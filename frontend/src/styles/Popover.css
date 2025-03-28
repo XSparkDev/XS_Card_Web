@@ -1,0 +1,162 @@
+/* Popover overlay */
+.popover-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: transparent;
+}
+
+/* Popover content container */
+.popover-content {
+  position: absolute;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  min-width: 12.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 51;
+  border: 1px solid #f0f0f0;
+  max-width: calc(100vw - 1.25rem);
+  max-height: calc(100vh - 1.25rem);
+  overflow: auto;
+  transform-origin: var(--popover-transform-origin, top);
+  animation-duration: 0.15s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Animation states */
+.popover-enter {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.popover-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.popover-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.popover-exit-active {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 100ms ease, transform 100ms ease;
+}
+
+/* Placement variations */
+.popover-content[data-side="top"] {
+  --popover-transform-origin: bottom;
+}
+
+.popover-content[data-side="right"] {
+  --popover-transform-origin: left;
+}
+
+.popover-content[data-side="bottom"] {
+  --popover-transform-origin: top;
+}
+
+.popover-content[data-side="left"] {
+  --popover-transform-origin: right;
+}
+
+/* Arrow styling */
+.popover-arrow {
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: inherit;
+  border: inherit;
+  z-index: -1;
+}
+
+.popover-arrow::before {
+  content: '';
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: white;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #f0f0f0;
+  transform: rotate(45deg);
+}
+
+/* Arrow positioning */
+.popover-content[data-side="top"] .popover-arrow {
+  bottom: -0.375rem;
+}
+
+.popover-content[data-side="right"] .popover-arrow {
+  left: -0.375rem;
+}
+
+.popover-content[data-side="bottom"] .popover-arrow {
+  top: -0.375rem;
+}
+
+.popover-content[data-side="left"] .popover-arrow {
+  right: -0.375rem;
+}
+
+/* Align variations for the arrow */
+.popover-content[data-align="start"] .popover-arrow {
+  left: 1rem;
+}
+
+.popover-content[data-align="center"] .popover-arrow {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.popover-content[data-align="end"] .popover-arrow {
+  right: 1rem;
+}
+
+/* Helper classes for animation without React-specific libraries */
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes popoverFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.popover-content.animate-in {
+  animation: popoverFadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.popover-content.animate-out {
+  animation: popoverFadeOut 100ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Focus management */
+.popover-content:focus {
+  outline: none;
+}
+
+.popover-content:focus-visible {
+  outline: 2px solid var(--color-primary, #4f46e5);
+  outline-offset: 2px;
+} 

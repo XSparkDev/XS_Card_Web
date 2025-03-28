@@ -1,0 +1,342 @@
+/* Sidebar container and layout */
+.sidebar-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #f1f5f9;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  transition: width 0.3s ease;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  border-radius: 3px;
+}
+
+.main-content {
+  flex: 1;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Sidebar header */
+.sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.logo-text {
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #0f172a;
+  margin: 0;
+}
+
+.sidebar-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Section headers */
+.section-header {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 16px 16px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Menu items */
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+}
+
+.sidebar-menu-item:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.sidebar-menu-item-active {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.sidebar-menu-item-icon {
+  margin-right: 12px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+}
+
+.sidebar-menu-item-active .sidebar-menu-item-icon {
+  color: var(--color-primary, #3b82f6);
+}
+
+.sidebar-menu-item-label {
+  font-size: 14px;
+  color: #0f172a;
+  flex: 1;
+}
+
+.sidebar-menu-item-active .sidebar-menu-item-label {
+  color: var(--color-primary, #3b82f6);
+  font-weight: 500;
+}
+
+.sidebar-menu-item-arrow {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-menu-item-expanded .sidebar-menu-item-arrow {
+  transform: rotate(180deg);
+}
+
+/* Submenu items */
+.sidebar-menu-sub-items {
+  display: flex;
+  flex-direction: column;
+  margin-left: 2.5rem; /* Indent sub-items */
+  margin-top: 0.25rem;
+}
+
+.sidebar-menu-sub-item {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: 0.25rem;
+  margin-bottom: 0.25rem;
+  display: block;
+  width: 100%;
+}
+
+.sidebar-menu-sub-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.sidebar-menu-sub-item.active {
+  background-color: var(--bg-active);
+  color: var(--text-active);
+  font-weight: 500;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+  border-top: 1px solid #e2e8f0;
+  padding: 16px;
+}
+
+/* User profile */
+.user-profile {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.user-initials {
+  font-size: 14px;
+  font-weight: bold;
+  color: #64748b;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+  margin: 0;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Footer buttons */
+.footer-button {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.footer-button:hover {
+  opacity: 0.8;
+}
+
+.footer-button-text {
+  font-size: 14px;
+  color: #0f172a;
+  margin-left: 10px;
+}
+
+.logout-button {
+  margin-top: 8px;
+}
+
+.logout-button-text {
+  color: #f44336;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 30;
+    display: none;
+  }
+  
+  .sidebar-backdrop.open {
+    display: block;
+  }
+  
+  .sidebar-toggle {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background-color: var(--color-primary, #3b82f6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Collapsible sidebar (optional feature) */
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .sidebar-subtitle,
+.sidebar.collapsed .sidebar-menu-item-label,
+.sidebar.collapsed .sidebar-menu-item-arrow,
+.sidebar.collapsed .section-header,
+.sidebar.collapsed .user-info,
+.sidebar.collapsed .footer-button-text {
+  display: none;
+}
+
+.sidebar.collapsed .logo-container {
+  justify-content: center;
+}
+
+.sidebar.collapsed .logo-icon {
+  margin-right: 0;
+}
+
+.sidebar.collapsed .sidebar-menu-item {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-menu-item-icon {
+  margin-right: 0;
+}
+
+.sidebar.collapsed .sidebar-menu-sub-items {
+  display: none;
+}
+
+/* More specific selector to override any conflicting rules */
+.sidebar .sidebar-menu-item-container .sidebar-menu-sub-items {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sidebar .sidebar-menu-item-container .sidebar-menu-sub-items .sidebar-menu-sub-item {
+  display: block !important;
+  width: 100% !important;
+} 

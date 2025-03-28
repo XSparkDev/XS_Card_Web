@@ -1,0 +1,342 @@
+.analytics-container {
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.analytics-header {
+  margin-bottom: 1.5rem;
+}
+
+.analytics-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+}
+
+.analytics-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card-wrapper {
+  width: 100%;
+}
+
+.stat-card {
+  border-radius: 0.5rem;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.stat-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+}
+
+.stat-card-title {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.stat-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 0.5rem;
+}
+
+.stat-card-percentage {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.percentage-icon {
+  color: #10b981;
+  font-size: 0.875rem;
+}
+
+.percentage-text {
+  font-size: 0.75rem;
+  color: #10b981;
+  margin-left: 0.25rem;
+}
+
+.icon-container {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.charts-grid {
+  margin-bottom: 1.5rem;
+}
+
+.charts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.half-width-card {
+  flex: 1;
+  min-width: 300px;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+
+.heatmap-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background-color: #0B4D2E;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.heatmap-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.heatmap-text {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.engagement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.engagement-chart {
+  background-color: #1e293b;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.engagement-chart-title {
+  font-size: 0.75rem;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.chart-placeholder {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.area-chart-placeholder {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.area-chart-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70%;
+  background-color: rgba(255, 99, 132, 0.1);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.area-chart-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #FF6384;
+}
+
+.line-chart-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.line-chart-line {
+  width: 90%;
+  height: 2px;
+  background-color: #36A2EB;
+  transform: rotate(-5deg);
+}
+
+.line-chart-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #36A2EB;
+  right: 20%;
+  top: 40%;
+}
+
+.pie-chart-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 15px solid rgba(255, 99, 132, 0.6);
+  border-top-color: rgba(54, 162, 235, 0.6);
+  border-right-color: rgba(0, 201, 167, 0.6);
+}
+
+.bottom-grid {
+  margin-bottom: 1.5rem;
+}
+
+.bottom-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.export-button {
+  height: 2rem;
+  padding: 0 0.75rem;
+}
+
+.crm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.crm-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+.crm-item-left {
+  display: flex;
+  align-items: center;
+}
+
+.crm-icon-container {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crm-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.connected-status {
+  font-size: 0.875rem;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.connect-button {
+  font-size: 0.875rem;
+  color: var(--color-primary);
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.environmental-grid {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.environmental-card {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.environmental-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.environmental-card-title {
+  font-size: 0.75rem;
+}
+
+.environmental-card-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .charts-row {
+    flex-direction: column;
+  }
+  
+  .half-width-card {
+    width: 100%;
+  }
+  
+  .environmental-grid {
+    flex-direction: column;
+  }
+} 
