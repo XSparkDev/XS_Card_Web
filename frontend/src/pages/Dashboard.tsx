@@ -1,4 +1,6 @@
 import React from 'react';
+import { Routes, Route } from "react-router-dom";
+import Security from "../components/Dashboard/Security";
 
 const Dashboard: React.FC = () => {
   return (

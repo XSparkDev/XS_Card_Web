@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useState, FC } from "react";
 import "../../styles/Department.css";
+import EmployeeModal from '../UI/EmployeeModal';
+import DepartmentModal from '../UI/DepartmentModal';
 
 const mockDepartments = [
   {
@@ -175,11 +177,23 @@ const DepartmentsSummaryCard = () => {
 
 const Department: FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [isDepartmentModalOpen, setIsDepartmentModalOpen] = useState(false);
   
   const filteredDepartments = mockDepartments.filter(department => 
     department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     department.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const handleAddEmployee = (employeeData) => {
+    console.log('New employee:', employeeData);
+    setIsEmployeeModalOpen(false);
+  };
+  
+  const handleAddDepartment = (departmentData) => {
+    console.log('New department:', departmentData);
+    setIsDepartmentModalOpen(false);
+  };
   
   return (
     <div className="department-container">
@@ -189,11 +203,14 @@ const Department: FC = () => {
           <p className="department-subtitle">Manage your organization's departments and teams</p>
         </div>
         <div className="header-buttons">
-          <button className="header-button outline-button">
+          <button className="header-button outline-button" onClick={() => setIsEmployeeModalOpen(true)}>
             <i className="fas fa-user-plus"></i>
             Add Employee
           </button>
-          <button className="header-button primary-button">
+          <button 
+            className="header-button primary-button" 
+            onClick={() => setIsDepartmentModalOpen(true)}
+          >
             <i className="fas fa-plus"></i>
             New Department
           </button>
@@ -218,6 +235,35 @@ const Department: FC = () => {
           <DepartmentCard key={department.id} department={department} />
         ))}
       </div>
+      
+      <EmployeeModal 
+        isOpen={isEmployeeModalOpen}
+        onClose={() => setIsEmployeeModalOpen(false)}
+        onSubmit={handleAddEmployee}
+        departments={[
+          { value: "sales", label: "Sales" },
+          { value: "engineering", label: "Engineering" },
+          { value: "product", label: "Product" },
+          { value: "customerSupport", label: "Customer Support" }
+        ]}
+      />
+      
+      <DepartmentModal 
+        isOpen={isDepartmentModalOpen}
+        onClose={() => setIsDepartmentModalOpen(false)}
+        onSubmit={handleAddDepartment}
+        parentDepartments={[
+          { value: "none", label: "None (Top Level)" },
+          { value: "sales", label: "Sales" },
+          { value: "marketing", label: "Marketing" },
+          { value: "operations", label: "Operations" }
+        ]}
+        managers={[
+          { value: "user1", label: "John Doe" },
+          { value: "user2", label: "Jane Smith" },
+          { value: "user3", label: "Robert Johnson" }
+        ]}
+      />
     </div>
   );
 };
