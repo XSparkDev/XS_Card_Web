@@ -254,4 +254,41 @@
   .contact-card {
     height: 100%;
   }
+}
+
+.contacts-tabs {
+  width: 100%;
+}
+
+.contacts-tabs-list {
+  margin-bottom: 1.5rem;
+}
+
+.contacts-search-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.contacts-search {
+  position: relative;
+  flex: 1;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+}
+
+.search-input {
+  padding-left: 2.5rem;
+  width: 100%;
+}
+
+[data-state="active"][role="tab"] {
+  border-bottom-color: #3b82f6;
+  color: #3b82f6;
 } 

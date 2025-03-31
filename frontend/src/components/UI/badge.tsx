@@ -10,13 +10,15 @@ interface BadgeProps {
   variant?: BadgeVariant;
   style?: React.CSSProperties;
   textStyle?: React.CSSProperties;
+  className?: string;
 }
 
 function Badge({ 
   children, 
   variant = 'default', 
   style,
-  textStyle
+  textStyle,
+  className = ""
 }: BadgeProps) {
   // Get styles based on variant
   const getVariantStyles = (): { container: React.CSSProperties, text: React.CSSProperties } => {
@@ -78,7 +80,7 @@ function Badge({
 
   return (
     <div 
-      className="badge"
+      className={`badge badge-${variant} ${className}`}
       style={{
         ...variantStyles.container,
         ...style,

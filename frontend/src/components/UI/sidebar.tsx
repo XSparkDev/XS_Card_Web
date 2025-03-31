@@ -139,6 +139,7 @@ const UserProfile: React.FC = () => (
 // Main Sidebar Component
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation(); //here
   
   return (
     <div className="sidebar">
@@ -180,11 +181,7 @@ const Sidebar: React.FC = () => {
           to="/contacts"
         />
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-chart-line"></i>}
-          label="Analytics"
-          to="/analytics"
-        />
+        
         
         <SidebarMenuItem
           icon={<i className="fas fa-building"></i>}

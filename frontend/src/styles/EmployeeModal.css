@@ -1,0 +1,83 @@
+.employee-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.employee-modal-container {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.employee-modal-header {
+  padding: 1.5rem;
+  padding-bottom: 1rem;
+  position: relative;
+}
+
+.employee-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.employee-modal-description {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.employee-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+  line-height: 1;
+}
+
+.employee-modal-form {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.employee-modal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.employee-modal-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.employee-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .employee-modal-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .employee-modal-container {
+    max-width: 90%;
+  }
+} 
