@@ -17,28 +17,32 @@ export interface EmployeeData {
   lastName: string;
   email: string;
   phone: string;
-  jobTitle: string;
   department: string;
-  startDate: string;
-  employeeId: string;
+  title: string;
+  role: string;
 }
 
-const EmployeeModal: React.FC<EmployeeModalProps> = ({ 
-  isOpen, 
-  onClose, 
+const EmployeeModal: React.FC<EmployeeModalProps> = ({
+  isOpen,
+  onClose,
   onSubmit,
-  departments 
+  departments
 }) => {
   const [employeeData, setEmployeeData] = useState<EmployeeData>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    jobTitle: "",
     department: "",
-    startDate: "",
-    employeeId: ""
+    title: "",
+    role: ""
   });
+
+  const roleOptions = [
+    { value: "employee", label: "Employee" },
+    { value: "manager", label: "Manager" },
+    { value: "admin", label: "Admin" }
+  ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -60,7 +64,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       <div className="employee-modal-container">
         <div className="employee-modal-header">
           <h2 className="employee-modal-title">Add New Employee</h2>
-          <p className="employee-modal-description">Enter the details of the new employee</p>
+          <p className="employee-modal-description">Enter employee information</p>
           <button 
             className="employee-modal-close" 
             onClick={onClose}
@@ -97,64 +101,68 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
             </div>
           </div>
           
-          <div className="employee-modal-form-group">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={employeeData.email}
-              onChange={handleChange}
-              placeholder="john.doe@company.com"
-              required
-            />
+          <div className="employee-modal-form-grid">
+            <div className="employee-modal-form-group">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={employeeData.email}
+                onChange={handleChange}
+                placeholder="john.doe@example.com"
+                required
+              />
+            </div>
+            
+            <div className="employee-modal-form-group">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                name="phone"
+                value={employeeData.phone}
+                onChange={handleChange}
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
+          </div>
+          
+          <div className="employee-modal-form-grid">
+            <div className="employee-modal-form-group">
+              <Label htmlFor="department">Department</Label>
+              <Select
+                id="department"
+                name="department"
+                value={employeeData.department}
+                onChange={handleChange}
+                options={departments}
+                placeholder="Select department"
+                required
+              />
+            </div>
+            
+            <div className="employee-modal-form-group">
+              <Label htmlFor="title">Job Title</Label>
+              <Input
+                id="title"
+                name="title"
+                value={employeeData.title}
+                onChange={handleChange}
+                placeholder="Software Engineer"
+                required
+              />
+            </div>
           </div>
           
           <div className="employee-modal-form-group">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              name="phone"
-              value={employeeData.phone}
-              onChange={handleChange}
-              placeholder="+1 (555) 123-4567"
-            />
-          </div>
-          
-          <div className="employee-modal-form-group">
-            <Label htmlFor="jobTitle">Job Title</Label>
-            <Input
-              id="jobTitle"
-              name="jobTitle"
-              value={employeeData.jobTitle}
-              onChange={handleChange}
-              placeholder="Software Developer"
-              required
-            />
-          </div>
-          
-          <div className="employee-modal-form-group">
-            <Label htmlFor="department">Department</Label>
+            <Label htmlFor="role">Role</Label>
             <Select
-              id="department"
-              name="department"
-              value={employeeData.department}
+              id="role"
+              name="role"
+              value={employeeData.role}
               onChange={handleChange}
-              options={departments}
-              placeholder="Select a department"
-            />
-          </div>
-          
-          
-          
-          <div className="employee-modal-form-group">
-            <Label htmlFor="employeeId">Employee ID</Label>
-            <Input
-              id="employeeId"
-              name="employeeId"
-              value={employeeData.employeeId}
-              onChange={handleChange}
-              placeholder="EMP-001"
+              options={roleOptions}
+              placeholder="Select role"
               required
             />
           </div>

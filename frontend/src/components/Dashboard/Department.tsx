@@ -115,13 +115,10 @@ const DepartmentCard = ({ department }: { department: typeof mockDepartments[0] 
             <i className="fas fa-users"></i>
             Team
           </button>
-          <button className="footer-button">
-            <i className="fas fa-credit-card"></i>
-            Cards
-          </button>
+          
           <button className="footer-button">
             <i className="fas fa-chart-bar"></i>
-            Stats
+            Export Report
           </button>
         </div>
       </div>
@@ -252,12 +249,6 @@ const Department: FC = () => {
         isOpen={isDepartmentModalOpen}
         onClose={() => setIsDepartmentModalOpen(false)}
         onSubmit={handleAddDepartment}
-        parentDepartments={[
-          { value: "none", label: "None (Top Level)" },
-          { value: "sales", label: "Sales" },
-          { value: "marketing", label: "Marketing" },
-          { value: "operations", label: "Operations" }
-        ]}
         managers={[
           { value: "user1", label: "John Doe" },
           { value: "user2", label: "Jane Smith" },
