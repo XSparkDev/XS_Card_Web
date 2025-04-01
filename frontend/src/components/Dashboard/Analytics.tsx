@@ -1,302 +1,255 @@
-import { FaArrowUp, FaCheck, FaFileDownload, FaPeopleArrows, FaCreditCard, FaLeaf, FaBrain, FaCloud, FaBuilding, FaThLarge } from "react-icons/fa";
-import { Card, CardContent } from "../UI/card";
-import { Button } from "../UI/button";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../UI/card";
 import "../../styles/Analytics.css";
-
-// Mock data for charts
-const mockData = {
-  totalConnections: {
-    value: "2,847",
-    percentage: 12.5,
-    icon: "people"
-  },
-  activeCards: {
-    value: "456",
-    percentage: 8.3,
-    icon: "credit-card"
-  },
-  paperSaved: {
-    value: "1,234 kg",
-    percentage: 15.2,
-    icon: "eco"
-  },
-  aiInsights: {
-    value: "89%",
-    percentage: 5.7,
-    icon: "psychology"
-  },
-  crmIntegrations: [
-    { name: "Salesforce", icon: "cloud", status: "Connected" },
-    { name: "HubSpot", icon: "apps", status: "Connected" },
-    { name: "Microsoft Dynamics", icon: "business", status: "Connect" }
-  ],
-  environmentalImpact: {
-    treesSaved: 47,
-    waterSaved: "2,890L",
-    co2Reduced: "1.2 tons"
-  }
-};
-
-// Get icon component based on name
-const getIconComponent = (iconName: string) => {
-  switch(iconName) {
-    case 'people': return <FaPeopleArrows />;
-    case 'credit-card': return <FaCreditCard />;
-    case 'eco': return <FaLeaf />;
-    case 'psychology': return <FaBrain />;
-    case 'cloud': return <FaCloud />;
-    case 'apps': return <FaThLarge />;
-    case 'business': return <FaBuilding />;
-    default: return <FaThLarge />;
-  }
-};
-
-// Stat Card Component
-const StatCard = ({ 
-  title, 
-  value, 
-  percentage, 
-  icon,
-  bgColor 
-}: { 
-  title: string; 
-  value: string; 
-  percentage: number; 
-  icon: string;
-  bgColor: string;
-}) => (
-  <Card className="stat-card">
-    <CardContent>
-      <div className="stat-card-content">
-        <div>
-          <p className="stat-card-title">{title}</p>
-          <p className="stat-card-value">{value}</p>
-          <div className="stat-card-percentage">
-            <FaArrowUp className="percentage-icon" />
-            <span className="percentage-text">{percentage}% increase</span>
-          </div>
-        </div>
-        <div className="icon-container" style={{ backgroundColor: bgColor }}>
-          {getIconComponent(icon)}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-// Environmental Impact Card
-const EnvironmentalImpactCard = ({ 
-  title, 
-  value, 
-  bgColor,
-  textColor
-}: { 
-  title: string; 
-  value: string | number; 
-  bgColor: string;
-  textColor: string;
-}) => (
-  <div className="environmental-card" style={{ backgroundColor: bgColor }}>
-    <div className="environmental-card-content">
-      <div>
-        <p className="environmental-card-title" style={{ color: textColor }}>{title}</p>
-        <p className="environmental-card-value" style={{ color: textColor }}>{value}</p>
-      </div>
-      <div style={{ opacity: 0.8 }}>
-        <FaCheck color={textColor} />
-      </div>
-    </div>
-  </div>
-);
-
-// CRM Integration Item
-const CRMIntegrationItem = ({ 
-  name, 
-  icon, 
-  status 
-}: { 
-  name: string; 
-  icon: string; 
-  status: string;
-}) => (
-  <div className="crm-item">
-    <div className="crm-item-left">
-      <div className="crm-icon-container" style={{ 
-        backgroundColor: name === "Salesforce" ? "#e6f0ff" : 
-                         name === "HubSpot" ? "#fff0e6" : "#f0f0f0" 
-      }}>
-        {getIconComponent(icon)}
-      </div>
-      <p className="crm-name">{name}</p>
-    </div>
-    {status === "Connect" ? (
-      <button className="connect-button">Connect</button>
-    ) : (
-      <span className="connected-status">Connected</span>
-    )}
-  </div>
-);
+import "../../styles/Dashboard.css";
+import { FaUsers, FaIdCard, FaLeaf, FaRobot, FaChartArea, FaChartLine, FaCommentDots, FaPalette } from "react-icons/fa";
 
 const Analytics = () => {
   return (
-    <div className="analytics-container">
-      <div className="analytics-header">
-        <h1 className="analytics-title">Analytics Dashboard</h1>
-        <p className="analytics-subtitle">Track your business card performance and networking insights</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="stats-grid">
-        <div className="stat-card-wrapper">
-          <StatCard 
-            title="Total Connections" 
-            value={mockData.totalConnections.value} 
-            percentage={mockData.totalConnections.percentage} 
-            icon={mockData.totalConnections.icon}
-            bgColor="#e6f0ff" 
-          />
-        </div>
-        <div className="stat-card-wrapper">
-          <StatCard 
-            title="Active Cards" 
-            value={mockData.activeCards.value} 
-            percentage={mockData.activeCards.percentage} 
-            icon={mockData.activeCards.icon}
-            bgColor="#f0e6ff"
-          />
-        </div>
-        <div className="stat-card-wrapper">
-          <StatCard 
-            title="Paper Saved" 
-            value={mockData.paperSaved.value} 
-            percentage={mockData.paperSaved.percentage} 
-            icon={mockData.paperSaved.icon}
-            bgColor="#e6fff0"
-          />
-        </div>
-        <div className="stat-card-wrapper">
-          <StatCard 
-            title="AI Insights" 
-            value={mockData.aiInsights.value} 
-            percentage={mockData.aiInsights.percentage} 
-            icon={mockData.aiInsights.icon}
-            bgColor="#fff0e6"
-          />
+    <div className="page-container">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Analytics Dashboard</h1>
+          <p className="page-description">Monitor your business card engagement and environmental impact</p>
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="charts-grid">
-        <div className="charts-row">
-          {/* Employee Networking Heat-map */}
-          <Card className="chart-card half-width-card">
-            <CardContent>
-              <h3 className="chart-title">Employee Networking Heat-map</h3>
-              <div className="heatmap-container">
-                <div className="heatmap-overlay">
-                  <p className="heatmap-text">Interactive Heat Map</p>
-                </div>
+      {/* Metrics Cards */}
+      <div className="metrics-grid">
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-icon" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)" }}>
+              <FaUsers />
+            </div>
+            <div className="metric-content">
+              <p className="metric-label">Total Connections</p>
+              <h2 className="metric-value">2,847</h2>
+              <p className="metric-change positive">
+                <span className="arrow">↑</span> 12.3% increase
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-icon" style={{ backgroundColor: "rgba(168, 85, 247, 0.1)" }}>
+              <FaIdCard />
+            </div>
+            <div className="metric-content">
+              <p className="metric-label">Active Cards</p>
+              <h2 className="metric-value">456</h2>
+              <p className="metric-change positive">
+                <span className="arrow">↑</span> 8.3% increase
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-icon" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
+              <FaLeaf />
+            </div>
+            <div className="metric-content">
+              <p className="metric-label">Paper Saved</p>
+              <h2 className="metric-value">1,234 kg</h2>
+              <p className="metric-change positive">
+                <span className="arrow">↑</span> 15.2% increase
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="metric-card">
+          <CardContent>
+            <div className="metric-icon" style={{ backgroundColor: "rgba(245, 158, 11, 0.1)" }}>
+              <FaRobot />
+            </div>
+            <div className="metric-content">
+              <p className="metric-label">AI Insights</p>
+              <h2 className="metric-value">89%</h2>
+              <p className="metric-change positive">
+                <span className="arrow">↑</span> 5.7% increase
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="analytics-grid">
+        {/* Heat Map */}
+        <Card className="heatmap-card">
+          <CardHeader>
+            <CardTitle>Employee Networking Heat-map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="heatmap-container">
+              <div className="placeholder-heatmap">
+                <p>Interactive Heat Map</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Engagement Analytics */}
-          <Card className="chart-card half-width-card">
-            <CardContent>
-              <h3 className="chart-title">Engagement Analytics</h3>
-              <div className="engagement-grid">
-                <div className="engagement-chart">
-                  <p className="engagement-chart-title">Landing Stats</p>
-                  <div className="chart-placeholder">
-                    <div className="area-chart-placeholder">
-                      <div className="area-chart-gradient"></div>
-                      <div className="area-chart-line"></div>
-                    </div>
-                  </div>
+        {/* Engagement Analytics Section */}
+        <div className="engagement-section">
+          <div className="section-header">
+            <h2 className="section-title">Engagement Analytics</h2>
+          </div>
+          
+          <div className="charts-grid">
+            <Card className="chart-card">
+              <CardHeader>
+                <CardTitle className="chart-title">
+                  <FaChartArea className="chart-icon" /> Landing Stats
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="chart-container area-chart">
+                  {/* Placeholder for area chart */}
                 </div>
-                <div className="engagement-chart">
-                  <p className="engagement-chart-title">User Analytics</p>
-                  <div className="chart-placeholder">
-                    <div className="line-chart-placeholder">
-                      <div className="line-chart-line"></div>
-                      <div className="line-chart-dot"></div>
-                    </div>
-                  </div>
+              </CardContent>
+            </Card>
+
+            <Card className="chart-card">
+              <CardHeader>
+                <CardTitle className="chart-title">
+                  <FaChartLine className="chart-icon" /> User Analytics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="chart-container line-chart">
+                  {/* Placeholder for line chart */}
                 </div>
-                <div className="engagement-chart">
-                  <p className="engagement-chart-title">Mention Tools</p>
-                  <div className="chart-placeholder">
-                    <div className="pie-chart-placeholder"></div>
-                  </div>
+              </CardContent>
+            </Card>
+
+            <Card className="chart-card">
+              <CardHeader>
+                <CardTitle className="chart-title">
+                  <FaCommentDots className="chart-icon" /> Mention Tools
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="chart-container donut-chart">
+                  {/* Placeholder for donut chart */}
                 </div>
-                <div className="engagement-chart">
-                  <p className="engagement-chart-title">Design Cards</p>
-                  <div className="chart-placeholder">
-                    <div className="area-chart-placeholder"></div>
-                  </div>
+              </CardContent>
+            </Card>
+
+            <Card className="chart-card">
+              <CardHeader>
+                <CardTitle className="chart-title">
+                  <FaPalette className="chart-icon" /> Design Cards
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="chart-container area-chart">
+                  {/* Placeholder for area chart */}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Cards - CRM Integration and Environmental Impact side by side */}
+      {/* Bottom Content */}
       <div className="bottom-grid">
-        <div className="charts-row">
-          {/* CRM Integration */}
-          <Card className="bottom-card half-width-card">
-            <CardContent>
-              <div className="card-header">
-                <h3 className="chart-title">CRM Integration</h3>
-                <Button 
-                  variant="outline" 
-                  className="export-button"
-                  leftIcon={<FaFileDownload />}
-                >
-                  Export
-                </Button>
+        {/* CRM Integration */}
+        <Card className="crm-card">
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle>CRM Integration</CardTitle>
+            <button className="export-button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Export</span>
+            </button>
+          </CardHeader>
+          <CardContent>
+            <div className="crm-integration">
+              <div className="crm-item">
+                <div className="crm-logo salesforce">
+                  <span>SF</span>
+                </div>
+                <div className="crm-info">
+                  <span className="crm-name">Salesforce</span>
+                </div>
+                <div className="crm-status">
+                  <span className="status-badge connected">Connected</span>
+                </div>
               </div>
-              <div className="crm-list">
-                {mockData.crmIntegrations.map((item, index) => (
-                  <CRMIntegrationItem 
-                    key={index}
-                    name={item.name} 
-                    icon={item.icon} 
-                    status={item.status} 
-                  />
-                ))}
+              
+              <div className="crm-item">
+                <div className="crm-logo hubspot" style={{ backgroundColor: "#ff7a59", color: "white" }}>
+                  <span>H</span>
+                </div>
+                <div className="crm-info">
+                  <span className="crm-name">HubSpot</span>
+                </div>
+                <div className="crm-status">
+                  <span className="status-badge connected">Connected</span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="crm-item">
+                <div className="crm-logo microsoft" style={{ backgroundColor: "#0078d4", color: "white" }}>
+                  <span>MD</span>
+                </div>
+                <div className="crm-info">
+                  <span className="crm-name">Microsoft Dynamics</span>
+                </div>
+                <div className="crm-status">
+                  <button className="connect-button">Connect</button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Environmental Impact */}
-          <Card className="bottom-card half-width-card">
-            <CardContent>
-              <h3 className="chart-title">Environmental Impact</h3>
-              <div className="environmental-grid">
-                <EnvironmentalImpactCard 
-                  title="Trees Saved"
-                  value={mockData.environmentalImpact.treesSaved}
-                  bgColor="#e6fff0"
-                  textColor="#10b981"
-                />
-                <EnvironmentalImpactCard 
-                  title="Water Saved"
-                  value={mockData.environmentalImpact.waterSaved}
-                  bgColor="#e6f0ff"
-                  textColor="#3b82f6"
-                />
-                <EnvironmentalImpactCard 
-                  title="CO₂ Reduced"
-                  value={mockData.environmentalImpact.co2Reduced}
-                  bgColor="#f0e6ff"
-                  textColor="#8b5cf6"
-                />
+        {/* Environmental Impact */}
+        <Card className="environmental-card">
+          <CardHeader>
+            <CardTitle>Environmental Impact</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="environmental-impact-grid">
+              <div className="impact-box trees-box">
+                <div className="impact-content">
+                  <div className="impact-title">Trees Saved</div>
+                  <div className="impact-value trees-value">47</div>
+                </div>
+                <div className="impact-check-container">
+                  <div className="impact-check">✓</div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div className="impact-box water-box">
+                <div className="impact-content">
+                  <div className="impact-title">Water Saved</div>
+                  <div className="impact-value water-value">2,890L</div>
+                </div>
+                <div className="impact-check-container">
+                  <div className="impact-check">✓</div>
+                </div>
+              </div>
+              
+              <div className="impact-box co2-box">
+                <div className="impact-content">
+                  <div className="impact-title">CO<sub>2</sub> Reduced</div>
+                  <div className="impact-value co2-value">1.2 tons</div>
+                </div>
+                <div className="impact-check-container">
+                  <div className="impact-check">✓</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

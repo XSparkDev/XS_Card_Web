@@ -9,14 +9,12 @@ interface DepartmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (departmentData: DepartmentData) => void;
-  parentDepartments: { value: string; label: string }[];
   managers: { value: string; label: string }[];
 }
 
 export interface DepartmentData {
   name: string;
   description: string;
-  parentDepartment: string;
   manager: string;
 }
 
@@ -24,13 +22,11 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  parentDepartments,
   managers
 }) => {
   const [departmentData, setDepartmentData] = useState<DepartmentData>({
     name: "",
     description: "",
-    parentDepartment: "",
     manager: ""
   });
 
@@ -88,18 +84,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
               className="department-description-input"
               rows={4}
             ></textarea>
-          </div>
-          
-          <div className="department-modal-form-group">
-            <Label htmlFor="parentDepartment">Parent Department</Label>
-            <Select
-              id="parentDepartment"
-              name="parentDepartment"
-              value={departmentData.parentDepartment}
-              onChange={handleChange}
-              options={parentDepartments}
-              placeholder="Select a parent department"
-            />
           </div>
           
           <div className="department-modal-form-group">

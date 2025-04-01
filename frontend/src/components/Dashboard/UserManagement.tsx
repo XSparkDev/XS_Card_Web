@@ -85,6 +85,7 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("all");
 
   // Keep all your existing functions and state handlers
 
@@ -150,14 +151,45 @@ const UserManagement = () => {
               <CardTitle className="card-title-small">Quick Filters</CardTitle>
             </CardHeader>
             <CardContent className="card-content-compact">
-              <button className="filter-button filter-active">All Users (6)</button>
-              <button className="filter-button">Administrators (1)</button>
-              <button className="filter-button">Managers (2)</button>
-              <button className="filter-button">Regular Employees (3)</button>
+              <button
+                className={`filter-button ${activeFilter === "administrators" ? "filter-active" : ""}`}
+                onClick={() => setActiveFilter("administrators")}
+              >
+                Administrators (1)
+              </button>
+              <button
+                className={`filter-button ${activeFilter === "managers" ? "filter-active" : ""}`}
+                onClick={() => setActiveFilter("managers")}
+              >
+                Managers (2)
+              </button>
+              <button
+                className={`filter-button ${activeFilter === "employees" ? "filter-active" : ""}`}
+                onClick={() => setActiveFilter("employees")}
+              >
+                Regular Employees (3)
+              </button>
+              
               <hr className="divider" />
-              <button className="filter-button">Active (5)</button>
-              <button className="filter-button">Inactive (1)</button>
-              <button className="filter-button">Pending Activation (1)</button>
+              
+              <button
+                className={`filter-button ${activeFilter === "active" ? "filter-active" : ""}`}
+                onClick={() => setActiveFilter("active")}
+              >
+                Active (5)
+              </button>
+              <button
+                className={`filter-button ${activeFilter === "inactive" ? "filter-active" : ""}`}
+                onClick={() => setActiveFilter("inactive")}
+              >
+                Inactive (1)
+              </button>
+              <button
+                className={`filter-button ${activeFilter === "pending" ? "filter-active" : ""}`}
+                onClick={() => setActiveFilter("pending")}
+              >
+                Pending Activation (1)
+              </button>
             </CardContent>
           </Card>
           

@@ -1,9 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { FaSearch, FaFilter, FaDownload, FaPlus, FaQrcode, FaShare, FaEdit } from "react-icons/fa";
 import { Button } from "../UI/button";
-import { Card } from "../UI/card";
+import { Card, CardContent } from "../UI/card";
 import { Input } from "../UI/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
 import "../../styles/BusinessCards.css";
+import "../../styles/Dashboard.css";
 
 // Mock data
 const mockCards = [
@@ -111,118 +113,74 @@ const BusinessCardItem = ({ card }: { card: typeof mockCards[0] }) => {
 
 const BusinessCards = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-  
-  const filteredCards = mockCards.filter(card => 
-    card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    card.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    card.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
   
   return (
-    <div className="business-cards-container">
-      <div className="cards-header">
+    <div className="page-container">
+      <div className="page-header">
         <div>
-          <h1 className="cards-title">Business Cards</h1>
-          <p className="cards-subtitle">Manage all your company's digital business cards</p>
+          <h1 className="page-title">Business Cards</h1>
+          <p className="page-description">Manage and customize your digital business cards</p>
         </div>
-        <div className="header-buttons">
-          <Button 
-            variant="outline" 
-            leftIcon={<FaDownload />}
-            onClick={() => console.log('Export')}
-          >
-            Export
-          </Button>
-          <Button 
-            leftIcon={<FaPlus />}
-            onClick={() => console.log('Create Card')}
-          >
+        <div className="page-actions">
+          <Button>
+            <FaPlus className="mr-2" size={14} />
             Create Card
           </Button>
         </div>
       </div>
       
-      <div className="search-container">
-        <div className="search-input-container">
-          <FaSearch className="search-icon" />
-          <Input
-            placeholder="Search cards..."
-            className="search-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <Button 
-          variant="outline" 
-          leftIcon={<FaFilter />}
-          className="filter-button"
-          onClick={() => console.log('Filter')}
-        >
-          Filter
-        </Button>
-      </div>
-      
-      <div className="tabs-container">
-        <div className="tabs-list">
-          <button 
-            className={`tab-button ${activeTab === 'all' ? 'active-tab-button' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            All Cards
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'recent' ? 'active-tab-button' : ''}`}
-            onClick={() => setActiveTab('recent')}
-          >
-            Recent
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'departments' ? 'active-tab-button' : ''}`}
-            onClick={() => setActiveTab('departments')}
-          >
-            By Department
-          </button>
+      <Tabs defaultValue="all" className="business-cards-tabs">
+        <TabsList className="business-cards-tabs-list">
+          <TabsTrigger value="all">All Cards</TabsTrigger>
+          <TabsTrigger value="recent">Recent</TabsTrigger>
+          <TabsTrigger value="department">By Department</TabsTrigger>
+        </TabsList>
+        
+        <div className="search-filter-container">
+          <div className="search-container">
+            <FaSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search cards..."
+              className="search-input"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" className="filter-button">
+            <FaFilter className="mr-2" size={12} />
+            Filter
+          </Button>
         </div>
         
-        {activeTab === 'all' && (
+        <TabsContent value="all" className="mt-4">
           <div className="cards-grid">
-            {filteredCards.map(card => (
+            {mockCards.map(card => (
               <BusinessCardItem key={card.id} card={card} />
             ))}
           </div>
-        )}
+        </TabsContent>
         
-        {activeTab === 'recent' && (
+        <TabsContent value="recent">
           <div className="cards-grid">
-            {filteredCards
+            {mockCards
               .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
               .slice(0, 3)
               .map(card => (
                 <BusinessCardItem key={card.id} card={card} />
-              ))
-            }
+              ))}
           </div>
-        )}
+        </TabsContent>
         
-        {activeTab === 'departments' && (
-          <div className="departments-container">
-            {['Executive', 'Sales', 'Marketing', 'Business Development'].map((dept) => (
-              <div key={dept} className="department-section">
-                <h2 className="department-title">{dept}</h2>
-                <div className="cards-grid">
-                  {filteredCards
-                    .filter(card => card.department === dept)
-                    .map(card => (
-                      <BusinessCardItem key={card.id} card={card} />
-                    ))
-                  }
-                </div>
-              </div>
-            ))}
+        <TabsContent value="department">
+          <div className="cards-grid">
+            {mockCards.filter(card => card.department === "Sales")
+              .map(card => (
+                <BusinessCardItem key={card.id} card={card} />
+              ))}
           </div>
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

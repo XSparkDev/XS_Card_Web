@@ -291,8 +291,8 @@
 }
 
 .connect-button {
+  color: #3b82f6;
   font-size: 0.875rem;
-  color: var(--color-primary);
   font-weight: 500;
   background: none;
   border: none;
@@ -337,6 +337,403 @@
   }
   
   .environmental-grid {
+    flex-direction: column;
+  }
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  height: 100%;
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #1e40af;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.metric-change {
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+}
+
+.metric-change.positive {
+  color: #10b981;
+}
+
+.metric-change.negative {
+  color: #ef4444;
+}
+
+.arrow {
+  margin-right: 0.25rem;
+}
+
+/* Main Content Grid */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.heatmap-card {
+  height: 100%;
+}
+
+.heatmap-container {
+  width: 100%;
+  height: 400px;
+  background-color: #065f46;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+}
+
+.placeholder-heatmap {
+  text-align: center;
+}
+
+.section-header {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 1rem;
+}
+
+.chart-card {
+  height: 100%;
+}
+
+.chart-title {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.chart-icon {
+  margin-right: 0.5rem;
+}
+
+.chart-container {
+  width: 100%;
+  height: 150px;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.area-chart {
+  background: linear-gradient(180deg, rgba(219, 39, 119, 0.1) 0%, rgba(219, 39, 119, 0.5) 100%);
+}
+
+.line-chart {
+  background-color: #0f172a;
+  position: relative;
+}
+
+.line-chart::after {
+  content: "";
+  position: absolute;
+  width: 90%;
+  height: 2px;
+  background-color: #38bdf8;
+  z-index: 1;
+  transform: translateY(20px) translateX(-5px);
+}
+
+.donut-chart {
+  background-color: #0f172a;
+  position: relative;
+}
+
+.donut-chart::after {
+  content: "";
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 15px solid #10b981;
+  border-right: 15px solid #fb7185;
+  border-bottom: 15px solid #3b82f6;
+  transform: rotate(-45deg);
+}
+
+/* Bottom Content */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.crm-integration {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.crm-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.crm-logo {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-weight: 600;
+}
+
+.salesforce {
+  background-color: #1589ee;
+  color: white;
+}
+
+.crm-info {
+  flex: 1;
+}
+
+.crm-name {
+  font-weight: 500;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+}
+
+.connected {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.export-button {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Environmental Impact Section */
+.impact-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.impact-stat {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.impact-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-size: 1.25rem;
+}
+
+.trees {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.water {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.co2 {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.impact-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.impact-label {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.impact-value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.impact-check {
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Updated CRM styles */
+.connect-button {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Environmental Impact updated styles */
+.environmental-impact-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.impact-box {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.trees-box {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.water-box {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.co2-box {
+  background-color: rgba(139, 92, 246, 0.1);
+}
+
+.impact-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.impact-title {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.trees-value {
+  color: #10b981;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.water-value {
+  color: #3b82f6;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.co2-value {
+  color: #8b5cf6;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.impact-check-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.impact-check {
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .environmental-impact-grid {
     flex-direction: column;
   }
 } 
