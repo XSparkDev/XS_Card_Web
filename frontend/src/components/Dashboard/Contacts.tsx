@@ -1,9 +1,12 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { FaStar, FaRegStar, FaSearch, FaFilter, FaDownload, FaUserPlus, FaEnvelope, FaPhone, FaEllipsisH } from "react-icons/fa";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
-import { Card, CardContent } from "../UI/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../UI/card";
+import { Badge } from "../UI/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
 import "../../styles/Contacts.css";
+import "../../styles/Dashboard.css";
 
 const mockContacts = [
   {
@@ -133,102 +136,68 @@ const ContactItem = ({ contact }: { contact: typeof mockContacts[0] }) => {
 };
 
 const Contacts = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-  
-  const filteredContacts = mockContacts.filter(contact => 
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.company.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  const getTabContacts = () => {
-    switch (activeTab) {
-      case "recent":
-        return [...filteredContacts]
-          .sort((a, b) => new Date(b.lastContact).getTime() - new Date(a.lastContact).getTime())
-          .slice(0, 3);
-      case "favorites":
-        return filteredContacts.filter(contact => contact.favorite);
-      default:
-        return filteredContacts;
-    }
-  };
+  const [activeFilter, setActiveFilter] = useState("all");
   
   return (
-    <div className="contacts-container">
-      <div className="contacts-header">
+    <div className="page-container">
+      <div className="page-header">
         <div>
-          <h1 className="contacts-title">Contacts</h1>
-          <p className="contacts-subtitle">Manage and organize your business network</p>
+          <h1 className="page-title">Contacts</h1>
+          <p className="page-description">Manage your network and connections</p>
         </div>
-        <div className="header-buttons">
-          <Button 
-            variant="outline" 
-            className="export-button"
-            leftIcon={<FaDownload />}
-            onClick={() => console.log('Export')}
-          >
-            Export
-          </Button>
-          <Button 
-            className="add-button"
-            leftIcon={<FaUserPlus />}
-            onClick={() => console.log('Add Contact')}
-          >
+        <div className="page-actions">
+          <Button>
+            <FaUserPlus className="mr-2" size={14} />
             Add Contact
           </Button>
         </div>
       </div>
       
-      <div className="search-container">
-        <div className="search-input-container">
-          <FaSearch className="search-icon" />
-          <Input
-            placeholder="Search contacts..."
-            className="search-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <Button 
-          variant="outline" 
-          className="filter-button"
-          leftIcon={<FaFilter />}
-          onClick={() => console.log('Filter')}
-        >
-          Filter
-        </Button>
-      </div>
-      
-      <div className="tabs-container">
-        <div className="tabs-list">
-          <button 
-            className={`tab-button ${activeTab === 'all' ? 'active-tab-button' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            All Contacts
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'recent' ? 'active-tab-button' : ''}`}
-            onClick={() => setActiveTab('recent')}
-          >
-            Recent
-          </button>
-          <button 
-            className={`tab-button ${activeTab === 'favorites' ? 'active-tab-button' : ''}`}
-            onClick={() => setActiveTab('favorites')}
-          >
-            Favorites
-          </button>
+      <Tabs defaultValue="all" className="contacts-tabs">
+        <TabsList className="contacts-tabs-list">
+          <TabsTrigger value="all">All Contacts</TabsTrigger>
+          <TabsTrigger value="recent">Recent</TabsTrigger>
+          <TabsTrigger value="favorites">Favorites</TabsTrigger>
+        </TabsList>
+        
+        <div className="contacts-search-actions">
+          <div className="contacts-search">
+            <FaSearch className="search-icon" />
+            <Input 
+              type="text" 
+              placeholder="Search contacts..." 
+              className="search-input" 
+            />
+          </div>
+          <Button variant="outline" className="filter-button">
+            Filter
+          </Button>
         </div>
         
-        <div className="contacts-list">
-          {getTabContacts().map(contact => (
-            <ContactItem key={contact.id} contact={contact} />
-          ))}
-        </div>
-      </div>
+        <TabsContent value="all" className="mt-4">
+          <div className="contacts-list">
+            {mockContacts.map(contact => (
+              <ContactItem key={contact.id} contact={contact} />
+            ))}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="recent">
+          <div className="contacts-list">
+            {mockContacts.sort((a, b) => new Date(b.lastContact).getTime() - new Date(a.lastContact).getTime()).slice(0, 3).map(contact => (
+              <ContactItem key={contact.id} contact={contact} />
+            ))}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="favorites">
+          <div className="contacts-list">
+            {mockContacts.filter(contact => contact.favorite).map(contact => (
+              <ContactItem key={contact.id} contact={contact} />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

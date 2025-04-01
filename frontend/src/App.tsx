@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
+import Security from "./components/Dashboard/Security";
 
 // Import your pages
 import Dashboard from './pages/Dashboard';
@@ -12,6 +13,8 @@ import Analytics from './components/Dashboard/Analytics';
 import Department from './components/Dashboard/Department';
 import Calendar from './components/Dashboard/CalendarMain';
 import UserManagement from './components/Dashboard/UserManagement';
+import Integrations from "./components/Dashboard/Integrations";
+import Settings from './components/Dashboard/Settings';
 
 // Optional: Import SignIn if you have it
 // import SignIn from './path/to/SignIn';
@@ -25,7 +28,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/business-cards" />} />
         <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Navigate to="/analytics" />} />
           <Route path="/business-cards" element={<BusinessCards />} />
           <Route path="/business-cards/create" element={<CreateCard />} />
           <Route path="/business-cards/archived" element={<div>Archived Cards</div>} />
@@ -34,9 +37,9 @@ const App = () => {
           <Route path="/department" element={<Department />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/user-management" element={<UserManagement />} />
-          <Route path="/security" element={<div>Security</div>} />
-          <Route path="/integrations" element={<div>Integrations</div>} />
-          <Route path="/settings" element={<div>Settings</div>} />
+          <Route path="/security" element={<Security />} />
+          <Route path="/integrations" element={<Integrations />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
     </Router>
