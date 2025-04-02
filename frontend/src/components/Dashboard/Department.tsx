@@ -3,6 +3,9 @@ import { useState, FC } from "react";
 import "../../styles/Department.css";
 import EmployeeModal from '../UI/EmployeeModal';
 import DepartmentModal from '../UI/DepartmentModal';
+import { FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
+import { Button } from "../UI/button";
 
 const mockDepartments = [
   {
@@ -69,6 +72,14 @@ const mockDepartments = [
 
 // Department Card component
 const DepartmentCard = ({ department }: { department: typeof mockDepartments[0] }) => {
+  const handleDeleteDepartment = (id: string) => {
+    console.log(`Delete department with id: ${id}`);
+  };
+
+  const handleEditDepartment = (id: string) => {
+    console.log(`Edit department with id: ${id}`);
+  };
+
   return (
     <div className="department-card">
       <div className="card-content">
@@ -77,9 +88,26 @@ const DepartmentCard = ({ department }: { department: typeof mockDepartments[0] 
             <h3 className="card-title">{department.name}</h3>
             <p className="card-description">{department.description}</p>
           </div>
-          <button className="more-button">
-            <i className="fas fa-ellipsis-v"></i>
-          </button>
+          
+          <div className="department-actions">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="more-button">
+                  <FaEllipsisV />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="dropdown-content">
+                <DropdownMenuItem onClick={() => handleEditDepartment(department.id)}>
+                  <FaEdit className="action-icon" />
+                  <span>Edit</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDeleteDepartment(department.id)}>
+                  <FaTrash className="action-icon" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         <div className="stats-grid">
