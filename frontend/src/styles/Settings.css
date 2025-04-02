@@ -461,4 +461,82 @@
 .view-description {
   font-size: 0.875rem;
   color: #64748b;
+}
+
+/* Add these styles to your existing Settings.css file */
+
+.security-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+.password-link-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.password-link-info {
+  flex: 1;
+}
+
+.password-link-title {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.password-link-description {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.password-change-link {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* Pricing section styling */
+.pricing-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.pricing-link-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.pricing-link-info {
+  flex: 1;
+}
+
+.pricing-link-title {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.pricing-link-description {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #6b7280);
+}
+
+.pricing-link {
+  color: var(--color-primary);
+  font-weight: 500;
 } 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaStar, FaRegStar, FaSearch, FaFilter, FaDownload, FaUserPlus, FaEnvelope, FaPhone, FaEllipsisH } from "react-icons/fa";
+import { FaStar, FaRegStar, FaSearch, FaFilter, FaDownload, FaUserPlus, FaEnvelope, FaPhone, FaEllipsisH, FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../UI/card";
@@ -7,6 +7,8 @@ import { Badge } from "../UI/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
 import "../../styles/Contacts.css";
 import "../../styles/Dashboard.css";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../UI/dialog";
 
 const mockContacts = [
   {
@@ -75,6 +77,20 @@ const ContactItem = ({ contact }: { contact: typeof mockContacts[0] }) => {
   const [favorite, setFavorite] = useState(contact.favorite);
   const initials = contact.name.split(' ').map(n => n[0]).join('');
   
+  const handleEmailClick = (email: string) => {
+    window.location.href = `mailto:${email}`;
+  };
+
+  const handleDeleteContact = (id: string) => {
+    // Implement the delete logic
+    console.log(`Delete contact with id: ${id}`);
+  };
+
+  const handleUpdateContact = (id: string) => {
+    // Implement the update logic
+    console.log(`Update contact with id: ${id}`);
+  };
+
   return (
     <Card className="contact-card">
       <CardContent>
@@ -88,13 +104,22 @@ const ContactItem = ({ contact }: { contact: typeof mockContacts[0] }) => {
               <p className="contact-title">{contact.title} at {contact.company}</p>
             </div>
           </div>
-          <button 
-            className="favorite-button"
-            onClick={() => setFavorite(!favorite)}
-            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-          >
-            {favorite ? <FaStar className="star-icon-filled" /> : <FaRegStar className="star-icon" />}
-          </button>
+          <div className="contact-actions">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="action-button">
+                  <FaEllipsisV />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="dropdown-content">
+                
+                <DropdownMenuItem onClick={() => handleDeleteContact(contact.id)}>
+                  <FaTrash className="action-icon" />
+                  <span>Delete</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         <div className="contact-details">
@@ -119,15 +144,10 @@ const ContactItem = ({ contact }: { contact: typeof mockContacts[0] }) => {
               variant="outline" 
               className="email-button"
               leftIcon={<FaEnvelope />}
+              onClick={() => handleEmailClick(contact.email)}
             >
               Email
             </Button>
-            <Button 
-              variant="ghost" 
-              className="more-button"
-              leftIcon={<FaEllipsisH />}
-              aria-label="More options"
-            />
           </div>
         </div>
       </CardContent>

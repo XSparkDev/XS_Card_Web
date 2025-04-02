@@ -15,7 +15,23 @@ import {
   FaCheck, FaDownload, FaShieldAlt, FaExclamationTriangle
 } from "react-icons/fa";
 
+// Import useNavigate from react-router-dom if you're using React Router
+import { useNavigate } from "react-router-dom";
+
 const Settings = () => {
+  // Add navigate function if using React Router
+  const navigate = useNavigate();
+  
+  // Add a function to handle navigation to Change Password page
+  const goToChangePassword = () => {
+    navigate("/settings/change-password");
+  };
+
+  // Add this function next to the goToChangePassword function
+  const goToPricing = () => {
+    navigate("/pricing");
+  };
+
   const [profileForm, setProfileForm] = useState({
     fullName: "John Doe",
     email: "john.doe@example.com",
@@ -90,12 +106,14 @@ const Settings = () => {
         </TabsList>
         
         <TabsContent value="profile" className="settings-tab-content">
-          <Card>
+          <Card className="profile-card">
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal profile information</CardDescription>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>
+                Manage your account information and preferences
+              </CardDescription>
             </CardHeader>
-            <CardContent className="personal-info-form">
+            <CardContent>
               <div className="form-grid">
                 <div className="form-group">
                   <Label htmlFor="fullName">Full Name</Label>
@@ -145,6 +163,26 @@ const Settings = () => {
                   rows={4}
                   className="bio-input" 
                 />
+              </div>
+              
+              {/* Add Change Password section */}
+              <div className="security-section">
+                <h3 className="section-title">Account Security</h3>
+                <div className="password-link-container">
+                  <div className="password-link-info">
+                    <h4 className="password-link-title">Password</h4>
+                    <p className="password-link-description">
+                      Set a unique password to protect your account
+                    </p>
+                  </div>
+                  <Button 
+                    variant="link" 
+                    className="password-change-link"
+                    onClick={goToChangePassword}
+                  >
+                    Change password
+                  </Button>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="form-actions">
@@ -273,8 +311,8 @@ const Settings = () => {
         <TabsContent value="billing" className="settings-tab-content">
           <Card>
             <CardHeader>
-              <CardTitle>Subscription Plan</CardTitle>
-              <CardDescription>Manage your subscription and billing</CardDescription>
+              <CardTitle>Billing & Subscription</CardTitle>
+              <CardDescription>Manage your billing information and subscription plan</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="billing-content">
@@ -313,7 +351,13 @@ const Settings = () => {
                   </div>
                   <div className="plan-actions">
                     <Button size="sm">Manage Subscription</Button>
-                    <Button size="sm" variant="outline">See All Plans</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={goToPricing}
+                    >
+                      See All Plans
+                    </Button>
                   </div>
                 </div>
                 
@@ -365,6 +409,26 @@ const Settings = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+              
+              {/* Add Pricing section */}
+              <div className="pricing-section">
+                <h3 className="section-title">Plans & Pricing</h3>
+                <div className="pricing-link-container">
+                  <div className="pricing-link-info">
+                    <h4 className="pricing-link-title">View Available Plans</h4>
+                    <p className="pricing-link-description">
+                      Compare plans and pricing to find the right fit for your business
+                    </p>
+                  </div>
+                  <Button 
+                    variant="link" 
+                    className="pricing-link"
+                    onClick={goToPricing}
+                  >
+                    Pricing
+                  </Button>
                 </div>
               </div>
             </CardContent>

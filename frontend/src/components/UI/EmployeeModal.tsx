@@ -17,7 +17,9 @@ export interface EmployeeData {
   lastName: string;
   email: string;
   phone: string;
+  position: string;
   department: string;
+  team: string;
   title: string;
   role: string;
 }
@@ -28,12 +30,23 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   onSubmit,
   departments
 }) => {
+  const teams = [
+    { value: "engineering", label: "Engineering Team" },
+    { value: "design", label: "Design Team" },
+    { value: "marketing", label: "Marketing Team" },
+    { value: "sales", label: "Sales Team" },
+    { value: "support", label: "Customer Support" },
+    { value: "product", label: "Product Management" }
+  ];
+
   const [employeeData, setEmployeeData] = useState<EmployeeData>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
+    position: "",
     department: "",
+    team: "",
     title: "",
     role: ""
   });
@@ -142,16 +155,28 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
             </div>
             
             <div className="employee-modal-form-group">
-              <Label htmlFor="title">Job Title</Label>
-              <Input
-                id="title"
-                name="title"
-                value={employeeData.title}
+              <Label htmlFor="team">Team</Label>
+              <Select
+                id="team"
+                name="team"
+                value={employeeData.team}
                 onChange={handleChange}
-                placeholder="Software Engineer"
-                required
+                options={teams}
+                placeholder="Select a team"
               />
             </div>
+          </div>
+          
+          <div className="employee-modal-form-group">
+            <Label htmlFor="title">Job Title</Label>
+            <Input
+              id="title"
+              name="title"
+              value={employeeData.title}
+              onChange={handleChange}
+              placeholder="Software Engineer"
+              required
+            />
           </div>
           
           <div className="employee-modal-form-group">

@@ -16,6 +16,7 @@ export interface DepartmentData {
   name: string;
   description: string;
   manager: string;
+  teamName: string;
 }
 
 const DepartmentModal: React.FC<DepartmentModalProps> = ({
@@ -27,7 +28,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   const [departmentData, setDepartmentData] = useState<DepartmentData>({
     name: "",
     description: "",
-    manager: ""
+    manager: "",
+    teamName: ""
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -72,6 +74,18 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
               required
             />
           </div>
+          
+          <div className="department-modal-form-group">
+            <Label htmlFor="team-name">Team Name</Label>
+            <Input
+              id="team-name"
+              name="teamName"
+              value={departmentData.teamName}
+              onChange={handleChange}
+              placeholder="Team Name"
+              required
+            />
+          </div>    
           
           <div className="department-modal-form-group">
             <Label htmlFor="description">Description</Label>
