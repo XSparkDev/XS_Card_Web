@@ -122,10 +122,7 @@ const BusinessCards = () => {
           <p className="page-description">Manage and customize your digital business cards</p>
         </div>
         <div className="page-actions">
-          <Button>
-            <FaPlus className="mr-2" size={14} />
-            Create Card
-          </Button>
+          
         </div>
       </div>
       
