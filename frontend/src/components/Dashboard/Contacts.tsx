@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaStar, FaRegStar, FaSearch, FaFilter, FaDownload, FaUserPlus, FaEnvelope, FaPhone, FaEllipsisH, FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
@@ -10,70 +10,21 @@ import "../../styles/Dashboard.css";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../UI/dialog";
 
-const mockContacts = [
-  {
-    id: "1",
-    name: "Jason Reynolds",
-    title: "Marketing Director",
-    company: "TechGlobe Inc.",
-    email: "jason.reynolds@techglobe.com",
-    phone: "+1 (415) 555-1234",
-    addedOn: "2023-06-15",
-    lastContact: "2023-09-02",
-    favorite: true,
-    avatar: "",
-  },
-  {
-    id: "2",
-    name: "Sarah Chen",
-    title: "CTO",
-    company: "FutureSys Co.",
-    email: "sarah.chen@futuresys.com",
-    phone: "+1 (212) 555-6789",
-    addedOn: "2023-05-28",
-    lastContact: "2023-08-15",
-    favorite: false,
-    avatar: "",
-  },
-  {
-    id: "3",
-    name: "Michael Okonkwo",
-    title: "Sales Manager",
-    company: "GlobalVision Group",
-    email: "michael.o@globalvision.com",
-    phone: "+1 (312) 555-4321",
-    addedOn: "2023-07-10",
-    lastContact: "2023-09-10",
-    favorite: true,
-    avatar: "",
-  },
-  {
-    id: "4",
-    name: "Amelia Garcia",
-    title: "Product Lead",
-    company: "InnovateTech",
-    email: "amelia.garcia@innovatetech.com",
-    phone: "+1 (650) 555-8765",
-    addedOn: "2023-08-05",
-    lastContact: "2023-09-01",
-    favorite: false,
-    avatar: "",
-  },
-  {
-    id: "5",
-    name: "Robert Kim",
-    title: "Operations Director",
-    company: "StrategicOps LLC",
-    email: "robert.kim@strategicops.com",
-    phone: "+1 (206) 555-3456",
-    addedOn: "2023-06-20",
-    lastContact: "2023-08-25",
-    favorite: false,
-    avatar: "",
-  },
-];
+// Define contact interface
+interface Contact {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  email: string;
+  phone: string;
+  addedOn: string;
+  lastContact: string;
+  favorite: boolean;
+  avatar: string;
+}
 
-const ContactItem = ({ contact }: { contact: typeof mockContacts[0] }) => {
+const ContactItem = ({ contact }: { contact: Contact }) => {
   const [favorite, setFavorite] = useState(contact.favorite);
   const initials = contact.name.split(' ').map(n => n[0]).join('');
   
@@ -157,6 +108,53 @@ const ContactItem = ({ contact }: { contact: typeof mockContacts[0] }) => {
 
 const Contacts = () => {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Fetch contacts from the API
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        setLoading(true);
+        // Using the Postman mock server URL from help.md
+        const userId = "current"; // This can be dynamic if needed
+        const response = await fetch(`https://96b20ff1-0262-4b5c-9df9-ce99f48cfc94.mock.pstmn.io/Contacts/${userId}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setContacts(data);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching contacts:", err);
+        setError("Failed to load contacts. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchContacts();
+  }, []);
+  
+  // Filter contacts based on search term
+  const filteredContacts = contacts.filter(contact => 
+    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    contact.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    contact.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Get recent contacts - sort by last contact date
+  const recentContacts = [...filteredContacts]
+    .sort((a, b) => new Date(b.lastContact).getTime() - new Date(a.lastContact).getTime())
+    .slice(0, 3);
+  
+  // Get favorite contacts
+  const favoriteContacts = filteredContacts.filter(contact => contact.favorite);
   
   return (
     <div className="page-container">
@@ -186,7 +184,9 @@ const Contacts = () => {
             <Input 
               type="text" 
               placeholder="Search contacts..." 
-              className="search-input" 
+              className="search-input"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Button variant="outline" className="filter-button">
@@ -194,29 +194,49 @@ const Contacts = () => {
           </Button>
         </div>
         
-        <TabsContent value="all" className="mt-4">
-          <div className="contacts-list">
-            {mockContacts.map(contact => (
-              <ContactItem key={contact.id} contact={contact} />
-            ))}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="recent">
-          <div className="contacts-list">
-            {mockContacts.sort((a, b) => new Date(b.lastContact).getTime() - new Date(a.lastContact).getTime()).slice(0, 3).map(contact => (
-              <ContactItem key={contact.id} contact={contact} />
-            ))}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="favorites">
-          <div className="contacts-list">
-            {mockContacts.filter(contact => contact.favorite).map(contact => (
-              <ContactItem key={contact.id} contact={contact} />
-            ))}
-          </div>
-        </TabsContent>
+        {loading ? (
+          <div className="loading-state">Loading contacts...</div>
+        ) : error ? (
+          <div className="error-state">{error}</div>
+        ) : (
+          <>
+            <TabsContent value="all" className="mt-4">
+              <div className="contacts-list">
+                {filteredContacts.length > 0 ? (
+                  filteredContacts.map(contact => (
+                    <ContactItem key={contact.id} contact={contact} />
+                  ))
+                ) : (
+                  <div className="no-results">No contacts found. Try adjusting your search.</div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="recent">
+              <div className="contacts-list">
+                {recentContacts.length > 0 ? (
+                  recentContacts.map(contact => (
+                    <ContactItem key={contact.id} contact={contact} />
+                  ))
+                ) : (
+                  <div className="no-results">No recent contacts found.</div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="favorites">
+              <div className="contacts-list">
+                {favoriteContacts.length > 0 ? (
+                  favoriteContacts.map(contact => (
+                    <ContactItem key={contact.id} contact={contact} />
+                  ))
+                ) : (
+                  <div className="no-results">No favorite contacts found.</div>
+                )}
+              </div>
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );

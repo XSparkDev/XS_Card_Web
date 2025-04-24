@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, FC } from "react";
+import { useState, FC, useEffect } from "react";
 import "../../styles/Department.css";
 import EmployeeModal from '../UI/EmployeeModal';
 import DepartmentModal from '../UI/DepartmentModal';
@@ -7,71 +7,20 @@ import { FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
 import { Button } from "../UI/button";
 
-const mockDepartments = [
-  {
-    id: "1",
-    name: "Sales",
-    description: "Business development and client acquisition",
-    employeeCount: 24,
-    cardCount: 22,
-    scanCount: 1450,
-    progress: 95,
-    growthRate: 12.5,
-  },
-  {
-    id: "2",
-    name: "Marketing",
-    description: "Brand strategy and promotion",
-    employeeCount: 18,
-    cardCount: 18,
-    scanCount: 967,
-    progress: 100,
-    growthRate: 15.3,
-  },
-  {
-    id: "3",
-    name: "Product",
-    description: "Product development and research",
-    employeeCount: 32,
-    cardCount: 28,
-    scanCount: 1120,
-    progress: 87.5,
-    growthRate: 8.7,
-  },
-  {
-    id: "4",
-    name: "Engineering",
-    description: "Software development and technical operations",
-    employeeCount: 45,
-    cardCount: 40,
-    scanCount: 1230,
-    progress: 88.9,
-    growthRate: 10.2,
-  },
-  {
-    id: "5",
-    name: "Operations",
-    description: "Business operations and logistics",
-    employeeCount: 15,
-    cardCount: 12,
-    scanCount: 780,
-    progress: 80,
-    growthRate: 9.5,
-  },
-  {
-    id: "6",
-    name: "Customer Support",
-    description: "Customer service and issue resolution",
-    employeeCount: 22,
-    cardCount: 20,
-    scanCount: 980,
-    progress: 90.9,
-    growthRate: 7.8,
-  },
-];
+// Interface for the department data
+interface DepartmentData {
+  id?: string;
+  name: string;
+  description: string;
+  employeeCount: number;
+  cardCount: number;
+  scanCount: number;
+  progress: number;
+  growthRate: number;
+}
 
 // Department Card component
-const DepartmentCard = ({ department }: { department: typeof mockDepartments[0] }) => {
+const DepartmentCard = ({ department }: { department: DepartmentData }) => {
   const handleDeleteDepartment = (id: string) => {
     console.log(`Delete department with id: ${id}`);
   };
@@ -155,11 +104,13 @@ const DepartmentCard = ({ department }: { department: typeof mockDepartments[0] 
 };
 
 // Organization Summary Card
-const DepartmentsSummaryCard = () => {
-  const totalEmployees = mockDepartments.reduce((acc, dept) => acc + dept.employeeCount, 0);
-  const totalCards = mockDepartments.reduce((acc, dept) => acc + dept.cardCount, 0);
-  const totalScans = mockDepartments.reduce((acc, dept) => acc + dept.scanCount, 0);
-  const averageCoverage = mockDepartments.reduce((acc, dept) => acc + dept.progress, 0) / mockDepartments.length;
+const DepartmentsSummaryCard = ({ departments }) => {
+  const totalEmployees = departments.reduce((acc, dept) => acc + dept.employeeCount, 0);
+  const totalCards = departments.reduce((acc, dept) => acc + dept.cardCount, 0);
+  const totalScans = departments.reduce((acc, dept) => acc + dept.scanCount, 0);
+  const averageCoverage = departments.length > 0 
+    ? departments.reduce((acc, dept) => acc + dept.progress, 0) / departments.length
+    : 0;
   
   return (
     <div className="summary-card">
@@ -204,8 +155,42 @@ const Department: FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isDepartmentModalOpen, setIsDepartmentModalOpen] = useState(false);
+  const [departments, setDepartments] = useState<DepartmentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const filteredDepartments = mockDepartments.filter(department => 
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("https://a668b002-9b2b-446e-9def-4a5d12103f4b.mock.pstmn.io/enterprise/xspark/departments");
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data: DepartmentData[] = await response.json();
+        
+        // Add IDs if they don't exist
+        const processedData = data.map((dept, index) => ({
+          ...dept,
+          id: dept.id || `${index + 1}`
+        }));
+        
+        setDepartments(processedData);
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch departments. Please try again later.");
+        console.error("Error fetching departments:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDepartments();
+  }, []);
+  
+  const filteredDepartments = departments.filter(department => 
     department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     department.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -242,24 +227,32 @@ const Department: FC = () => {
         </div>
       </div>
       
-      <DepartmentsSummaryCard />
-      
-      <div className="search-container">
-        <i className="fas fa-search search-icon"></i>
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search departments..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-      
-      <div className="departments-grid">
-        {filteredDepartments.map(department => (
-          <DepartmentCard key={department.id} department={department} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="loading-state">Loading departments...</div>
+      ) : error ? (
+        <div className="error-state">{error}</div>
+      ) : (
+        <>
+          <DepartmentsSummaryCard departments={departments} />
+          
+          <div className="search-container">
+            <i className="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search departments..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <div className="departments-grid">
+            {filteredDepartments.map(department => (
+              <DepartmentCard key={department.id} department={department} />
+            ))}
+          </div>
+        </>
+      )}
       
       <EmployeeModal 
         isOpen={isEmployeeModalOpen}

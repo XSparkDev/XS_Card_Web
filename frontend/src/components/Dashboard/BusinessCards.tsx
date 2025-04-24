@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaSearch, FaFilter, FaDownload, FaPlus, FaQrcode, FaShare, FaEdit } from "react-icons/fa";
 import { Button } from "../UI/button";
 import { Card, CardContent } from "../UI/card";
@@ -7,59 +7,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
 import "../../styles/BusinessCards.css";
 import "../../styles/Dashboard.css";
 
-// Mock data
-const mockCards = [
-  {
-    id: "1",
-    name: "John Smith",
-    title: "Chief Executive Officer",
-    department: "Executive",
-    email: "john.smith@company.com",
-    phone: "+27 123 456 789",
-    scans: 324,
-    createdAt: "2023-05-12",
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    title: "Sales Director",
-    department: "Sales",
-    email: "sarah.johnson@company.com",
-    phone: "+27 234 567 890",
-    scans: 245,
-    createdAt: "2023-06-18",
-  },
-  {
-    id: "3",
-    name: "Robert Chen",
-    title: "Marketing Lead",
-    department: "Marketing",
-    email: "robert.chen@company.com",
-    phone: "+27 345 678 901",
-    scans: 193,
-    createdAt: "2023-07-29",
-  },
-  {
-    id: "4",
-    name: "Leila Ndong",
-    title: "Business Development Manager",
-    department: "Business Development",
-    email: "leila.ndong@company.com",
-    phone: "+27 456 789 012",
-    scans: 156,
-    createdAt: "2023-08-14",
-  },
-  {
-    id: "5",
-    name: "Michael Patel",
-    title: "Account Manager",
-    department: "Sales",
-    email: "michael.patel@company.com",
-    phone: "+27 567 890 123",
-    scans: 124,
-    createdAt: "2023-09-02",
-  },
-];
+// Interface for the card data
+interface CardData {
+  id?: string;
+  fullName: string;
+  occupation: string;
+  department: string;
+  email: string;
+  number: string;
+  numberOfScan: number;
+  createdAt?: string;
+}
 
 // Add this function to determine card colors based on department
 const getCardColor = (department: string): string => {
@@ -77,22 +35,22 @@ const getCardColor = (department: string): string => {
   return colors[department] || '#4361ee'; // Default to blue if department not found
 };
 
-const BusinessCardItem = ({ card }: { card: typeof mockCards[0] }) => {
+const BusinessCardItem = ({ card }: { card: CardData }) => {
   return (
     <div key={card.id} className="business-card">
       <div className="business-card-content">
         <div className="business-card-left" style={{ backgroundColor: getCardColor(card.department) }}>
-          <h3 className="business-card-name">{card.name}</h3>
-          <p className="business-card-title">{card.title}</p>
+          <h3 className="business-card-name">{card.fullName}</h3>
+          <p className="business-card-title">{card.occupation}</p>
         </div>
         
         <div className="business-card-right">
           <p className="business-card-department">Department: {card.department}</p>
           <p className="business-card-email">{card.email}</p>
-          <p className="business-card-phone">{card.phone}</p>
+          <p className="business-card-phone">{card.number}</p>
           
           <div className="business-card-footer">
-            <span className="business-card-scans">{card.scans || 0} scans</span>
+            <span className="business-card-scans">{card.numberOfScan || 0} scans</span>
             <div className="business-card-actions">
               <button className="action-button" title="QR Code">
                 <i className="fas fa-qrcode"></i>
@@ -113,6 +71,49 @@ const BusinessCardItem = ({ card }: { card: typeof mockCards[0] }) => {
 
 const BusinessCards = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [cards, setCards] = useState<CardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchCards = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("https://3bcc5669-46d9-485e-9c2a-6813b9b74336.mock.pstmn.io/cards");
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data: CardData[] = await response.json();
+        
+        // Add IDs and createdAt if they don't exist
+        const processedData = data.map((card, index) => ({
+          ...card,
+          id: card.id || `${index + 1}`,
+          createdAt: card.createdAt || new Date().toISOString().split('T')[0]
+        }));
+        
+        setCards(processedData);
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch business cards. Please try again later.");
+        console.error("Error fetching cards:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCards();
+  }, []);
+  
+  // Filter cards based on search term
+  const filteredCards = cards.filter(card => 
+    card.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    card.occupation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    card.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    card.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   
   return (
     <div className="page-container">
@@ -150,33 +151,42 @@ const BusinessCards = () => {
           </Button>
         </div>
         
-        <TabsContent value="all" className="mt-4">
-          <div className="cards-grid">
-            {mockCards.map(card => (
-              <BusinessCardItem key={card.id} card={card} />
-            ))}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="recent">
-          <div className="cards-grid">
-            {mockCards
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .slice(0, 3)
-              .map(card => (
-                <BusinessCardItem key={card.id} card={card} />
-              ))}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="department">
-          <div className="cards-grid">
-            {mockCards.filter(card => card.department === "Sales")
-              .map(card => (
-                <BusinessCardItem key={card.id} card={card} />
-              ))}
-          </div>
-        </TabsContent>
+        {loading ? (
+          <div className="loading-state">Loading business cards...</div>
+        ) : error ? (
+          <div className="error-state">{error}</div>
+        ) : (
+          <>
+            <TabsContent value="all" className="mt-4">
+              <div className="cards-grid">
+                {filteredCards.map(card => (
+                  <BusinessCardItem key={card.id} card={card} />
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="recent">
+              <div className="cards-grid">
+                {filteredCards
+                  .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
+                  .slice(0, 3)
+                  .map(card => (
+                    <BusinessCardItem key={card.id} card={card} />
+                  ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="department">
+              <div className="cards-grid">
+                {filteredCards
+                  .filter(card => card.department === "Sales")
+                  .map(card => (
+                    <BusinessCardItem key={card.id} card={card} />
+                  ))}
+              </div>
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );

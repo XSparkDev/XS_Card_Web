@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Card, 
   CardContent, 
@@ -66,28 +66,67 @@ const IconComponent = ({
   return icons[name] || null;
 };
 
-// Mock user data
-const mockUsers = [
-  // Keep your existing mock data
-  {
-    id: 1,
-    name: "John Smith",
-    email: "john.smith@xscard.com",
-    role: "Administrator",
-    department: "Executive",
-    status: "Active",
-    lastActive: "Today, 10:23 AM",
-  },
-  // ...rest of your mock data
-];
+// Define a user type
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  department: string;
+  status: string;
+  lastActive: string;
+}
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
 
-  // Keep all your existing functions and state handlers
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        let url;
+        
+        if (selectedDepartment && selectedDepartment !== "all") {
+          // Fetch users for a specific department
+          url = `https://c856e524-50d6-4a3d-9527-fe4a0b41f24c.mock.pstmn.io/enterprise/xspark/departments/${selectedDepartment}/employees`;
+        } else {
+          // Fetch all users - in this case, we'll use the same endpoint but with "all" as a parameter
+          url = `https://c856e524-50d6-4a3d-9527-fe4a0b41f24c.mock.pstmn.io/enterprise/xspark/departments/all/employees`;
+        }
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setUsers(data as User[]);
+        
+        // Extract unique departments for filtering
+        const uniqueDepartments = [...new Set(data.map((user: User) => user.department))] as string[];
+        setDepartments(uniqueDepartments);
+        
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setError("Failed to load user data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, [selectedDepartment]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -103,12 +142,53 @@ const UserManagement = () => {
     );
   };
 
-  const filteredUsers = mockUsers.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Get filtered users based on activeFilter
+  const getFilteredUsers = () => {
+    let filtered = [...users];
+    
+    // Filter based on activeFilter
+    switch (activeFilter) {
+      case "administrators":
+        filtered = filtered.filter(user => user.role === "Administrator");
+        break;
+      case "managers":
+        filtered = filtered.filter(user => user.role === "Manager");
+        break;
+      case "employees":
+        filtered = filtered.filter(user => user.role === "Employee");
+        break;
+      case "active":
+        filtered = filtered.filter(user => user.status === "Active");
+        break;
+      case "inactive":
+        filtered = filtered.filter(user => user.status === "Inactive");
+        break;
+      case "pending":
+        filtered = filtered.filter(user => user.status === "Pending");
+        break;
+      default:
+        // All users, no filtering
+        break;
+    }
+    
+    // Then apply search term filter
+    return filtered.filter(user => 
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  const filteredUsers = getFilteredUsers();
+
+  // Count users for each filter
+  const adminCount = users.filter(user => user.role === "Administrator").length;
+  const managerCount = users.filter(user => user.role === "Manager").length;
+  const employeeCount = users.filter(user => user.role === "Employee").length;
+  const activeCount = users.filter(user => user.status === "Active").length;
+  const inactiveCount = users.filter(user => user.status === "Inactive").length;
+  const pendingCount = users.filter(user => user.status === "Pending").length;
 
   const getBadgeVariant = (status: string) => {
     switch (status) {
@@ -155,19 +235,19 @@ const UserManagement = () => {
                 className={`filter-button ${activeFilter === "administrators" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("administrators")}
               >
-                Administrators (1)
+                Administrators ({adminCount})
               </button>
               <button
                 className={`filter-button ${activeFilter === "managers" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("managers")}
               >
-                Managers (2)
+                Managers ({managerCount})
               </button>
               <button
                 className={`filter-button ${activeFilter === "employees" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("employees")}
               >
-                Regular Employees (3)
+                Regular Employees ({employeeCount})
               </button>
               
               <hr className="divider" />
@@ -176,20 +256,48 @@ const UserManagement = () => {
                 className={`filter-button ${activeFilter === "active" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("active")}
               >
-                Active (5)
+                Active ({activeCount})
               </button>
               <button
                 className={`filter-button ${activeFilter === "inactive" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("inactive")}
               >
-                Inactive (1)
+                Inactive ({inactiveCount})
               </button>
               <button
                 className={`filter-button ${activeFilter === "pending" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("pending")}
               >
-                Pending Activation (1)
+                Pending Activation ({pendingCount})
               </button>
+              
+              <hr className="divider" />
+              
+              <button
+                className={`filter-button ${activeFilter === "all" ? "filter-active" : ""}`}
+                onClick={() => setActiveFilter("all")}
+              >
+                All Users ({users.length})
+              </button>
+            </CardContent>
+          </Card>
+          
+          {/* Department Filter Card */}
+          <Card className="sidebar-card">
+            <CardHeader className="card-header-compact">
+              <CardTitle className="card-title-small">Departments</CardTitle>
+            </CardHeader>
+            <CardContent className="card-content-compact">
+              <select 
+                className="department-select"
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+              >
+                <option value="all">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
             </CardContent>
           </Card>
           
@@ -241,7 +349,11 @@ const UserManagement = () => {
           <Card className="content-card">
             <CardHeader className="card-header">
               <div className="card-header-content">
-                <CardTitle>User Accounts</CardTitle>
+                <CardTitle>
+                  User Accounts 
+                  {activeFilter !== "all" && ` - ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}`}
+                  {selectedDepartment !== "all" && ` - ${selectedDepartment}`}
+                </CardTitle>
                 <div className="card-actions">
                   <Button variant="outline" size="sm" className="action-button-small">
                     <IconComponent name="Filter" className="icon-tiny mr-2" />
@@ -255,95 +367,101 @@ const UserManagement = () => {
               </div>
             </CardHeader>
             <CardContent className="card-content">
-              <div className="users-table">
-                <div className="table-header">
-                  <div className="select-all">
-                    <Checkbox 
-                      id="selectAll" 
-                      checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                      onCheckedChange={handleSelectAll}
-                    />
-                    <label htmlFor="selectAll" className="select-label">
-                      {selectedUsers.length > 0 ? `${selectedUsers.length} selected` : "Select all"}
-                    </label>
+              {loading ? (
+                <div className="loading-state">Loading users...</div>
+              ) : error ? (
+                <div className="error-state">{error}</div>
+              ) : (
+                <div className="users-table">
+                  <div className="table-header">
+                    <div className="select-all">
+                      <Checkbox 
+                        id="selectAll" 
+                        checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                      <label htmlFor="selectAll" className="select-label">
+                        {selectedUsers.length > 0 ? `${selectedUsers.length} selected` : "Select all"}
+                      </label>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="table-body">
-                  {filteredUsers.map((user) => (
-                    <div key={user.id} className="table-row">
-                      <div className="user-info">
-                        <Checkbox 
-                          checked={selectedUsers.includes(user.id)}
-                          onCheckedChange={() => toggleUserSelection(user.id)} 
-                        />
-                        <div className="user-details">
-                          <div className="user-name">{user.name}</div>
-                          <div className="user-email">{user.email}</div>
-                        </div>
-                      </div>
-                      
-                      <div className="user-meta">
-                        <div className="user-status">
-                          <Badge variant={getBadgeVariant(user.status)}>{user.status}</Badge>
-                          <div className="last-active">
-                            <IconComponent name="Clock" className="icon-tiny mr-1" />
-                            {user.lastActive}
+                  
+                  <div className="table-body">
+                    {filteredUsers.map((user) => (
+                      <div key={user.id} className="table-row">
+                        <div className="user-info">
+                          <Checkbox 
+                            checked={selectedUsers.includes(user.id)}
+                            onCheckedChange={() => toggleUserSelection(user.id)} 
+                          />
+                          <div className="user-details">
+                            <div className="user-name">{user.name}</div>
+                            <div className="user-email">{user.email}</div>
                           </div>
                         </div>
                         
-                        <div className="user-role">
-                          <div className="role-title">{user.role}</div>
-                          <div className="department">{user.department}</div>
+                        <div className="user-meta">
+                          <div className="user-status">
+                            <Badge variant={getBadgeVariant(user.status)}>{user.status}</Badge>
+                            <div className="last-active">
+                              <IconComponent name="Clock" className="icon-tiny mr-1" />
+                              {user.lastActive}
+                            </div>
+                          </div>
+                          
+                          <div className="user-role">
+                            <div className="role-title">{user.role}</div>
+                            <div className="department">{user.department}</div>
+                          </div>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="icon-button">
+                                <IconComponent name="MoreVertical" className="icon-small" />
+                                <span className="sr-only">More options</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>
+                                <IconComponent name="UserCheck" className="icon-small mr-2" />
+                                View Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <IconComponent name="Shield" className="icon-small mr-2" />
+                                Edit Permissions
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <IconComponent name="Mail" className="icon-small mr-2" />
+                                Send Email
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <IconComponent name="RefreshCw" className="icon-small mr-2" />
+                                Reset Password
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="dropdown-destructive">
+                                <IconComponent name="UserX" className="icon-small mr-2" />
+                                Deactivate Account
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="icon-button">
-                              <IconComponent name="MoreVertical" className="icon-small" />
-                              <span className="sr-only">More options</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
-                              <IconComponent name="UserCheck" className="icon-small mr-2" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <IconComponent name="Shield" className="icon-small mr-2" />
-                              Edit Permissions
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <IconComponent name="Mail" className="icon-small mr-2" />
-                              Send Email
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <IconComponent name="RefreshCw" className="icon-small mr-2" />
-                              Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="dropdown-destructive">
-                              <IconComponent name="UserX" className="icon-small mr-2" />
-                              Deactivate Account
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
-                    </div>
-                  ))}
-                  
-                  {filteredUsers.length === 0 && (
-                    <div className="no-results">
-                      <p>No users found. Try adjusting your search.</p>
-                    </div>
-                  )}
+                    ))}
+                    
+                    {filteredUsers.length === 0 && (
+                      <div className="no-results">
+                        <p>No users found. Try adjusting your search or filter.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </CardContent>
             <CardFooter className="card-footer">
               <div className="pagination-info">
-                Showing {filteredUsers.length} of {mockUsers.length} users
+                Showing {filteredUsers.length} of {users.length} users
               </div>
               <div className="pagination-controls">
                 <Button variant="outline" size="sm" disabled className="pagination-button">
@@ -422,12 +540,10 @@ const UserManagement = () => {
             <div className="form-group">
               <label htmlFor="department" className="form-label">Department</label>
               <select id="department" className="select-input">
-                <option value="executive">Executive</option>
-                <option value="sales">Sales</option>
-                <option value="marketing">Marketing</option>
-                <option value="product">Product</option>
-                <option value="engineering">Engineering</option>
-                <option value="support">Customer Support</option>
+                <option value="">Select Department</option>
+                {departments.map((dept) => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
               </select>
             </div>
             <div className="checkbox-group">
