@@ -10,44 +10,43 @@ import "../../styles/Dashboard.css";
 // Interface for the card data
 interface CardData {
   id?: string;
-  fullName: string;
+  name: string;
+  surname: string;
   occupation: string;
-  department: string;
+  company: string;
   email: string;
-  number: string;
-  numberOfScan: number;
-  createdAt?: string;
+  phone: string;
+  colorScheme: string;
+  profileImage?: string;
+  companyLogo?: string;
+  socials?: {
+    instagram?: string;
+    facebook?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    tiktok?: string;
+  };
+  numberOfScan?: number;
 }
 
 // Add this function to determine card colors based on department
-const getCardColor = (department: string): string => {
-  const colors: Record<string, string> = {
-    'Executive': '#4361ee',
-    'Marketing': '#3a86ff',
-    'Sales': '#38b000',
-    'Engineering': '#9d4edd',
-    'Finance': '#ff5400',
-    'HR': '#ff006e',
-    'Product': '#8338ec',
-    'Customer Support': '#fb8500'
-  };
-  
-  return colors[department] || '#4361ee'; // Default to blue if department not found
+const getCardColor = (colorScheme: string): string => {
+  return colorScheme || '#4361ee'; // Default to blue if colorScheme not found
 };
 
 const BusinessCardItem = ({ card }: { card: CardData }) => {
   return (
     <div key={card.id} className="business-card">
       <div className="business-card-content">
-        <div className="business-card-left" style={{ backgroundColor: getCardColor(card.department) }}>
-          <h3 className="business-card-name">{card.fullName}</h3>
+        <div className="business-card-left" style={{ backgroundColor: getCardColor(card.colorScheme) }}>
+          <h3 className="business-card-name">{card.name} {card.surname}</h3>
           <p className="business-card-title">{card.occupation}</p>
         </div>
         
         <div className="business-card-right">
-          <p className="business-card-department">Department: {card.department}</p>
+          <p className="business-card-department">Company: {card.company}</p>
           <p className="business-card-email">{card.email}</p>
-          <p className="business-card-phone">{card.number}</p>
+          <p className="business-card-phone">{card.phone}</p>
           
           <div className="business-card-footer">
             <span className="business-card-scans">{card.numberOfScan || 0} scans</span>
@@ -87,11 +86,11 @@ const BusinessCards = () => {
         
         const data: CardData[] = await response.json();
         
-        // Add IDs and createdAt if they don't exist
+        // Add IDs if they don't exist
         const processedData = data.map((card, index) => ({
           ...card,
           id: card.id || `${index + 1}`,
-          createdAt: card.createdAt || new Date().toISOString().split('T')[0]
+          numberOfScan: card.numberOfScan || 0
         }));
         
         setCards(processedData);
@@ -109,9 +108,9 @@ const BusinessCards = () => {
   
   // Filter cards based on search term
   const filteredCards = cards.filter(card => 
-    card.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${card.name} ${card.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.occupation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    card.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    card.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
@@ -168,7 +167,6 @@ const BusinessCards = () => {
             <TabsContent value="recent">
               <div className="cards-grid">
                 {filteredCards
-                  .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
                   .slice(0, 3)
                   .map(card => (
                     <BusinessCardItem key={card.id} card={card} />
@@ -179,7 +177,7 @@ const BusinessCards = () => {
             <TabsContent value="department">
               <div className="cards-grid">
                 {filteredCards
-                  .filter(card => card.department === "Sales")
+                  .filter(card => card.company === "Nexus") // Example company filter
                   .map(card => (
                     <BusinessCardItem key={card.id} card={card} />
                   ))}
