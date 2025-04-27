@@ -163,12 +163,12 @@ const Contacts = () => {
           <h1 className="page-title">Contacts</h1>
           <p className="page-description">Manage your network and connections</p>
         </div>
-        <div className="page-actions">
+        {/* <div className="page-actions">
           <Button>
             <FaUserPlus className="mr-2" size={14} />
             Add Contact
           </Button>
-        </div>
+        </div> */}
       </div>
       
       <Tabs defaultValue="all" className="contacts-tabs">
