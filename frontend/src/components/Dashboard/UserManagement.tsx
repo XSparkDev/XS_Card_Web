@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/UI/dropdown-menu";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, DEFAULT_ENTERPRISE_ID } from "../../utils/api";
 import "../../styles/UserManagement.css";
 
 // Define a type for icon names
@@ -93,27 +94,51 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        let url;
         
-        if (selectedDepartment && selectedDepartment !== "all") {
-          // Fetch users for a specific department
-          url = `https://c856e524-50d6-4a3d-9527-fe4a0b41f24c.mock.pstmn.io/enterprise/xspark/departments/${selectedDepartment}/employees`;
-        } else {
-          // Fetch all users - in this case, we'll use the same endpoint but with "all" as a parameter
-          url = `https://c856e524-50d6-4a3d-9527-fe4a0b41f24c.mock.pstmn.io/enterprise/xspark/departments/all/employees`;
-        }
+        // Use the enterprise employees endpoint from our API utils
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
+        const headers = getEnterpriseHeaders();
         
-        const response = await fetch(url);
+        const response = await fetch(url, { headers });
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
         const data = await response.json();
-        setUsers(data as User[]);
+        
+        // Process the API response into our User interface format
+        // Define interface for API employee data structure
+        interface EmployeeData {
+          id: number;
+          firstName: string;
+          lastName: string;
+          email: string;
+          role?: string;
+          departmentName?: string;
+          status?: string;
+          lastActive?: string;
+        }
+
+        // Define interface for the API response
+        interface EmployeesResponse {
+          employees: EmployeeData[];
+        }
+
+        const processedUsers = (data as EmployeesResponse).employees.map((emp: EmployeeData) => ({
+          id: emp.id,
+          name: `${emp.firstName} ${emp.lastName}`,
+          email: emp.email,
+          role: emp.role || 'Employee',
+          department: emp.departmentName || 'Unassigned',
+          status: emp.status || 'Active',
+          lastActive: emp.lastActive || 'Never',
+        }));
+        
+        setUsers(processedUsers);
         
         // Extract unique departments for filtering
-        const uniqueDepartments = [...new Set(data.map((user: User) => user.department))] as string[];
+        const uniqueDepartments = [...new Set(processedUsers.map(user => user.department))];
         setDepartments(uniqueDepartments);
         
         setError(null);
@@ -126,6 +151,20 @@ const UserManagement = () => {
     };
     
     fetchUsers();
+  }, []);
+  
+  // If selected department changes, filter the users accordingly
+  // We'll handle this client-side for now, but this could be modified to call
+  // a department-specific API endpoint if needed in the future
+  useEffect(() => {
+    // Only filter if we have already loaded users
+    if (!loading && !error && selectedDepartment !== "all") {
+      const filteredUsers = users.filter(user => 
+        user.department === selectedDepartment
+      );
+      // For the filtered view, we would replace setUsers here
+      // For now we'll handle this in our getFilteredUsers function
+    }
   }, [selectedDepartment]);
 
   const handleSelectAll = (checked: boolean) => {

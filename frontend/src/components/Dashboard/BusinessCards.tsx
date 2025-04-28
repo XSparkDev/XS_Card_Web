@@ -4,7 +4,7 @@ import { Button } from "../UI/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
 import "../../styles/BusinessCards.css";
 import "../../styles/Dashboard.css";
-import { API_BASE_URL } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 
 // Update the CardData interface to include only the fields we need
 interface CardData {
@@ -70,20 +70,11 @@ const BusinessCards = () => {
       try {
         setLoading(true);
         
-        // Use the real API endpoint instead of the Postman mock server
-        const enterpriseId = "PegXyjZYojbLudlmOmDf";
-        const endpoint = `enterprise/${enterpriseId}/cards`;
-        const url = `${API_BASE_URL}/${endpoint}`;
+        // Use the API utility functions to get the URL and headers
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        const headers = getEnterpriseHeaders();
         
-        // Firebase JWT token
-        const firebaseToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjkwOTg1NzhjNDg4MWRjMDVlYmYxOWExNWJhMjJkOGZkMWFiMzRjOGEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzQ1NzU1NTUyLCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NDU3NTU1NTIsImV4cCI6MTc0NTc1OTE1MiwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.Rk40t9NJT5KEIUztmCo3nrvWSskGIDqEaffiaO7uzufgs-cQW_GxYMdM5DgGC5YKvSvtmgqmTjhwcYcf2AqgqglVWr1x4pVMnlQOjQjC0kP0nLi_3WybnuTNId7BcXEWEUizoc6_dJmmJqZcwd4ygejnPiX39T5KMdWlK8QDOLeOHatMBwWr9fWNdekbx6FeDKSi8OrPYvnnzxd633803QiPTrj2Pu80Fc-g8BB_3rfol_UGF3OBjZ3L1t8UG9nFT-VbWVMiX8SpDKlIPbZZsNekUVqlqN4G-zZDWSSM66JeJbur3zwSHt_ubmYZ1UsDMkXKgJJ-mh-K26_yFwNFVg";
-        
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${firebaseToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await fetch(url, { headers });
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);

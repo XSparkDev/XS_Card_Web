@@ -6,17 +6,43 @@ import DepartmentModal from '../UI/DepartmentModal';
 import { FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
 import { Button } from "../UI/button";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 
 // Interface for the department data
 interface DepartmentData {
   id?: string;
   name: string;
   description: string;
-  employeeCount: number;
+  employeeCount: number; // Will map from memberCount
+  parentDepartmentId?: string | null;
+  createdAt?: any;
+  updatedAt?: any;
   cardCount: number;
   scanCount: number;
   progress: number;
   growthRate: number;
+}
+
+// Interface for card data from the API
+interface CardData {
+  name: string;
+  surname: string;
+  email: string;
+  phone: string;
+  occupation: string;
+  company: string;
+  profileImage: string | null;
+  companyLogo: string | null;
+  socials: Record<string, string>;
+  colorScheme: string;
+  createdAt: string;
+  userId: string;
+  cardIndex: number;
+  employeeId: string;
+  employeeName: string;
+  employeeTitle: string;
+  departmentId: string;
+  departmentName: string;
 }
 
 // Department Card component
@@ -108,9 +134,13 @@ const DepartmentsSummaryCard = ({ departments }) => {
   const totalEmployees = departments.reduce((acc, dept) => acc + dept.employeeCount, 0);
   const totalCards = departments.reduce((acc, dept) => acc + dept.cardCount, 0);
   const totalScans = departments.reduce((acc, dept) => acc + dept.scanCount, 0);
-  const averageCoverage = departments.length > 0 
-    ? departments.reduce((acc, dept) => acc + dept.progress, 0) / departments.length
-    : 0;
+  
+  // Calculate weighted average coverage based on actual employee counts
+  // This gives the true organization-wide coverage percentage
+  const weightedCoverage = totalEmployees > 0 ? (totalCards / totalEmployees) * 100 : 0;
+  
+  // For display purposes, round to 1 decimal place
+  const displayCoverage = weightedCoverage.toFixed(1);
   
   return (
     <div className="summary-card">
@@ -131,7 +161,7 @@ const DepartmentsSummaryCard = ({ departments }) => {
             <p className="summary-stat-label">Total Scans</p>
           </div>
           <div className="summary-stat">
-            <p className="summary-stat-value">{averageCoverage.toFixed(1)}%</p>
+            <p className="summary-stat-value">{displayCoverage}%</p>
             <p className="summary-stat-label">Avg. Coverage</p>
           </div>
         </div>
@@ -156,38 +186,105 @@ const Department: FC = () => {
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [isDepartmentModalOpen, setIsDepartmentModalOpen] = useState(false);
   const [departments, setDepartments] = useState<DepartmentData[]>([]);
+  const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Fetch both departments and cards
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch("https://a668b002-9b2b-446e-9def-4a5d12103f4b.mock.pstmn.io/enterprise/xspark/departments");
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        // Fetch departments
+        const deptUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_DEPARTMENTS);
+        const headers = getEnterpriseHeaders();
+        
+        const deptResponse = await fetch(deptUrl, { headers });
+        
+        if (!deptResponse.ok) {
+          throw new Error(`HTTP error for departments! Status: ${deptResponse.status}`);
         }
         
-        const data: DepartmentData[] = await response.json();
+        const deptData = await deptResponse.json();
+        console.log('Departments response:', deptData);
         
-        // Add IDs if they don't exist
-        const processedData = data.map((dept, index) => ({
-          ...dept,
-          id: dept.id || `${index + 1}`
-        }));
+        if (!deptData.departments || !Array.isArray(deptData.departments)) {
+          throw new Error('Invalid departments response format');
+        }
+        
+        // Fetch cards
+        const cardsUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        const cardsResponse = await fetch(cardsUrl, { headers });
+        
+        if (!cardsResponse.ok) {
+          throw new Error(`HTTP error for cards! Status: ${cardsResponse.status}`);
+        }
+        
+        const cardsData = await cardsResponse.json();
+        console.log('Cards response:', cardsData);
+        
+        // Store the cards data
+        if (cardsData.cards && Array.isArray(cardsData.cards)) {
+          setCards(cardsData.cards);
+        }
+        
+        // Calculate card counts for each department
+        const cardsByDepartment: Record<string, number> = {};
+        
+        // Initialize with 0 for all departments
+        deptData.departments.forEach(dept => {
+          cardsByDepartment[dept.id] = 0;
+        });
+        
+        // Count cards per department
+        if (cardsData.cards && Array.isArray(cardsData.cards)) {
+          cardsData.cards.forEach(card => {
+            if (card.departmentId && cardsByDepartment[card.departmentId] !== undefined) {
+              cardsByDepartment[card.departmentId]++;
+            }
+          });
+        }
+        
+        // Process department data with card counts
+        const processedData = deptData.departments.map(dept => {
+          // Calculate the progress percentage (card coverage)
+          // If there are no employees, set progress to 0 to avoid division by zero
+          const progress = dept.memberCount > 0 
+            ? Math.round((cardsByDepartment[dept.id] || 0) / dept.memberCount * 100)
+            : 0;
+            
+          return {
+            id: dept.id,
+            name: dept.name,
+            description: dept.description,
+            employeeCount: dept.memberCount,
+            parentDepartmentId: dept.parentDepartmentId,
+            createdAt: dept.createdAt,
+            updatedAt: dept.updatedAt,
+            // Use actual card count now
+            cardCount: cardsByDepartment[dept.id] || 0,
+            // Use calculated progress value
+            progress: progress,
+            // Still using default values for these
+            scanCount: 0,
+            growthRate: 0
+          };
+        });
         
         setDepartments(processedData);
         setError(null);
+        
+        console.log('Processed departments with card counts:', processedData);
       } catch (err) {
-        setError("Failed to fetch departments. Please try again later.");
-        console.error("Error fetching departments:", err);
+        setError("Failed to fetch data. Please try again later.");
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchDepartments();
+    fetchData();
   }, []);
   
   const filteredDepartments = departments.filter(department => 
