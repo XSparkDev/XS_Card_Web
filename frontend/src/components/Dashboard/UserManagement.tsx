@@ -247,7 +247,7 @@ const UserManagement = () => {
         </div>
         <Button onClick={() => setIsAddUserOpen(true)} className="add-user-button">
           <IconComponent name="UserPlus" className="icon-small mr-2" />
-          Add User
+          Add Employee
         </Button>
       </div>
 

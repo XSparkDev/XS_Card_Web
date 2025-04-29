@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "./input";
 import { Button } from "./button";
 import { Select } from "./select";
@@ -10,6 +10,8 @@ interface DepartmentModalProps {
   onClose: () => void;
   onSubmit: (departmentData: DepartmentData) => void;
   managers: { value: string; label: string }[];
+  department?: DepartmentData | null;
+  onChange?: () => void;
 }
 
 export interface DepartmentData {
@@ -23,7 +25,9 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  managers
+  managers,
+  department = null,
+  onChange
 }) => {
   const [departmentData, setDepartmentData] = useState<DepartmentData>({
     name: "",
@@ -31,6 +35,47 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
     manager: "",
     teamName: ""
   });
+  
+  const [initialData, setInitialData] = useState<DepartmentData | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  useEffect(() => {
+    if (department) {
+      const data = {
+        name: department.name || "",
+        description: department.description || "",
+        manager: department.manager || "",
+        teamName: department.teamName || ""
+      };
+      setDepartmentData(data);
+      setInitialData(data);
+      setHasChanges(false);
+    } else {
+      setDepartmentData({
+        name: "",
+        description: "",
+        manager: "",
+        teamName: ""
+      });
+      setInitialData(null);
+      setHasChanges(false);
+    }
+  }, [department, isOpen]);
+  
+  useEffect(() => {
+    if (initialData) {
+      const changed = 
+        initialData.name !== departmentData.name ||
+        initialData.description !== departmentData.description ||
+        initialData.manager !== departmentData.manager ||
+        initialData.teamName !== departmentData.teamName;
+      
+      setHasChanges(changed);
+      if (changed && onChange) {
+        onChange();
+      }
+    }
+  }, [departmentData, initialData, onChange]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -47,12 +92,19 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isEditMode = !!department;
+  const buttonDisabled = isEditMode && !hasChanges;
+
   return (
     <div className="department-modal-overlay">
       <div className="department-modal-container">
         <div className="department-modal-header">
-          <h2 className="department-modal-title">Create New Department</h2>
-          <p className="department-modal-description">Add a new department to your organization</p>
+          <h2 className="department-modal-title">
+            {isEditMode ? "Edit Department" : "Create New Department"}
+          </h2>
+          <p className="department-modal-description">
+            {isEditMode ? "Update department information" : "Add a new department to your organization"}
+          </p>
           <button 
             className="department-modal-close" 
             onClick={onClose}
@@ -116,8 +168,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">
-              Create Department
+            <Button type="submit" disabled={buttonDisabled}>
+              {isEditMode ? "Save Changes" : "Create Department"}
             </Button>
           </div>
         </form>
