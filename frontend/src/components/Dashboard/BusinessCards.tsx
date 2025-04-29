@@ -1,32 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { FaSearch, FaFilter, FaDownload, FaPlus, FaQrcode, FaShare, FaEdit } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FaSearch, FaFilter, FaQrcode, FaShare, FaEdit } from "react-icons/fa";
 import { Button } from "../UI/button";
-import { Card, CardContent } from "../UI/card";
-import { Input } from "../UI/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
 import "../../styles/BusinessCards.css";
 import "../../styles/Dashboard.css";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 
-// Interface for the card data
+// Update the CardData interface to include only the fields we need
 interface CardData {
   id?: string;
   name: string;
   surname: string;
   occupation: string;
-  company: string;
   email: string;
   phone: string;
   colorScheme: string;
-  profileImage?: string;
-  companyLogo?: string;
-  socials?: {
-    instagram?: string;
-    facebook?: string;
-    whatsapp?: string;
-    linkedin?: string;
-    tiktok?: string;
-  };
   numberOfScan?: number;
+  departmentName?: string;
+  employeeTitle?: string;
 }
 
 // Add this function to determine card colors based on department
@@ -40,25 +31,25 @@ const BusinessCardItem = ({ card }: { card: CardData }) => {
       <div className="business-card-content">
         <div className="business-card-left" style={{ backgroundColor: getCardColor(card.colorScheme) }}>
           <h3 className="business-card-name">{card.name} {card.surname}</h3>
-          <p className="business-card-title">{card.occupation}</p>
         </div>
         
         <div className="business-card-right">
-          <p className="business-card-department">Company: {card.company}</p>
-          <p className="business-card-email">{card.email}</p>
+          <p className="business-card-department">Department: {card.departmentName || 'N/A'}</p>
+          <p className="business-card-occupation" style={{ marginTop: '4px' }}>Position: {card.occupation || card.employeeTitle || 'N/A'}</p>
+          <p className="business-card-email" style={{ marginTop: '4px' }}>{card.email}</p>
           <p className="business-card-phone">{card.phone}</p>
           
           <div className="business-card-footer">
             <span className="business-card-scans">{card.numberOfScan || 0} scans</span>
             <div className="business-card-actions">
               <button className="action-button" title="QR Code">
-                <i className="fas fa-qrcode"></i>
+                <FaQrcode />
               </button>
               <button className="action-button" title="Share">
-                <i className="fas fa-share-alt"></i>
+                <FaShare />
               </button>
               <button className="action-button" title="Edit">
-                <i className="fas fa-edit"></i>
+                <FaEdit />
               </button>
             </div>
           </div>
@@ -78,16 +69,40 @@ const BusinessCards = () => {
     const fetchCards = async () => {
       try {
         setLoading(true);
-        const response = await fetch("https://3bcc5669-46d9-485e-9c2a-6813b9b74336.mock.pstmn.io/cards");
+        
+        // Use the API utility functions to get the URL and headers
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        const headers = getEnterpriseHeaders();
+        
+        const response = await fetch(url, { headers });
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
-        const data: CardData[] = await response.json();
+        // Parse the response
+        const responseData = await response.json();
+        
+        // Check if the data is in an array format, if not, extract it from the response structure
+        let cardsData: CardData[] = [];
+        
+        if (Array.isArray(responseData)) {
+          // If the response is already an array of cards
+          cardsData = responseData;
+        } else if (responseData && typeof responseData === 'object') {
+          // If the response is an object that might contain a data/cards property
+          if (Array.isArray(responseData.data)) {
+            cardsData = responseData.data;
+          } else if (Array.isArray(responseData.cards)) {
+            cardsData = responseData.cards;
+          } else {
+            // If the object itself contains the card data (single card)
+            cardsData = [responseData];
+          }
+        }
         
         // Add IDs if they don't exist
-        const processedData = data.map((card, index) => ({
+        const processedData = cardsData.map((card, index) => ({
           ...card,
           id: card.id || `${index + 1}`,
           numberOfScan: card.numberOfScan || 0
@@ -95,6 +110,9 @@ const BusinessCards = () => {
         
         setCards(processedData);
         setError(null);
+        
+        // Log the processed data for debugging
+        console.log('Processed cards data:', processedData);
       } catch (err) {
         setError("Failed to fetch business cards. Please try again later.");
         console.error("Error fetching cards:", err);
@@ -110,7 +128,6 @@ const BusinessCards = () => {
   const filteredCards = cards.filter(card => 
     `${card.name} ${card.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.occupation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    card.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
@@ -174,7 +191,7 @@ const BusinessCards = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="department">
+            {/* <TabsContent value="department">
               <div className="cards-grid">
                 {filteredCards
                   .filter(card => card.company === "Nexus") // Example company filter
@@ -182,7 +199,7 @@ const BusinessCards = () => {
                     <BusinessCardItem key={card.id} card={card} />
                   ))}
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </>
         )}
       </Tabs>
