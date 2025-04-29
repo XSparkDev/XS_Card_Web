@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Card, 
   CardContent, 
@@ -79,6 +80,7 @@ interface User {
 }
 
 const UserManagement = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -238,6 +240,12 @@ const UserManagement = () => {
     }
   };
 
+  const navigateToDepartmentAddEmployee = () => {
+    // Navigate to Department page and store info about the button to animate
+    localStorage.setItem('animateAddEmployeeButton', 'true');
+    navigate('/department');
+  };
+
   return (
     <div className="user-management-container">
       <div className="user-management-header">
@@ -245,7 +253,7 @@ const UserManagement = () => {
           <h1 className="page-title">User Management</h1>
           <p className="page-description">Manage users and their permissions</p>
         </div>
-        <Button onClick={() => setIsAddUserOpen(true)} className="add-user-button">
+        <Button onClick={navigateToDepartmentAddEmployee} className="header-button outline-button">
           <IconComponent name="UserPlus" className="icon-small mr-2" />
           Add Employee
         </Button>
@@ -460,7 +468,7 @@ const UserManagement = () => {
                                 <span className="sr-only">More options</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="dropdown-menu-content">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem>
                                 <IconComponent name="UserCheck" className="icon-small mr-2" />

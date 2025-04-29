@@ -186,6 +186,23 @@ const Department: FC = () => {
   const [hasFormChanges, setHasFormChanges] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
+  const [animateAddEmployee, setAnimateAddEmployee] = useState(false);
+  
+  // Check for animation flag from UserManagement
+  useEffect(() => {
+    const shouldAnimate = localStorage.getItem('animateAddEmployeeButton');
+    if (shouldAnimate === 'true') {
+      setAnimateAddEmployee(true);
+      localStorage.removeItem('animateAddEmployeeButton');
+      
+      // Remove animation class after it's done
+      const timer = setTimeout(() => {
+        setAnimateAddEmployee(false);
+      }, 4500); // 3 animations * 1.5s per animation
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
   
   // Fetch both departments and cards
   useEffect(() => {
@@ -494,7 +511,10 @@ const Department: FC = () => {
           <p className="department-subtitle">Manage your organization's departments and teams</p>
         </div>
         <div className="header-buttons">
-          <button className="header-button outline-button" onClick={() => setIsEmployeeModalOpen(true)}>
+          <button 
+            className={`header-button outline-button ${animateAddEmployee ? 'animate-highlight' : ''}`} 
+            onClick={() => setIsEmployeeModalOpen(true)}
+          >
             <i className="fas fa-user-plus"></i>
             Add Employee
           </button>
