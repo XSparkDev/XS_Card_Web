@@ -9,7 +9,7 @@ export interface PasscreatorResponse {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjNmOWEwNTBkYzRhZTgyOGMyODcxYzMyNTYzYzk5ZDUwMjc3ODRiZTUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzQ1ODcyMjQ3LCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NDU4NzIyNDcsImV4cCI6MTc0NTg3NTg0NywiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.KF1vFmFVMQH5C5dhSh8i_0TCdl7YtOX3HSZA1hmTaAqQ9PujvzZYtHj7nrjw60qAI_dKKmxlAYUZGWSeoBEHT-cziM83XG3N8v9_x5GWyohzOhuuP7_hZLwijGyKr5GoaqZcw9BSWjG-cED_V0xtqS85kMyEKXY69drtuL-VcpwIaaQ-QsOtwerKGCVNBedsxUf8sStCwr7xtnIOxMgVbWhIIReD5pP0ikwAVINzGX6dnI2mQK7maykiki0h5taUosy5tKlFEBSxYEjQOCAjyyF6Z1jSfqQN1C-GWqXLhgmIlPl--8Jk5wm8aYWQfe9zdPYTxrR5ytOWiKQlnci6Sg";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjkwOTg1NzhjNDg4MWRjMDVlYmYxOWExNWJhMjJkOGZkMWFiMzRjOGEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzQ1OTMxNzg0LCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NDU5MzE3ODQsImV4cCI6MTc0NTkzNTM4NCwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.hHUo4oGkSj2Xt5xwyHxCm5XoeyRpmpmCijXuJ15VbkQOjWmlQRyD3T1K_K7veMP9s2TPbLAdorTQspS_-s3lJZVp6QLs28hxqNpdYsipZvKhRyu6IzJcnAuBv5renF6dDR9Pu3aEZhO_mOHdAodd1_qsy_U0j8duY3eFe48ilIYeam-rdhWEalO3xVtMX1a3XsUycbN49zwEFNuFETY422ewrypVt-OfoaWYSUS1kFh8-vmZsauOQBK62J3uAj7BXv7nawYuIkjBSRUk-oX9_KUtUPgtnvMor49pygIFOfgIACYA4K0Htsjra_bjPga7jCDwcrY8I3r_LXFJAtg5Dg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -17,7 +17,7 @@ export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
 // Helper function to get the appropriate base URL
 const getBaseUrl = () => {
   // return 'https://xscard-app.onrender.com';
-  return 'http://192.168.2.237:8383';
+  return 'http://localhost:8383';
 };
 
 export const API_BASE_URL = getBaseUrl();
@@ -52,6 +52,8 @@ export const ENDPOINTS = {
     ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,
     ENTERPRISE_DEPARTMENTS: `/enterprise/:enterpriseId/departments`,
     ENTERPRISE_EMPLOYEES: `/enterprise/:enterpriseId/employees`,
+    ENTERPRISE_CREATE_DEPARTMENT: `/enterprise/:enterpriseId/departments`,
+    ENTERPRISE_DELETE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
 };
 
 // Helper function to build enterprise endpoints with the enterpriseId
