@@ -401,3 +401,13 @@
   width: 1rem;
   height: 1rem;
 }
+
+@keyframes highlightButton {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.outline-button.animate-highlight {
+  animation: highlightButton 1.5s ease-in-out 3;
+}
