@@ -54,6 +54,7 @@ export const ENDPOINTS = {
     ENTERPRISE_EMPLOYEES: `/enterprise/:enterpriseId/employees`,
     ENTERPRISE_CREATE_DEPARTMENT: `/enterprise/:enterpriseId/departments`,
     ENTERPRISE_DELETE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
+    ENTERPRISE_UPDATE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
 };
 
 // Helper function to build enterprise endpoints with the enterpriseId

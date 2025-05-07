@@ -379,14 +379,14 @@ const Department: FC = () => {
       
       if (editingDepartment) {
         // Update existing department
-        const url = buildEnterpriseUrl(`${ENDPOINTS.ENTERPRISE_DEPARTMENTS}/${editingDepartment.id}`);
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_UPDATE_DEPARTMENT.replace(':departmentId', editingDepartment.id));
         const headers = getEnterpriseHeaders();
         
         const departmentToUpdate = {
           name: departmentData.name,
           description: departmentData.description,
-          managerId: departmentData.manager,
-          teamName: departmentData.teamName
+          managers: departmentData.managers,
+          removeManagersCompletely: departmentData.removeManagersCompletely
         };
         
         console.log('Updating department data:', departmentToUpdate);
@@ -421,8 +421,7 @@ const Department: FC = () => {
         const departmentToCreate = {
           name: departmentData.name,
           description: departmentData.description,
-          managerId: departmentData.manager,
-          teamName: departmentData.teamName
+          managers: departmentData.managers
         };
         
         console.log('Sending department data:', departmentToCreate);
@@ -577,8 +576,8 @@ const Department: FC = () => {
         department={editingDepartment}
         onChange={handleDepartmentFormChange}
         managers={[
-          { value: "user1", label: "John Doe" },
-          { value: "user2", label: "Jane Smith" },
+          { value: "K6gW9I1aypYN9uTIW6cMGVBEB4o1", label: "John Doe" },
+          { value: "tpNykUrXytMDFWrv8PxY3TBfr1k2", label: "Jane Smith" },
           { value: "user3", label: "Robert Johnson" }
         ]}
       />
