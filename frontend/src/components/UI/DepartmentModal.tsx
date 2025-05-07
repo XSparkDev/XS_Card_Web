@@ -3,6 +3,7 @@ import { Input } from "./input";
 import { Button } from "./button";
 import { Select } from "./select";
 import { Label } from "./label";
+import { Checkbox } from "./checkbox";
 import "../../styles/DepartmentModal.css";
 
 interface DepartmentModalProps {
@@ -17,8 +18,8 @@ interface DepartmentModalProps {
 export interface DepartmentData {
   name: string;
   description: string;
-  manager: string;
-  teamName: string;
+  managers: string[];
+  removeManagersCompletely?: boolean;
 }
 
 const DepartmentModal: React.FC<DepartmentModalProps> = ({
@@ -32,8 +33,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
   const [departmentData, setDepartmentData] = useState<DepartmentData>({
     name: "",
     description: "",
-    manager: "",
-    teamName: ""
+    managers: [],
+    removeManagersCompletely: false
   });
   
   const [initialData, setInitialData] = useState<DepartmentData | null>(null);
@@ -44,8 +45,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
       const data = {
         name: department.name || "",
         description: department.description || "",
-        manager: department.manager || "",
-        teamName: department.teamName || ""
+        managers: department.managers || [],
+        removeManagersCompletely: false
       };
       setDepartmentData(data);
       setInitialData(data);
@@ -54,8 +55,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
       setDepartmentData({
         name: "",
         description: "",
-        manager: "",
-        teamName: ""
+        managers: [],
+        removeManagersCompletely: false
       });
       setInitialData(null);
       setHasChanges(false);
@@ -67,8 +68,8 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
       const changed = 
         initialData.name !== departmentData.name ||
         initialData.description !== departmentData.description ||
-        initialData.manager !== departmentData.manager ||
-        initialData.teamName !== departmentData.teamName;
+        JSON.stringify(initialData.managers) !== JSON.stringify(departmentData.managers) ||
+        initialData.removeManagersCompletely !== departmentData.removeManagersCompletely;
       
       setHasChanges(changed);
       if (changed && onChange) {
@@ -82,6 +83,21 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
     setDepartmentData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleManagerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    setDepartmentData(prev => ({
+      ...prev,
+      managers: selectedOptions
+    }));
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setDepartmentData(prev => ({
+      ...prev,
+      removeManagersCompletely: checked
     }));
   };
 
@@ -128,18 +144,6 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
           </div>
           
           <div className="department-modal-form-group">
-            <Label htmlFor="team-name">Team Name</Label>
-            <Input
-              id="team-name"
-              name="teamName"
-              value={departmentData.teamName}
-              onChange={handleChange}
-              placeholder="Team Name"
-              required
-            />
-          </div>    
-          
-          <div className="department-modal-form-group">
             <Label htmlFor="description">Description</Label>
             <textarea
               id="description"
@@ -153,16 +157,36 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
           </div>
           
           <div className="department-modal-form-group">
-            <Label htmlFor="manager">Department Manager</Label>
-            <Select
-              id="manager"
-              name="manager"
-              value={departmentData.manager}
-              onChange={handleChange}
-              options={managers}
-              placeholder="Select a manager"
-            />
+            <Label htmlFor="managers">Department Managers</Label>
+            <select
+              id="managers"
+              name="managers"
+              multiple
+              value={departmentData.managers}
+              onChange={handleManagerChange}
+              className="managers-select"
+            >
+              {managers.map(manager => (
+                <option key={manager.value} value={manager.value}>
+                  {manager.label}
+                </option>
+              ))}
+            </select>
+            <p className="help-text">Hold Ctrl/Cmd to select multiple managers</p>
           </div>
+          
+          {isEditMode && (
+            <div className="department-modal-form-group checkbox-group">
+              <Checkbox 
+                id="removeManagersCompletely" 
+                checked={departmentData.removeManagersCompletely}
+                onCheckedChange={handleCheckboxChange}
+              />
+              <Label htmlFor="removeManagersCompletely" className="checkbox-label">
+                Remove managers completely
+              </Label>
+            </div>
+          )}
           
           <div className="department-modal-actions">
             <Button type="button" variant="outline" onClick={onClose}>
