@@ -1,10 +1,142 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../UI/card";
 import "../../styles/Analytics.css";
 import "../../styles/Dashboard.css";
-import { FaUsers, FaIdCard, FaLeaf, FaRobot, FaChartArea, FaChartLine, FaCommentDots, FaPalette } from "react-icons/fa";
+import "../../styles/MetricCards.css";
+import { 
+  FaUsers, 
+  FaIdCard, 
+  FaLeaf, 
+  FaRobot, 
+  FaChartArea, 
+  FaChartLine, 
+  FaCommentDots, 
+  FaPalette,
+  FaTree,
+  FaTint,
+  FaCloud,
+  FaFire
+} from "react-icons/fa";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
+import { 
+  calculatePaperSaved, 
+  calculateWaterSaved, 
+  calculateCO2Saved,
+  calculateTreesSaved
+} from "../../utils/environmentalImpact";
 
 const Analytics = () => {
+  const [activeCardsCount, setActiveCardsCount] = useState<number>(0);
+  const [connectionsCount, setConnectionsCount] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [connectionsLoading, setConnectionsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [connectionsError, setConnectionsError] = useState<string | null>(null);
+
+  // Fetch cards count
+  useEffect(() => {
+    const fetchCardsCount = async () => {
+      try {
+        setLoading(true);
+        
+        // Use the same API utility functions as in BusinessCards component
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        const headers = getEnterpriseHeaders();
+        
+        const response = await fetch(url, { headers });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        // Parse the response
+        const responseData = await response.json();
+        
+        // Extract cards data from the response
+        let cardsData = [];
+        
+        if (Array.isArray(responseData)) {
+          cardsData = responseData;
+        } else if (responseData && typeof responseData === 'object') {
+          if (Array.isArray(responseData.data)) {
+            cardsData = responseData.data;
+          } else if (Array.isArray(responseData.cards)) {
+            cardsData = responseData.cards;
+          } else {
+            cardsData = [responseData];
+          }
+        }
+        
+        // Set the count of active cards
+        setActiveCardsCount(cardsData.length);
+        setError(null);
+      } catch (err) {
+        setError("Failed to fetch business cards data.");
+        console.error("Error fetching cards:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCardsCount();
+  }, []);
+
+  // Fetch connections count
+  useEffect(() => {
+    const fetchConnectionsCount = async () => {
+      try {
+        setConnectionsLoading(true);
+        
+        // Create URL for the Contacts endpoint
+        const baseUrl = buildEnterpriseUrl("").replace(/\/enterprise.*$/, "");
+        const url = `${baseUrl}/Contacts`;
+        const headers = getEnterpriseHeaders();
+        
+        const response = await fetch(url, { headers });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        // Parse the response
+        const responseData = await response.json();
+        
+        // Extract connections data from the response
+        let connectionsData = [];
+        
+        if (Array.isArray(responseData)) {
+          connectionsData = responseData;
+        } else if (responseData && typeof responseData === 'object') {
+          if (Array.isArray(responseData.data)) {
+            connectionsData = responseData.data;
+          } else if (Array.isArray(responseData.contacts)) {
+            connectionsData = responseData.contacts;
+          } else {
+            // If the object itself contains the connection data
+            connectionsData = [responseData];
+          }
+        }
+        
+        // Set the count of connections
+        setConnectionsCount(connectionsData.length);
+        setConnectionsError(null);
+      } catch (err) {
+        setConnectionsError("Failed to fetch connections data.");
+        console.error("Error fetching connections:", err);
+      } finally {
+        setConnectionsLoading(false);
+      }
+    };
+    
+    fetchConnectionsCount();
+  }, []);
+
+  // Calculate environmental impact metrics
+  const paperSavedKg = calculatePaperSaved(connectionsCount);
+  const waterSavedLitres = calculateWaterSaved(paperSavedKg);
+  const co2SavedKg = calculateCO2Saved(paperSavedKg);
+  const treesSaved = calculateTreesSaved(paperSavedKg);
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -17,61 +149,61 @@ const Analytics = () => {
       {/* Metrics Cards */}
       <div className="metrics-grid">
         <Card className="metric-card">
-          <CardContent>
-            <div className="metric-icon" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)" }}>
-              <FaUsers />
+          <CardContent className="metric-card-content">
+            <div className="metric-header">
+              <div className="metric-label">Total Connections</div>
+              <div className="metric-icon-container blue">
+                <FaUsers />
+              </div>
             </div>
-            <div className="metric-content">
-              <p className="metric-label">Total Connections</p>
-              <h2 className="metric-value">2,847</h2>
-              <p className="metric-change positive">
-                <span className="arrow">↑</span> 12.3% increase
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="metric-card">
-          <CardContent>
-            <div className="metric-icon" style={{ backgroundColor: "rgba(168, 85, 247, 0.1)" }}>
-              <FaIdCard />
-            </div>
-            <div className="metric-content">
-              <p className="metric-label">Active Cards</p>
-              <h2 className="metric-value">456</h2>
-              <p className="metric-change positive">
-                <span className="arrow">↑</span> 8.3% increase
-              </p>
+            <div className="metric-value">{connectionsLoading ? "Loading..." : connectionsCount}</div>
+            <div className="metric-change positive">
+              <span className="arrow">↑</span> 12.5% increase
             </div>
           </CardContent>
         </Card>
         
         <Card className="metric-card">
-          <CardContent>
-            <div className="metric-icon" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
-              <FaLeaf />
+          <CardContent className="metric-card-content">
+            <div className="metric-header">
+              <div className="metric-label">Active Cards</div>
+              <div className="metric-icon-container purple">
+                <FaIdCard />
+              </div>
             </div>
-            <div className="metric-content">
-              <p className="metric-label">Paper Saved</p>
-              <h2 className="metric-value">1,234 kg</h2>
-              <p className="metric-change positive">
-                <span className="arrow">↑</span> 15.2% increase
-              </p>
+            <div className="metric-value">{loading ? "Loading..." : activeCardsCount}</div>
+            <div className="metric-change positive">
+              <span className="arrow">↑</span> 8.3% increase
             </div>
           </CardContent>
         </Card>
         
         <Card className="metric-card">
-          <CardContent>
-            <div className="metric-icon" style={{ backgroundColor: "rgba(245, 158, 11, 0.1)" }}>
-              <FaRobot />
+          <CardContent className="metric-card-content">
+            <div className="metric-header">
+              <div className="metric-label">Paper Saved</div>
+              <div className="metric-icon-container green">
+                <FaLeaf />
+              </div>
             </div>
-            <div className="metric-content">
-              <p className="metric-label">AI Insights</p>
-              <h2 className="metric-value">89%</h2>
-              <p className="metric-change positive">
-                <span className="arrow">↑</span> 5.7% increase
-              </p>
+            <div className="metric-value">{connectionsLoading ? "Loading..." : `${paperSavedKg} kg`}</div>
+            <div className="metric-change positive">
+              <span className="arrow">↑</span> 15.2% increase
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="metric-card">
+          <CardContent className="metric-card-content">
+            <div className="metric-header">
+              <div className="metric-label">AI Insights</div>
+              <div className="metric-icon-container orange">
+                <FaFire />
+              </div>
+            </div>
+            <div className="metric-value">89%</div>
+            <div className="metric-change positive">
+              <span className="arrow">↑</span> 5.7% increase
             </div>
           </CardContent>
         </Card>
@@ -221,30 +353,36 @@ const Analytics = () => {
               <div className="impact-box trees-box">
                 <div className="impact-content">
                   <div className="impact-title">Trees Saved</div>
-                  <div className="impact-value trees-value">47</div>
+                  <div className="impact-value trees-value">
+                    {connectionsLoading ? "Loading..." : treesSaved}
+                  </div>
                 </div>
-                <div className="impact-check-container">
-                  <div className="impact-check">✓</div>
+                <div className="impact-icon-container">
+                  <FaTree className="impact-icon" />
                 </div>
               </div>
               
               <div className="impact-box water-box">
                 <div className="impact-content">
                   <div className="impact-title">Water Saved</div>
-                  <div className="impact-value water-value">2,890L</div>
+                  <div className="impact-value water-value">
+                    {connectionsLoading ? "Loading..." : `${waterSavedLitres}L`}
+                  </div>
                 </div>
-                <div className="impact-check-container">
-                  <div className="impact-check">✓</div>
+                <div className="impact-icon-container">
+                  <FaTint className="impact-icon" />
                 </div>
               </div>
               
               <div className="impact-box co2-box">
                 <div className="impact-content">
                   <div className="impact-title">CO<sub>2</sub> Reduced</div>
-                  <div className="impact-value co2-value">1.2 tons</div>
+                  <div className="impact-value co2-value">
+                    {connectionsLoading ? "Loading..." : `${co2SavedKg} kg`}
+                  </div>
                 </div>
-                <div className="impact-check-container">
-                  <div className="impact-check">✓</div>
+                <div className="impact-icon-container">
+                  <FaCloud className="impact-icon" />
                 </div>
               </div>
             </div>
