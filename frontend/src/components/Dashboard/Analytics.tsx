@@ -24,6 +24,7 @@ import {
   calculateCO2Saved,
   calculateTreesSaved
 } from "../../utils/environmentalImpact";
+import EmployeeHeatmap from "./EmployeeHeatmap";
 
 const Analytics = () => {
   const [activeCardsCount, setActiveCardsCount] = useState<number>(0);
@@ -217,11 +218,7 @@ const Analytics = () => {
             <CardTitle>Employee Networking Heat-map</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="heatmap-container">
-              <div className="placeholder-heatmap">
-                <p>Interactive Heat Map</p>
-              </div>
-            </div>
+            <EmployeeHeatmap />
           </CardContent>
         </Card>
 
