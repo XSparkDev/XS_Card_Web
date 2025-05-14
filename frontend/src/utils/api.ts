@@ -18,7 +18,7 @@ export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
 // Helper function to get the appropriate base URL
 const getBaseUrl = () => {
   // return 'https://xscard-app.onrender.com';
-  return 'http://localhost:8383';
+  return 'http://localhost:8384';
 };
 
 export const API_BASE_URL = getBaseUrl();

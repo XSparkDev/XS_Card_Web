@@ -460,6 +460,7 @@
   margin-right: 0.5rem;
 }
 
+/* Chart container styles */
 .chart-container {
   width: 100%;
   height: 150px;
@@ -473,19 +474,32 @@
   background: linear-gradient(180deg, rgba(219, 39, 119, 0.1) 0%, rgba(219, 39, 119, 0.5) 100%);
 }
 
+/* Line chart styling */
 .line-chart {
-  background-color: #0f172a;
+  background: #0f172a !important;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  height: 200px !important;
   position: relative;
 }
 
-.line-chart::after {
-  content: "";
-  position: absolute;
-  width: 90%;
-  height: 2px;
-  background-color: #38bdf8;
-  z-index: 1;
-  transform: translateY(20px) translateX(-5px);
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.no-data-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
 }
 
 .donut-chart {
@@ -503,6 +517,18 @@
   border-right: 15px solid #fb7185;
   border-bottom: 15px solid #3b82f6;
   transform: rotate(-45deg);
+}
+
+/* Tooltip customization */
+.recharts-tooltip-wrapper {
+  z-index: 10;
+}
+
+/* Chart responsive adjustments */
+@media (max-width: 768px) {
+  .line-chart {
+    height: 180px !important;
+  }
 }
 
 /* Bottom Content */
