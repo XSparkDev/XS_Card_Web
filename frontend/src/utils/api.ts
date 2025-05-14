@@ -9,7 +9,7 @@ export interface PasscreatorResponse {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU5MWYxNWRlZTg0OTUzNjZjOTgyZTA1MTMzYmNhOGYyNDg5ZWFjNzIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzQ3MjI5NDExLCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NDcyMjk0MTEsImV4cCI6MTc0NzIzMzAxMSwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.PPjeposHyEGAfjqBEkED8GaOpvYGuSTg-jH5kdWpgVlOPKZ5IV4q6kyCCFjjrvSi6_X2WlK7nXzCTH6h6F1kFA3WbGl7aaPvztmuCp9cAxn5bx_3V9EHTFZb7-CFGC6gZbou_-V1HJgwl98ORuBfS2T3Nib0IkoWM8jc6f6p5FBnYY3uEHl-HwWD62ZRtAOkWLHU1Nmftb1Gjoik2fNDPc_zcVqhRoKB3cqMTE9WM_9G-bm1eWQPxGkoXk6leJBVAWfzTvnAnaVDezwS6US0SaypgtbAFfwHMwksa3OvoF_utHNR5wsbsvuvTMUi8M4zDEsh0dexx4BN7SQlCJxdcg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -18,7 +18,7 @@ export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
 // Helper function to get the appropriate base URL
 const getBaseUrl = () => {
   // return 'https://xscard-app.onrender.com';
-  return 'http://localhost:8384';
+  return 'http://localhost:8383';
 };
 
 export const API_BASE_URL = getBaseUrl();

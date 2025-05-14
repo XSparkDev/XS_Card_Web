@@ -14,7 +14,8 @@ import {
   FaTree,
   FaTint,
   FaCloud,
-  FaArrowUp
+  FaArrowUp,
+  FaCalendarAlt
 } from "react-icons/fa";
 import { 
   LineChart, 
@@ -36,6 +37,31 @@ import EmployeeHeatmap from "./EmployeeHeatmap";
 
 // User ID specifically for contacts - using the same ID as heatmap
 const CONTACTS_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
+
+// Interface for meeting attendees
+interface MeetingAttendee {
+  email: string;
+  name: string;
+}
+
+// Interface for meeting data
+interface Meeting {
+  title: string;
+  meetingWith: string;
+  meetingWhen: string;
+  endTime?: { _seconds: number; _nanoseconds: number };
+  description: string;
+  location: string;
+  attendees: MeetingAttendee[];
+  duration: number;
+}
+
+// Interface for meetings response
+interface MeetingsResponse {
+  userId: string;
+  totalMeetings: number;
+  meetings: Meeting[];
+}
 
 // Growth chart data point interface
 interface GrowthDataPoint {
@@ -61,6 +87,18 @@ const Analytics = () => {
   const [growthData, setGrowthData] = useState<GrowthDataPoint[]>([]);
   const [growthPercentage, setGrowthPercentage] = useState<number>(0);
   const [growthLoading, setGrowthLoading] = useState<boolean>(true);
+  
+  // Meetings states
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [totalMeetings, setTotalMeetings] = useState<number>(0);
+  const [meetingsLoading, setMeetingsLoading] = useState<boolean>(true);
+  const [meetingsError, setMeetingsError] = useState<string | null>(null);
+
+  // Add a new state for tracking expanded state of meetings overview
+  const [meetingsExpanded, setMeetingsExpanded] = useState<boolean>(false);
+
+  // Add a new state for tracking expanded state of connection growth chart
+  const [growthExpanded, setGrowthExpanded] = useState<boolean>(false);
 
   // Fetch cards count
   useEffect(() => {
@@ -167,6 +205,47 @@ const Analytics = () => {
     };
     
     fetchConnectionsData();
+  }, []);
+  
+  // Fetch meetings data
+  useEffect(() => {
+    const fetchMeetings = async () => {
+      try {
+        setMeetingsLoading(true);
+        
+        const url = `${API_BASE_URL}${ENDPOINTS.CREATE_MEETING}/${CONTACTS_USER_ID}`;
+        const headers = getEnterpriseHeaders();
+        
+        const response = await fetch(url, { headers });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const responseData = await response.json();
+        
+        if (responseData.success && responseData.data) {
+          setMeetings(responseData.data.meetings || []);
+          setTotalMeetings(responseData.data.totalMeetings || 0);
+          console.log("Meetings data loaded:", responseData.data);
+        } else {
+          console.warn("Meetings data format unexpected:", responseData);
+          setMeetings([]);
+          setTotalMeetings(0);
+        }
+        
+        setMeetingsError(null);
+      } catch (err) {
+        setMeetingsError("Failed to fetch meetings data.");
+        console.error("Error fetching meetings:", err);
+        setMeetings([]);
+        setTotalMeetings(0);
+      } finally {
+        setMeetingsLoading(false);
+      }
+    };
+    
+    fetchMeetings();
   }, []);
   
   // Helper to extract date from contact
@@ -336,12 +415,216 @@ const Analytics = () => {
     setGrowthData([]);
     setGrowthPercentage(0);
   };
+  
+  // Parse and format meeting time from the unusual format
+  const formatMeetingTime = (timeString: string): string => {
+    try {
+      // Parse the date manually from format like "December 20 2023 at at 2:00:00 PM GMT+2"
+      const parts = timeString.replace('at at', 'at').split(' at ');
+      if (parts.length < 2) return timeString;
+      
+      const datePart = parts[0]; // "December 20 2023"
+      const timePart = parts[1]; // "2:00:00 PM GMT+2"
+      
+      // Extract time components
+      const timeWithoutTZ = timePart.split(' GMT')[0]; // "2:00:00 PM"
+      const [time, period] = timeWithoutTZ.split(' '); // ["2:00:00", "PM"]
+      const [hours, minutes] = time.split(':').map(Number); // [2, 0]
+      
+      // Convert to 24 hour format if PM
+      const adjustedHours = period === 'PM' && hours < 12 ? hours + 12 : hours;
+      
+      // Create date object
+      const date = new Date(datePart);
+      if (isNaN(date.getTime())) return timeString;
+      
+      // Set the time components
+      date.setHours(adjustedHours);
+      date.setMinutes(minutes);
+      
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'short',
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      console.warn("Failed to parse meeting time:", e);
+      return timeString;
+    }
+  };
+  
+  // Parse meeting date for sorting and filtering
+  const parseMeetingDate = (timeString: string): Date | null => {
+    try {
+      // Parse the date manually from format like "December 20 2023 at at 2:00:00 PM GMT+2"
+      const parts = timeString.replace('at at', 'at').split(' at ');
+      if (parts.length < 2) return null;
+      
+      const datePart = parts[0]; // "December 20 2023"
+      const timePart = parts[1]; // "2:00:00 PM GMT+2"
+      
+      // Extract time components for more accurate sorting
+      const timeWithoutTZ = timePart.split(' GMT')[0]; // "2:00:00 PM"
+      const [time, period] = timeWithoutTZ.split(' '); // ["2:00:00", "PM"]
+      const [hours, minutes] = time.split(':').map(Number); // [2, 0]
+      
+      // Convert to 24 hour format if PM
+      const adjustedHours = period === 'PM' && hours < 12 ? hours + 12 : hours;
+      
+      // Create a date object from parts
+      const date = new Date(datePart);
+      if (isNaN(date.getTime())) return null;
+      
+      // Set the time components
+      date.setHours(adjustedHours);
+      date.setMinutes(minutes);
+      
+      console.log(`Parsed "${timeString}" -> ${date.toISOString()}`);
+      
+      return date;
+    } catch (e) {
+      console.warn("Failed to parse meeting date for sorting:", e);
+      return null;
+    }
+  };
+  
+  // Calculate meeting end time
+  const getMeetingEndTime = (meeting: Meeting): Date | null => {
+    const startTime = parseMeetingDate(meeting.meetingWhen);
+    if (!startTime) return null;
+    
+    const endTime = new Date(startTime);
+    endTime.setMinutes(endTime.getMinutes() + (meeting.duration || 30));
+    return endTime;
+  };
+  
+  // Check if a meeting is currently active
+  const isMeetingActive = (meeting: Meeting): boolean => {
+    const now = new Date();
+    const startTime = parseMeetingDate(meeting.meetingWhen);
+    if (!startTime) return false;
+    
+    const endTime = getMeetingEndTime(meeting);
+    if (!endTime) return false;
+    
+    return now >= startTime && now < endTime;
+  };
+  
+  // Check if a meeting is in the future
+  const isMeetingUpcoming = (meeting: Meeting): boolean => {
+    const now = new Date();
+    const startTime = parseMeetingDate(meeting.meetingWhen);
+    if (!startTime) return false;
+    
+    return startTime > now;
+  };
+  
+  // Check if a meeting has ended
+  const isMeetingEnded = (meeting: Meeting): boolean => {
+    const now = new Date();
+    const endTime = getMeetingEndTime(meeting);
+    if (!endTime) return false;
+    
+    return now >= endTime;
+  };
+  
+  // Process meetings for display - recalculated periodically
+  const processMeetingsForDisplay = () => {
+    // Get active meetings
+    const active = meetings.filter(meeting => isMeetingActive(meeting))
+      .sort((a, b) => {
+        const endTimeA = getMeetingEndTime(a);
+        const endTimeB = getMeetingEndTime(b);
+        return (endTimeA?.getTime() || 0) - (endTimeB?.getTime() || 0); 
+      });
+    
+    // Get upcoming meetings
+    const upcoming = meetings.filter(meeting => isMeetingUpcoming(meeting))
+      .sort((a, b) => {
+        const startTimeA = parseMeetingDate(a.meetingWhen);
+        const startTimeB = parseMeetingDate(b.meetingWhen);
+        return (startTimeA?.getTime() || 0) - (startTimeB?.getTime() || 0);
+      });
+    
+    return { active, upcoming };
+  };
+  
+  // State for processed meetings
+  const [currentMeetings, setCurrentMeetings] = useState<{ active: Meeting[], upcoming: Meeting[] }>({ active: [], upcoming: [] });
+  
+  // Check if a meeting overlaps with another
+  const checkMeetingOverlap = (meeting: Meeting, otherMeeting: Meeting): boolean => {
+    const meetingStart = parseMeetingDate(meeting.meetingWhen);
+    const otherStart = parseMeetingDate(otherMeeting.meetingWhen);
+    
+    if (!meetingStart || !otherStart) return false;
+    
+    const meetingEnd = getMeetingEndTime(meeting);
+    const otherEnd = getMeetingEndTime(otherMeeting);
+    
+    if (!meetingEnd || !otherEnd) return false;
+    
+    // Check for overlap
+    return (meetingStart < otherEnd && meetingEnd > otherStart);
+  };
+  
+  // Find overlapping meetings
+  const findOverlappingMeetings = (meetings: Meeting[]): Record<string, number> => {
+    const overlaps: Record<string, number> = {};
+    
+    meetings.forEach((meeting) => {
+      // Use meeting title as a key
+      const key = meeting.title;
+      overlaps[key] = 0;
+      
+      meetings.forEach((otherMeeting) => {
+        if (meeting !== otherMeeting && checkMeetingOverlap(meeting, otherMeeting)) {
+          overlaps[key]++;
+        }
+      });
+    });
+    
+    return overlaps;
+  };
+  
+  // Update meeting processing on an interval and when meetings change
+  useEffect(() => {
+    // Initial processing
+    const updateMeetingStatus = () => {
+      const processed = processMeetingsForDisplay();
+      setCurrentMeetings(processed);
+    };
+    
+    updateMeetingStatus();
+    
+    // Set up interval to update every minute
+    const intervalId = setInterval(updateMeetingStatus, 60000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
+  }, [meetings]);
+  
+  // Get meeting conflicts
+  const meetingOverlaps = findOverlappingMeetings([...currentMeetings.active, ...currentMeetings.upcoming]);
 
   // Calculate environmental impact metrics
   const paperSavedKg = calculatePaperSaved(connectionsCount);
   const waterSavedLitres = calculateWaterSaved(paperSavedKg);
   const co2SavedKg = calculateCO2Saved(paperSavedKg);
   const treesSaved = calculateTreesSaved(paperSavedKg);
+
+  // Add a function to toggle the expanded state
+  const toggleMeetingsExpand = () => {
+    setMeetingsExpanded(!meetingsExpanded);
+  };
+
+  // Add a function to toggle the expanded state for growth chart
+  const toggleGrowthExpand = () => {
+    setGrowthExpanded(!growthExpanded);
+  };
 
   return (
     <div className="page-container">
@@ -437,26 +720,152 @@ const Analytics = () => {
           </div>
           
           <div className="charts-grid">
-            <Card className="chart-card">
-              <CardHeader>
+            <Card className={`chart-card ${meetingsExpanded ? 'meetings-expanded' : ''}`}>
+              <CardHeader onClick={toggleMeetingsExpand} className="meetings-card-header">
                 <CardTitle className="chart-title">
-                  <FaChartArea className="chart-icon" /> Landing Stats
+                  <FaCalendarAlt className="chart-icon" /> Meetings Overview
                 </CardTitle>
+                <div className="expand-icon">
+                  {meetingsExpanded ? '−' : '+'}
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="chart-container area-chart">
-                  {/* Placeholder for area chart */}
+              <CardContent className={`meetings-content-wrapper ${meetingsExpanded ? 'meetings-content-expanded' : ''}`}>
+                <div className="chart-container meetings-chart">
+                  {meetingsLoading ? (
+                    <div className="loading-indicator">Loading meetings data...</div>
+                  ) : meetingsError ? (
+                    <div className="error-message">{meetingsError}</div>
+                  ) : (currentMeetings.active.length > 0 || currentMeetings.upcoming.length > 0) ? (
+                    <div className="meetings-content">
+                      <div className="meetings-stats">
+                        <div className="meeting-stat">
+                          <span className="meeting-stat-value">{totalMeetings}</span>
+                          <span className="meeting-stat-label">Total Meetings</span>
+                        </div>
+                        <div className="meeting-stat">
+                          <span className="meeting-stat-value">{meetings.length > 0 ? 
+                            meetings.reduce((sum, meeting) => sum + meeting.attendees.length, 0) : 0}
+                          </span>
+                          <span className="meeting-stat-label">Total Participants</span>
+                        </div>
+                      </div>
+                      
+                      {currentMeetings.active.length > 0 ? (
+                        <div className="next-meeting active-meeting">
+                          <h4>Happening Now</h4>
+                          <div className={`meeting-card ${meetingOverlaps[currentMeetings.active[0].title] > 0 ? 'meeting-overlap' : ''}`}>
+                            <div className="meeting-title">{currentMeetings.active[0].title}</div>
+                            <div className="meeting-time">
+                              {formatMeetingTime(currentMeetings.active[0].meetingWhen)}
+                            </div>
+                            <div className="meeting-location">{currentMeetings.active[0].location}</div>
+                            <div className="meeting-attendees">
+                              {currentMeetings.active[0].attendees.length} attendees
+                            </div>
+                            {meetingsExpanded && (
+                              <div className="meeting-details">
+                                <div className="meeting-description">
+                                  {currentMeetings.active[0].description || "No description available"}
+                                </div>
+                                <div className="meeting-attendees-list">
+                                  <h5>Attendees:</h5>
+                                  <ul>
+                                    {currentMeetings.active[0].attendees.map((attendee, i) => (
+                                      <li key={i}>{attendee.name} ({attendee.email})</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            )}
+                            {meetingOverlaps[currentMeetings.active[0].title] > 0 && (
+                              <div className="meeting-overlap-warning">
+                                Conflicts with {meetingOverlaps[currentMeetings.active[0].title]} other meeting(s)
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : currentMeetings.upcoming.length > 0 ? (
+                        <div className="next-meeting">
+                          <h4>Next Meeting</h4>
+                          <div className={`meeting-card ${meetingOverlaps[currentMeetings.upcoming[0].title] > 0 ? 'meeting-overlap' : ''}`}>
+                            <div className="meeting-title">{currentMeetings.upcoming[0].title}</div>
+                            <div className="meeting-time">
+                              {formatMeetingTime(currentMeetings.upcoming[0].meetingWhen)}
+                            </div>
+                            <div className="meeting-location">{currentMeetings.upcoming[0].location}</div>
+                            <div className="meeting-attendees">
+                              {currentMeetings.upcoming[0].attendees.length} attendees
+                            </div>
+                            {meetingsExpanded && (
+                              <div className="meeting-details">
+                                <div className="meeting-description">
+                                  {currentMeetings.upcoming[0].description || "No description available"}
+                                </div>
+                                <div className="meeting-attendees-list">
+                                  <h5>Attendees:</h5>
+                                  <ul>
+                                    {currentMeetings.upcoming[0].attendees.map((attendee, i) => (
+                                      <li key={i}>{attendee.name} ({attendee.email})</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            )}
+                            {meetingOverlaps[currentMeetings.upcoming[0].title] > 0 && (
+                              <div className="meeting-overlap-warning">
+                                Conflicts with {meetingOverlaps[currentMeetings.upcoming[0].title]} other meeting(s)
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
+                      
+                      {currentMeetings.upcoming.length > 0 && (
+                        <div className="upcoming-meetings">
+                          <h4>Upcoming Meetings</h4>
+                          <div className="meetings-list">
+                            {currentMeetings.upcoming.slice(currentMeetings.active.length > 0 ? 0 : 1, meetingsExpanded ? currentMeetings.upcoming.length : 3).map((meeting, index) => (
+                              <div className={`meeting-list-item ${meetingOverlaps[meeting.title] > 0 ? 'meeting-overlap' : ''}`} key={index}>
+                                <div className="meeting-list-title">{meeting.title}</div>
+                                <div className="meeting-list-time">
+                                  {formatMeetingTime(meeting.meetingWhen)}
+                                </div>
+                                {meetingsExpanded && (
+                                  <div className="meeting-expanded-details">
+                                    <div className="meeting-location">{meeting.location}</div>
+                                    <div className="meeting-description-preview">
+                                      {meeting.description ? meeting.description.substring(0, 50) + (meeting.description.length > 50 ? '...' : '') : 'No description'}
+                                    </div>
+                                  </div>
+                                )}
+                                {meetingOverlaps[meeting.title] > 0 && (
+                                  <div className="meeting-overlap-warning">
+                                    Conflicts with {meetingOverlaps[meeting.title]} other meeting(s)
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="no-data-message">No upcoming meetings</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="chart-card">
-              <CardHeader>
+            <Card className={`chart-card ${growthExpanded ? 'growth-expanded' : ''}`}>
+              <CardHeader onClick={toggleGrowthExpand} className="growth-card-header">
                 <CardTitle className="chart-title">
                   <FaChartLine className="chart-icon" /> Connection Growth Over Time
                 </CardTitle>
+                <div className="expand-icon">
+                  {growthExpanded ? '−' : '+'}
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className={`growth-content-wrapper ${growthExpanded ? 'growth-content-expanded' : ''}`}>
                 <div className="chart-container line-chart">
                   {growthLoading ? (
                     <div className="loading-indicator">Loading chart data...</div>
@@ -501,6 +910,35 @@ const Analytics = () => {
                     <div className="no-data-message">No connection data available</div>
                   )}
                 </div>
+                {growthExpanded && growthData.length > 0 && (
+                  <div className="growth-details">
+                    <h4>Monthly Growth Details</h4>
+                    <table className="growth-table">
+                      <thead>
+                        <tr>
+                          <th>Month</th>
+                          <th>Total Connections</th>
+                          <th>New Connections</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {growthData.map((item, index) => {
+                          const prevConnections = index > 0 ? growthData[index - 1].totalContacts : 0;
+                          const newConnections = item.totalContacts - prevConnections;
+                          return (
+                            <tr key={index}>
+                              <td>{item.date}</td>
+                              <td>{item.totalContacts}</td>
+                              <td className={newConnections > 0 ? 'positive' : ''}>
+                                {index > 0 ? `+${newConnections}` : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
