@@ -16,6 +16,15 @@ import {
   FaCloud,
   FaArrowUp
 } from "react-icons/fa";
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL } from "../../utils/api";
 import { 
   calculatePaperSaved, 
@@ -449,7 +458,48 @@ const Analytics = () => {
               </CardHeader>
               <CardContent>
                 <div className="chart-container line-chart">
-                  {/* Placeholder for line chart */}
+                  {growthLoading ? (
+                    <div className="loading-indicator">Loading chart data...</div>
+                  ) : growthData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={growthData}
+                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis 
+                          dataKey="date" 
+                          tick={{ fontSize: 12, fill: '#94a3b8' }}
+                        />
+                        <YAxis 
+                          tick={{ fontSize: 12, fill: '#94a3b8' }}
+                          width={30}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1e293b', 
+                            border: 'none',
+                            borderRadius: '4px',
+                            color: 'white',
+                            fontSize: '12px'
+                          }}
+                          itemStyle={{ color: '#38bdf8' }}
+                          labelStyle={{ color: 'white', fontWeight: 'bold' }}
+                          formatter={(value) => [`${value} connections`, 'Total']}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="totalContacts" 
+                          stroke="#38bdf8" 
+                          strokeWidth={2}
+                          dot={{ fill: '#38bdf8', r: 4 }}
+                          activeDot={{ fill: '#0ea5e9', r: 6, stroke: '#0c4a6e', strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="no-data-message">No connection data available</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
