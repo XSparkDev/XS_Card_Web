@@ -93,11 +93,16 @@ function DialogContent({ children, className, style }: DialogContentProps) {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [open, setOpen]);
   
-  // Manage focus when dialog opens
+  // Manage focus and body scrolling when dialog opens
   useEffect(() => {
     if (open) {
+      // Store current scroll position
+      const scrollY = window.scrollY;
+      
       // Prevent scrolling on the body when dialog is open
-      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
       
       // Set focus inside dialog
       const focusableElements = contentRef.current?.querySelectorAll(
@@ -109,21 +114,31 @@ function DialogContent({ children, className, style }: DialogContentProps) {
       }
       
       setAnimationClass('dialog-content-open');
+
+      // Return a cleanup function
+      return () => {
+        // Restore scrolling when dialog closes
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, scrollY);
+      };
     } else {
-      // Restore scrolling
-      document.body.style.overflow = '';
       setAnimationClass('dialog-content-closed');
+      return () => {};
     }
-    
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [open]);
   
   if (!open) return null;
   
   return (
-    <div className="dialog-backdrop" onClick={() => setOpen(false)}>
+    <div 
+      className="dialog-backdrop" 
+      onClick={(e) => {
+        e.preventDefault();
+        setOpen(false);
+      }}
+    >
       <div 
         ref={contentRef}
         className={`dialog-content ${animationClass} ${className || ''}`}
@@ -134,8 +149,13 @@ function DialogContent({ children, className, style }: DialogContentProps) {
       >
         {children}
         <button 
+          type="button"
           className="dialog-close-button"
-          onClick={() => setOpen(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(false);
+          }}
           aria-label="Close dialog"
         >
           ✕
