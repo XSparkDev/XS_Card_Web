@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../UI/card";
 import "../../styles/Analytics.css";
 import "../../styles/Dashboard.css";
@@ -7,7 +7,6 @@ import {
   FaUsers, 
   FaIdCard, 
   FaLeaf, 
-  FaChartArea, 
   FaChartLine, 
   FaCommentDots, 
   FaPalette,
@@ -56,13 +55,6 @@ interface Meeting {
   duration: number;
 }
 
-// Interface for meetings response
-interface MeetingsResponse {
-  userId: string;
-  totalMeetings: number;
-  meetings: Meeting[];
-}
-
 // Growth chart data point interface
 interface GrowthDataPoint {
   date: string;
@@ -80,8 +72,6 @@ const Analytics = () => {
   const [connectionsCount, setConnectionsCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionsLoading, setConnectionsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [connectionsError, setConnectionsError] = useState<string | null>(null);
   
   // Contact growth states
   const [growthData, setGrowthData] = useState<GrowthDataPoint[]>([]);
@@ -90,7 +80,6 @@ const Analytics = () => {
   
   // Meetings states
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [totalMeetings, setTotalMeetings] = useState<number>(0);
   const [meetingsLoading, setMeetingsLoading] = useState<boolean>(true);
   const [meetingsError, setMeetingsError] = useState<string | null>(null);
 
@@ -136,9 +125,7 @@ const Analytics = () => {
         
         // Set the count of active cards
         setActiveCardsCount(cardsData.length);
-        setError(null);
       } catch (err) {
-        setError("Failed to fetch business cards data.");
         console.error("Error fetching cards:", err);
       } finally {
         setLoading(false);
@@ -188,13 +175,11 @@ const Analytics = () => {
         
         // Set the count of connections
         setConnectionsCount(contactsList.length);
-        setConnectionsError(null);
         
         // Process growth data
         processGrowthData(contactsList);
         
       } catch (err) {
-        setConnectionsError("Failed to fetch connections data.");
         console.error("Error fetching connections:", err);
         // Generate sample growth data on error
         generateSampleGrowthData();
@@ -226,12 +211,10 @@ const Analytics = () => {
         
         if (responseData.success && responseData.data) {
           setMeetings(responseData.data.meetings || []);
-          setTotalMeetings(responseData.data.totalMeetings || 0);
           console.log("Meetings data loaded:", responseData.data);
         } else {
           console.warn("Meetings data format unexpected:", responseData);
           setMeetings([]);
-          setTotalMeetings(0);
         }
         
         setMeetingsError(null);
@@ -239,7 +222,6 @@ const Analytics = () => {
         setMeetingsError("Failed to fetch meetings data.");
         console.error("Error fetching meetings:", err);
         setMeetings([]);
-        setTotalMeetings(0);
       } finally {
         setMeetingsLoading(false);
       }
@@ -393,7 +375,7 @@ const Analytics = () => {
         // Log values for debugging
         console.log(`Growth calculation: (${latest} - ${previous}) / ${previous} * 100`);
         
-        const growth = ((latest - previous) / previous) * 100;
+        const growth = previous > 0 ? ((latest - previous) / previous) * 100 : 0;
         const roundedGrowth = Math.round(growth * 10) / 10;
         
         console.log("Growth percentage:", roundedGrowth);
@@ -522,15 +504,6 @@ const Analytics = () => {
     return startTime > now;
   };
   
-  // Check if a meeting has ended
-  const isMeetingEnded = (meeting: Meeting): boolean => {
-    const now = new Date();
-    const endTime = getMeetingEndTime(meeting);
-    if (!endTime) return false;
-    
-    return now >= endTime;
-  };
-  
   // Process meetings for display - recalculated periodically
   const processMeetingsForDisplay = () => {
     // Get active meetings
@@ -625,6 +598,31 @@ const Analytics = () => {
   const toggleGrowthExpand = () => {
     setGrowthExpanded(!growthExpanded);
   };
+
+  // Calculate filtered meeting stats for display
+  const calculateFilteredMeetingStats = () => {
+    // Only include active and upcoming meetings
+    const filteredMeetings = meetings.filter(meeting => 
+      isMeetingActive(meeting) || isMeetingUpcoming(meeting)
+    );
+    
+    // Count the total number of filtered meetings
+    const activeAndUpcomingCount = filteredMeetings.length;
+    
+    // Count total participants in filtered meetings
+    const totalParticipants = filteredMeetings.reduce(
+      (sum, meeting) => sum + meeting.attendees.length, 
+      0
+    );
+    
+    return {
+      meetingsCount: activeAndUpcomingCount,
+      participantsCount: totalParticipants
+    };
+  };
+
+  // Get filtered stats for display
+  const filteredStats = calculateFilteredMeetingStats();
 
   return (
     <div className="page-container">
@@ -739,14 +737,12 @@ const Analytics = () => {
                     <div className="meetings-content">
                       <div className="meetings-stats">
                         <div className="meeting-stat">
-                          <span className="meeting-stat-value">{totalMeetings}</span>
-                          <span className="meeting-stat-label">Total Meetings</span>
+                          <span className="meeting-stat-value">{meetingsLoading ? "..." : filteredStats.meetingsCount}</span>
+                          <span className="meeting-stat-label">Upcoming Meetings</span>
                         </div>
                         <div className="meeting-stat">
-                          <span className="meeting-stat-value">{meetings.length > 0 ? 
-                            meetings.reduce((sum, meeting) => sum + meeting.attendees.length, 0) : 0}
-                          </span>
-                          <span className="meeting-stat-label">Total Participants</span>
+                          <span className="meeting-stat-value">{meetingsLoading ? "..." : filteredStats.participantsCount}</span>
+                          <span className="meeting-stat-label">Expected Participants</span>
                         </div>
                       </div>
                       
