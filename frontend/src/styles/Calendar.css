@@ -196,6 +196,10 @@
   padding-bottom: 0.75rem;
 }
 
+.events-list {
+  position: relative;
+}
+
 .event-card {
   display: flex;
   flex-direction: column;
@@ -208,6 +212,10 @@
   margin-bottom: 0.75rem;
   cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
+  opacity: 1;
+  transform: translateX(0);
+  overflow: hidden;
 }
 
 .event-card:hover {
@@ -948,4 +956,183 @@ input[type="checkbox"]:focus {
 .error-title {
   font-weight: 600;
   margin-bottom: 0.25rem;
+}
+
+/* Styles for show more button and container */
+.text-center {
+  text-align: center;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+/* Animation for the loading indicator */
+@keyframes fade {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Success toast notification */
+.success-toast {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  background-color: #10b981;
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  animation: slideInFromTop 0.3s ease forwards, fadeOut 0.3s ease 2.7s forwards;
+  z-index: 1000;
+}
+
+/* Toast for deletions */
+.delete-toast {
+  background-color: #ef4444;
+}
+
+/* Animation for toast from top */
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Animation for events and toast notifications */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Delete confirmation dialog styles */
+.delete-dialog-content {
+  max-width: 400px;
+}
+
+.delete-confirm-button {
+  background-color: #ef4444;
+  color: white;
+}
+
+.delete-confirm-button:hover {
+  background-color: #dc2626;
+}
+
+/* Styles for deleted event cards */
+.event-card.deleting {
+  animation: slideOutToRight 0.3s ease forwards;
+  z-index: 1;
+}
+
+/* Animation for sliding out to the right */
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+    max-height: 200px;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    padding: 0 1rem;
+  }
+}
+
+/* Add styles for disabled button */
+.add-event-button[disabled] {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Upcoming events list with show-all support */
+.upcoming-events-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.upcoming-events-list.show-all {
+  max-height: 300px;
+}
+
+.upcoming-event {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.upcoming-event:hover {
+  background-color: #f8fafc;
+  border-radius: 0.25rem;
+}
+
+/* Date picker popup positioning */
+.date-picker-popover {
+  position: absolute;
+  top: 100px;
+  z-index: 1000;
+}
+
+/* Custom date picker styles */
+.custom-date-picker-container {
+  position: relative;
+}
+
+.custom-date-picker-popover {
+  position: fixed;
+  top: 100px;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  z-index: 9999;
+  border: 1px solid #e2e8f0;
+  max-width: 360px;
+  width: 100%;
+  animation: fadeIn 0.2s ease-in-out;
+  left: 50%;
+  transform: translateX(-50%);
 } 
