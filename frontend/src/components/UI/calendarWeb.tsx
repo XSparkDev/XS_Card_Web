@@ -174,7 +174,7 @@ export function Calendar({
   return (
     <div className={`calendar-container ${className || ''}`}>
       {/* Header with month navigation */}
-      <div className="calendar-header">
+      {/* <div className="calendar-header">
         <button 
           onClick={goToPreviousMonth} 
           className="calendar-nav-button" 
@@ -194,7 +194,7 @@ export function Calendar({
         >
           <span className="calendar-chevron">→</span>
         </button>
-      </div>
+      </div> */}
       
       {/* Day names row */}
       <div className="calendar-day-names">

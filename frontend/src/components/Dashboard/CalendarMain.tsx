@@ -1,5 +1,5 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format, parseISO, parse } from "date-fns";
 import {
   MdAccessTime,
@@ -158,7 +158,7 @@ const CalendarPage = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
-  const [view, setView] = useState<"month" | "week" | "day">("month");
+  // const [view, setView] = useState<"month" | "week" | "day">("month");
   const [eventFormData, setEventFormData] = useState(initialEventFormData);
   const [attendeeList, setAttendeeList] = useState<{name: string, email: string}[]>([]);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -167,6 +167,14 @@ const CalendarPage = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [visibleEventCount, setVisibleEventCount] = useState(5);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<any | null>(null);
+  const [createSuccess, setCreateSuccess] = useState(false);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   
   const today = new Date();
   const currentMonth = format(date || today, "MMMM yyyy");
@@ -179,8 +187,17 @@ const CalendarPage = () => {
            event.date.getFullYear() === date.getFullYear();
   });
   
+  // Get only the visible events based on the current count
+  const visibleEvents = filteredEvents.slice(0, visibleEventCount);
+  const hasMoreEvents = filteredEvents.length > visibleEventCount;
+  
   // Extract event dates for the calendar indicators
   const eventDates = events.map(event => new Date(event.date));
+
+  // Function to load more events
+  const handleLoadMore = () => {
+    setVisibleEventCount(prev => prev + 5);
+  };
 
   // Function to fetch events from API
   const fetchEvents = async () => {
@@ -278,18 +295,73 @@ const CalendarPage = () => {
     }
   };
   
-  // Helper function to determine event type based on title or description
+  // Add helper function to check if a date is in the past (before today)
+  const isDateInPast = (dateToCheck: Date): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    dateToCheck.setHours(0, 0, 0, 0);
+    return dateToCheck < today;
+  };
+
+  // Update isTimeInPastForToday function to fix time filtering
+  const isTimeInPastForToday = (timeString: string): boolean => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Parse the time string (e.g., "9:30 AM")
+    const [timeWithoutAmPm, amPm] = timeString.split(' ');
+    const [hourStr, minuteStr] = timeWithoutAmPm.split(':');
+    let hour = parseInt(hourStr);
+    const minute = parseInt(minuteStr);
+    
+    // Convert to 24-hour format
+    if (amPm === 'PM' && hour < 12) {
+      hour += 12;
+    } else if (amPm === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    
+    // Compare hours and minutes
+    if (hour < currentHour) {
+      return true;
+    } else if (hour === currentHour && minute <= currentMinute) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Update the determineEventType function to better categorize events
   const determineEventType = (titleOrDesc: string): string => {
-    if (titleOrDesc.includes('distribution') || titleOrDesc.includes('card')) {
+    // Convert to lowercase for case-insensitive matching
+    const text = titleOrDesc.toLowerCase();
+    
+    // Check for distribution-related keywords
+    if (text.includes('distribution') || text.includes('card') || text.includes('cards') || 
+        text.includes('handout') || text.includes('deliver')) {
       return 'distribution';
-    } else if (titleOrDesc.includes('design') || titleOrDesc.includes('template')) {
+    } 
+    // Check for design-related keywords
+    else if (text.includes('design') || text.includes('template') || text.includes('artwork') || 
+             text.includes('creative') || text.includes('layout')) {
       return 'design';
-    } else if (titleOrDesc.includes('inventory')) {
+    } 
+    // Check for inventory-related keywords
+    else if (text.includes('inventory') || text.includes('stock') || text.includes('supply') || 
+             text.includes('count') || text.includes('audit')) {
       return 'inventory';
-    } else if (titleOrDesc.includes('presentation') || titleOrDesc.includes('meeting')) {
+    } 
+    // Check for presentation/meeting-related keywords
+    else if (text.includes('presentation') || text.includes('meeting') || text.includes('discussion') || 
+             text.includes('conference') || text.includes('webinar')) {
       return 'presentation';
     }
-    return 'presentation'; // Default type
+    
+    // Assign a type based on the first character of the title if no matches
+    const firstChar = text.charCodeAt(0) % 4;
+    const types = ['distribution', 'design', 'inventory', 'presentation'];
+    return types[firstChar];
   };
 
   // Load events when component mounts or date changes
@@ -322,14 +394,62 @@ const CalendarPage = () => {
     }
   }, []);
 
-  // Reset form when dialog opens
+  // Now fix the default time selection issue by updating the getDefaultTimeForToday function
+  const getDefaultTimeForToday = (): string => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Round up to the nearest 30-minute increment
+    let hour = currentHour;
+    let minute = 0;
+    
+    if (currentMinute <= 30) {
+      minute = 30;
+    } else {
+      hour = (currentHour + 1) % 24;
+    }
+    
+    // Convert to 12-hour format with AM/PM
+    let period = 'AM';
+    if (hour >= 12) {
+      period = 'PM';
+      if (hour > 12) {
+        hour -= 12;
+      }
+    }
+    
+    // Handle midnight
+    if (hour === 0) {
+      hour = 12;
+      period = 'AM';
+    }
+    
+    // Format time string
+    return `${hour}:${minute === 0 ? '00' : minute} ${period}`;
+  };
+
+  // Update the useEffect hook to properly set the default time for today
   useEffect(() => {
     if (isAddEventOpen) {
       // If there's no saved draft, reset the form
       if (!localStorage.getItem('eventFormDraft')) {
+        const selectedDate = date || new Date();
+        const today = new Date();
+        
+        // Check if selected date is today
+        const isToday = 
+          selectedDate.getDate() === today.getDate() &&
+          selectedDate.getMonth() === today.getMonth() &&
+          selectedDate.getFullYear() === today.getFullYear();
+        
+        // Always set a default time - current/next hour for today, 9AM for other days
+        const defaultTime = isToday ? getDefaultTimeForToday() : "9:00 AM";
+        
         setEventFormData({
           ...initialEventFormData,
-          date: date || new Date()
+          date: selectedDate,
+          startTime: defaultTime
         });
         setAttendeeList([]);
       }
@@ -370,6 +490,91 @@ const CalendarPage = () => {
   
   const handleViewEvent = (event: any) => {
     setSelectedEvent(event);
+  };
+
+  // Handle event deletion
+  const handleDeleteEvent = (event: any) => {
+    setEventToDelete(event);
+    setIsDeletingEvent(true);
+  };
+
+  // Add new function to actually perform the deletion
+  const confirmDeleteEvent = async () => {
+    try {
+      // Get the user ID
+      const userId = localStorage.getItem('userId') || DEFAULT_USER_ID;
+      
+      // Find the meeting index in the API response
+      const meetingIndex = events.findIndex(e => e.id === eventToDelete.id);
+      
+      if (meetingIndex === -1) {
+        console.error('Could not find meeting index');
+        setApiError('Could not find meeting index for deletion');
+        setIsDeletingEvent(false);
+        return;
+      }
+      
+      // Create a copy of the current events to animate the deleted one
+      const updatedEvents = [...events];
+      const deletedEvent = {...updatedEvents[meetingIndex]};
+      deletedEvent.isDeleting = true;
+      updatedEvents[meetingIndex] = deletedEvent;
+      
+      // Update events state to trigger animation
+      setEvents(updatedEvents);
+      
+      // Use the enterprise API pattern
+      const url = buildEnterpriseUrl(`${ENDPOINTS.CREATE_MEETING}/${userId}/${meetingIndex}`);
+      const headers = getEnterpriseHeaders();
+      
+      // Make API call
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Failed to delete event';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `${errorMessage}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      // Wait for animation to complete before removing from state
+      setTimeout(() => {
+        // Remove the deleted event from events array
+        const filteredEvents = events.filter(e => e.id !== eventToDelete.id);
+        setEvents(filteredEvents);
+        
+        // Close all dialogs
+        setIsDeletingEvent(false);
+        setSelectedEvent(null);
+        
+        // Show success message
+        setApiError(null);
+        setDeleteSuccess(true);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setDeleteSuccess(false);
+        }, 3000);
+      }, 300); // Match animation duration
+      
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      setApiError(error instanceof Error ? error.message : 'An unknown error occurred while deleting event');
+      setIsDeletingEvent(false);
+    }
+  };
+
+  // Cancel delete
+  const cancelDeleteEvent = () => {
+    setIsDeletingEvent(false);
+    setEventToDelete(null);
   };
 
   const handleNextMonth = () => {
@@ -459,9 +664,22 @@ const CalendarPage = () => {
   // Handle scheduling from distribution items
   const handleScheduleDistribution = (title: string, count: number) => {
     // Pre-populate the form with distribution info
+    const selectedDate = date || new Date();
+    const today = new Date();
+    
+    // Check if selected date is today
+    const isToday = 
+      selectedDate.getDate() === today.getDate() &&
+      selectedDate.getMonth() === today.getMonth() &&
+      selectedDate.getFullYear() === today.getFullYear();
+    
+    // Set default time based on whether it's today or another date
+    const defaultTime = isToday ? getDefaultTimeForToday() : "9:00 AM";
+    
     setEventFormData({
       ...initialEventFormData,
-      date: date || new Date(),
+      date: selectedDate,
+      startTime: defaultTime,
       title: `${title} Distribution`,
       description: `Distribution of ${count} business cards for ${title}.`,
       type: "distribution"
@@ -523,7 +741,7 @@ const CalendarPage = () => {
     localStorage.removeItem('eventFormAttendees');
   };
 
-  // Update the form validation in handleSubmitEvent
+  // Update handleSubmitEvent to show success toast
   const handleSubmitEvent = async () => {
     // Reset any previous errors
     setApiError(null);
@@ -615,6 +833,14 @@ const CalendarPage = () => {
       // Clear the draft after successful submission
       clearEventDraft();
       
+      // Show create success toast
+      setCreateSuccess(true);
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setCreateSuccess(false);
+      }, 3000);
+      
       // Close dialog after a brief delay to show success
       setTimeout(() => {
         setIsAddEventOpen(false);
@@ -634,10 +860,11 @@ const CalendarPage = () => {
   // Event card component
   const EventCard = ({ event }: { event: any }) => {
     const colors = getEventTypeColor(event.type);
+    const cardClassName = `event-card ${event.isDeleting ? 'deleting' : ''}`;
     
     return (
       <button 
-        className="event-card"
+        className={cardClassName}
         onClick={() => handleViewEvent(event)}
       >
         <div className="event-card-header">
@@ -671,29 +898,44 @@ const CalendarPage = () => {
     );
   };
 
-  // No events placeholder
+  // Update the NoEvents component to check if date is in the past
   const NoEvents = () => (
     <div className="no-events">
       <MdEvent className="no-events-icon" />
       <h3 className="no-events-title">No events scheduled</h3>
       <p className="no-events-description">There are no events scheduled for this day.</p>
-      <Button 
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // Reset form data
-          setEventFormData({
-            ...initialEventFormData,
-            date: date || new Date()
-          });
-          setAttendeeList([]);
-          setIsAddEventOpen(true);
-        }}
-      >
-        <MdAdd className="icon-add" />
-        <span>Add Event</span>
-      </Button>
+      {!isDateInPast(date || new Date()) && (
+        <Button 
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Reset form data
+            const selectedDate = date || new Date();
+            const today = new Date();
+            
+            // Check if selected date is today
+            const isToday = 
+              selectedDate.getDate() === today.getDate() &&
+              selectedDate.getMonth() === today.getMonth() &&
+              selectedDate.getFullYear() === today.getFullYear();
+            
+            // Set default time based on whether it's today or another date
+            const defaultTime = isToday ? getDefaultTimeForToday() : "9:00 AM";
+            
+            setEventFormData({
+              ...initialEventFormData,
+              date: selectedDate,
+              startTime: defaultTime
+            });
+            setAttendeeList([]);
+            setIsAddEventOpen(true);
+          }}
+        >
+          <MdAdd className="icon-add" />
+          <span>Add Event</span>
+        </Button>
+      )}
     </div>
   );
 
@@ -725,6 +967,30 @@ const CalendarPage = () => {
     </div>
   );
 
+  // Add function to handle clicks outside the date picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        datePickerRef.current && 
+        !datePickerRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest('.date-picker-button')
+      ) {
+        setIsDatePickerOpen(false);
+      }
+    };
+
+    if (isDatePickerOpen) {
+      // Use setTimeout to add the event listener after the current event loop
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDatePickerOpen]);
+
   return (
     <div className="calendar-page">
       <div className="calendar-page-header">
@@ -738,13 +1004,27 @@ const CalendarPage = () => {
             e.preventDefault();
             e.stopPropagation();
             // Reset form data when opening
+            const selectedDate = date || new Date();
+            const today = new Date();
+            
+            // Check if selected date is today
+            const isToday = 
+              selectedDate.getDate() === today.getDate() &&
+              selectedDate.getMonth() === today.getMonth() &&
+              selectedDate.getFullYear() === today.getFullYear();
+            
+            // Set default time based on whether it's today or another date
+            const defaultTime = isToday ? getDefaultTimeForToday() : "9:00 AM";
+            
             setEventFormData({
               ...initialEventFormData,
-              date: date || new Date()
+              date: selectedDate,
+              startTime: defaultTime
             });
             setAttendeeList([]);
             setIsAddEventOpen(true);
           }}
+          disabled={isDateInPast(date || new Date())}
         >
           <MdAdd className="icon-add" />
           Add Event
@@ -752,7 +1032,6 @@ const CalendarPage = () => {
       </div>
       
       <div className="calendar-layout">
-        {/* Left sidebar - renamed from "sidebar" to "calendar-sidebar" */}
         <div className="calendar-sidebar">
           <Card>
             <CardContent className="calendar-widget">
@@ -808,22 +1087,44 @@ const CalendarPage = () => {
               <CardTitle>Upcoming Events</CardTitle>
             </CardHeader>
             <CardContent>
-              {events.slice(0, 3).map(event => (
-                <div key={event.id} className="upcoming-event">
-                  <p className="upcoming-event-title">{event.title}</p>
-                  <p className="upcoming-event-date">
-                    {format(event.date, "MMM d")} • {event.time}
-                  </p>
-                </div>
-              ))}
+              <div className={`upcoming-events-list ${showAllUpcoming ? 'show-all' : ''}`}>
+                {events
+                  .filter(event => {
+                    const eventDate = new Date(event.date);
+                    const now = new Date();
+                    // Only include future events or events today but not in the past
+                    if (eventDate.getDate() === now.getDate() &&
+                        eventDate.getMonth() === now.getMonth() &&
+                        eventDate.getFullYear() === now.getFullYear()) {
+                      // For today, parse the time to check if it's in the future
+                      const timeString = event.time.split(' - ')[0]; // Get start time
+                      return !isTimeInPastForToday(timeString);
+                    }
+                    return eventDate >= now;
+                  })
+                  .slice(0, showAllUpcoming ? undefined : 3)
+                  .map(event => (
+                    <div key={event.id} className="upcoming-event" onClick={() => handleViewEvent(event)}>
+                      <p className="upcoming-event-title">{event.title}</p>
+                      <p className="upcoming-event-date">
+                        {format(event.date, "MMM d")} • {event.time}
+                      </p>
+                    </div>
+                  ))}
+              </div>
             </CardContent>
             <CardFooter>
-              <Button variant="ghost" className="view-all-button">View All</Button>
+              <Button 
+                variant="ghost" 
+                className="view-all-button"
+                onClick={() => setShowAllUpcoming(!showAllUpcoming)}
+              >
+                {showAllUpcoming ? 'Show Less' : 'View All'}
+              </Button>
             </CardFooter>
           </Card>
         </div>
         
-        {/* Main content - renamed from "main-content" to "calendar-content" */}
         <div className="calendar-content">
           <Card className="events-card">
             <CardHeader className="events-card-header">
@@ -833,7 +1134,7 @@ const CalendarPage = () => {
                   {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""} scheduled
                 </CardDescription>
               </div>
-              <div className="view-toggle">
+              {/* <div className="view-toggle">
                 <button 
                   type="button"
                   className={`view-toggle-button ${view === "month" ? "view-toggle-button-active" : ""}`}
@@ -855,22 +1156,30 @@ const CalendarPage = () => {
                 >
                   <span className={`view-toggle-text ${view === "day" ? "view-toggle-text-active" : ""}`}>Day</span>
                 </button>
-              </div>
+              </div> */}
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="loading-events">
-                  <svg className="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <p className="mt-2">Loading events...</p>
+                <div className="flex justify-center items-center p-8">
+                  {/* Simple loading indicator */}
+                  <p>Loading...</p>
                 </div>
               ) : filteredEvents.length > 0 ? (
                 <div className="events-list">
-                  {filteredEvents.map(event => (
+                  {visibleEvents.map((event, index) => (
                     <EventCard key={event.id} event={event} />
                   ))}
+                  
+                  {hasMoreEvents && (
+                    <div className="text-center mt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleLoadMore}
+                      >
+                        Show More ({filteredEvents.length - visibleEventCount} remaining)
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <NoEvents />
@@ -911,16 +1220,28 @@ const CalendarPage = () => {
                   {selectedEvent.type.charAt(0).toUpperCase() + selectedEvent.type.slice(1)}
                 </Badge>
                 <div className="event-dialog-actions">
-                  <Button variant="outline" size="sm" className="mr-2">
-                    <MdEdit className="icon-edit" />
-                    <span>Edit</span>
-                  </Button>
-                  <Button variant="outline" size="sm" className="btn-delete">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="btn-delete"
+                    onClick={() => handleDeleteEvent(selectedEvent)}
+                  >
                     <MdDelete className="icon-delete" />
                     <span>Delete</span>
                   </Button>
                 </div>
               </div>
+              
+              {/* Show API error message in dialog if delete fails */}
+              {apiError && (
+                <div className="error-message mt-2">
+                  <MdErrorOutline className="error-icon" size={20} />
+                  <div>
+                    <div className="error-title">Error</div>
+                    <div>{apiError}</div>
+                  </div>
+                </div>
+              )}
               
               <div className="event-dialog-details">
                 <div className="event-dialog-detail">
@@ -1035,24 +1356,60 @@ const CalendarPage = () => {
             
             <div className="form-group">
               <label className="form-label">Date</label>
-              <Popover>
-                <PopoverTrigger>
-                  <Button 
-                    variant="outline" 
-                    className={`date-picker-button ${formErrors.date ? "border-red-500" : ""}`}
+              <div className="custom-date-picker-container">
+                <Button
+                  variant="outline"
+                  className={`date-picker-button ${formErrors.date ? "border-red-500" : ""}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDatePickerOpen(prevState => !prevState);
+                  }}
+                >
+                  <MdEvent className="icon-calendar" />
+                  <span>{eventFormData.date ? format(eventFormData.date, "PPP") : "Select a date"}</span>
+                </Button>
+                
+                {isDatePickerOpen && (
+                  <div 
+                    ref={datePickerRef}
+                    className="custom-date-picker-popover"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <MdEvent className="icon-calendar" />
-                    <span>{eventFormData.date ? format(eventFormData.date, "PPP") : "Select a date"}</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent>
-                  <Calendar
-                    selectedDate={eventFormData.date}
-                    onDateSelect={(newDate) => setEventFormData(prev => ({ ...prev, date: newDate }))}
-                    events={eventDates}
-                  />
-                </PopoverContent>
-              </Popover>
+                    <Calendar
+                      selectedDate={eventFormData.date}
+                      minDate={new Date()}
+                      onDateSelect={(newDate) => {
+                        setEventFormData(prev => {
+                          // Check if the selected date is today
+                          const today = new Date();
+                          const isToday = 
+                            newDate.getDate() === today.getDate() &&
+                            newDate.getMonth() === today.getMonth() &&
+                            newDate.getFullYear() === today.getFullYear();
+                          
+                          // Set appropriate start time
+                          let startTime = prev.startTime;
+                          if (isToday) {
+                            startTime = getDefaultTimeForToday();
+                          } else if (!startTime) {
+                            startTime = "9:00 AM";
+                          }
+                          
+                          return { 
+                            ...prev, 
+                            date: newDate,
+                            startTime 
+                          };
+                        });
+                        setIsDatePickerOpen(false);
+                      }}
+                      events={eventDates}
+                    />
+                  </div>
+                )}
+              </div>
               {formErrors.date && (
                 <p className="text-red-500 text-xs mt-1">{formErrors.date}</p>
               )}
@@ -1069,11 +1426,27 @@ const CalendarPage = () => {
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
                   <SelectContent>
-                    {timeOptions.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
+                    {timeOptions
+                      // Filter out past times if the selected date is today
+                      .filter(time => {
+                        const today = new Date();
+                        const selectedDate = eventFormData.date || new Date();
+                        
+                        // Only filter if date is today
+                        if (selectedDate.getDate() === today.getDate() &&
+                            selectedDate.getMonth() === today.getMonth() &&
+                            selectedDate.getFullYear() === today.getFullYear()) {
+                          return !isTimeInPastForToday(time);
+                        }
+                        
+                        return true;
+                      })
+                      .map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))
+                    }
                   </SelectContent>
                 </Select>
                 {formErrors.startTime && (
@@ -1250,6 +1623,60 @@ const CalendarPage = () => {
               ) : (
                 "Add Event"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Toast for creation */}
+      {createSuccess && (
+        <div className="success-toast">
+          <MdCheckCircle className="success-icon" size={20} />
+          <span>Event created successfully</span>
+        </div>
+      )}
+
+      {/* Success Toast for deletion */}
+      {deleteSuccess && (
+        <div className="success-toast delete-toast">
+          <MdCheckCircle className="success-icon" size={20} />
+          <span>Event deleted successfully</span>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeletingEvent} onOpenChange={cancelDeleteEvent}>
+        <DialogContent className="delete-dialog-content">
+          <DialogHeader>
+            <DialogTitle>Delete Event</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this event? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {apiError && (
+            <div className="error-message">
+              <MdErrorOutline className="error-icon" size={20} />
+              <div>
+                <div className="error-title">Error</div>
+                <div>{apiError}</div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="mt-4">
+            <Button 
+              variant="outline" 
+              onClick={cancelDeleteEvent}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              className="delete-confirm-button"
+              onClick={confirmDeleteEvent}
+            >
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
