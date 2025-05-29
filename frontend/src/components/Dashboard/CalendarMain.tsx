@@ -1358,7 +1358,7 @@ const CalendarPage = () => {
               <label className="form-label">Date</label>
               <div className="custom-date-picker-container">
                 <Button
-                  variant="outline"
+
                   className={`date-picker-button ${formErrors.date ? "border-red-500" : ""}`}
                   type="button"
                   onClick={(e) => {

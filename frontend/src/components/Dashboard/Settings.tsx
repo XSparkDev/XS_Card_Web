@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../UI/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
 import { Button } from "../UI/button";
@@ -11,34 +11,71 @@ import "../../styles/Settings.css";
 
 // Import icons from react-icons
 import { 
-  FaUser, FaBuilding, FaCreditCard, FaPalette, FaBell, 
+  FaBuilding, FaCreditCard, FaPalette, FaBell, 
   FaCheck, FaDownload, FaShieldAlt, FaExclamationTriangle
 } from "react-icons/fa";
 
+// Import API utilities
+import { 
+  ENDPOINTS, 
+  buildEnterpriseUrl, 
+  getEnterpriseHeaders, 
+  DEFAULT_ENTERPRISE_ID 
+} from "../../utils/api";
+
 // Import useNavigate from react-router-dom if you're using React Router
 import { useNavigate } from "react-router-dom";
+
+// Define interface for enterprise data
+interface EnterpriseData {
+  id: string;
+  name: string;
+  description?: string;
+  industry?: string;
+  website?: string;
+  logoUrl?: string;
+  colorScheme?: string;
+  companySize?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  };
+}
 
 const Settings = () => {
   // Add navigate function if using React Router
   const navigate = useNavigate();
   
-  // Add a function to handle navigation to Change Password page
-  const goToChangePassword = () => {
-    navigate("/settings/change-password");
-  };
-
-  // Add this function next to the goToChangePassword function
+  // Add a function to handle navigation to pricing page
   const goToPricing = () => {
     navigate("/pricing");
   };
 
-  const [profileForm, setProfileForm] = useState({
-    fullName: "John Doe",
-    email: "john.doe@example.com",
-    title: "Product Manager",
-    phone: "+1 (555) 123-4567",
-    bio: "Product manager with 5+ years of experience in SaaS and fintech industries."
+  const [enterpriseData, setEnterpriseData] = useState<EnterpriseData>({
+    id: DEFAULT_ENTERPRISE_ID,
+    name: "",
+    description: "",
+    industry: "Technology",
+    website: "",
+    logoUrl: "",
+    colorScheme: "#1B2B5B",
+    companySize: "unknown",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      country: ""
+    }
   });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -57,12 +94,136 @@ const Settings = () => {
   // Add this type to specify valid notification setting keys
   type NotificationSettingKey = keyof typeof notificationSettings;
 
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Fetch enterprise data on component mount
+  useEffect(() => {
+    const fetchEnterpriseData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const enterpriseId = localStorage.getItem('enterpriseId') || DEFAULT_ENTERPRISE_ID;
+        const url = buildEnterpriseUrl(ENDPOINTS.GET_ENTERPRISE.replace(':enterpriseId', enterpriseId));
+        const headers = getEnterpriseHeaders();
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch enterprise data');
+        }
+        
+        const data = await response.json();
+        
+        if (data.enterprise) {
+          setEnterpriseData({
+            id: data.enterprise.id,
+            name: data.enterprise.name || "",
+            description: data.enterprise.description || "",
+            industry: data.enterprise.industry || "Technology",
+            website: data.enterprise.website || "",
+            logoUrl: data.enterprise.logoUrl || "",
+            colorScheme: data.enterprise.colorScheme || "#1B2B5B",
+            companySize: data.enterprise.companySize || "unknown",
+            address: data.enterprise.address || {
+              street: "",
+              city: "",
+              state: "",
+              postalCode: "",
+              country: ""
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching enterprise data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load enterprise data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchEnterpriseData();
+  }, []);
+
+  const handleEnterpriseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setProfileForm({
-      ...profileForm,
-      [name]: value
-    });
+    
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setEnterpriseData({
+        ...enterpriseData,
+        address: {
+          ...enterpriseData.address,
+          [addressField]: value
+        }
+      });
+    } else {
+      setEnterpriseData({
+        ...enterpriseData,
+        [name]: value
+      });
+    }
+  };
+
+  const handleSaveEnterprise = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+      setSuccessMessage(null);
+      
+      const enterpriseId = enterpriseData.id || DEFAULT_ENTERPRISE_ID;
+      const url = buildEnterpriseUrl(ENDPOINTS.UPDATE_ENTERPRISE.replace(':enterpriseId', enterpriseId));
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          name: enterpriseData.name,
+          description: enterpriseData.description,
+          industry: enterpriseData.industry,
+          website: enterpriseData.website,
+          logoUrl: enterpriseData.logoUrl,
+          colorScheme: enterpriseData.colorScheme,
+          companySize: enterpriseData.companySize,
+          address: enterpriseData.address
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update enterprise data');
+      }
+      
+      const data = await response.json();
+      
+      if (data.enterprise) {
+        setEnterpriseData({
+          id: data.enterprise.id,
+          name: data.enterprise.name || "",
+          description: data.enterprise.description || "",
+          industry: data.enterprise.industry || "Technology",
+          website: data.enterprise.website || "",
+          logoUrl: data.enterprise.logoUrl || "",
+          colorScheme: data.enterprise.colorScheme || "#1B2B5B",
+          companySize: data.enterprise.companySize || "unknown",
+          address: data.enterprise.address || enterpriseData.address
+        });
+      }
+      
+      setSuccessMessage('Enterprise settings updated successfully');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Error saving enterprise data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save enterprise data');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggleNotification = (setting: NotificationSettingKey) => {
@@ -77,19 +238,15 @@ const Settings = () => {
       <div className="settings-header">
         <div>
           <h1 className="settings-title">Settings</h1>
-          <p className="settings-description">Manage your account settings and preferences</p>
+          <p className="settings-description">Manage your organization settings and preferences</p>
         </div>
       </div>
 
       <Tabs defaultValue="profile" className="settings-tabs">
         <TabsList className="settings-tabs-list">
           <TabsTrigger value="profile" className="settings-tab">
-            <FaUser className="tab-icon" />
-            <span className="tab-text">Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="company" className="settings-tab">
             <FaBuilding className="tab-icon" />
-            <span className="tab-text">Company</span>
+            <span className="tab-text">Organization</span>
           </TabsTrigger>
           <TabsTrigger value="billing" className="settings-tab">
             <FaCreditCard className="tab-icon" />
@@ -106,206 +263,196 @@ const Settings = () => {
         </TabsList>
         
         <TabsContent value="profile" className="settings-tab-content">
-          <Card className="profile-card">
-            <CardHeader>
-              <CardTitle>Profile</CardTitle>
-              <CardDescription>
-                Manage your account information and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="form-grid">
-                <div className="form-group">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input 
-                    id="fullName" 
-                    name="fullName" 
-                    value={profileForm.fullName} 
-                    onChange={handleProfileChange} 
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input 
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    value={profileForm.email} 
-                    onChange={handleProfileChange} 
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="title">Job Title</Label>
-                  <Input 
-                    id="title" 
-                    name="title" 
-                    value={profileForm.title} 
-                    onChange={handleProfileChange} 
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
-                    id="phone" 
-                    name="phone" 
-                    value={profileForm.phone} 
-                    onChange={handleProfileChange} 
-                  />
-                </div>
-              </div>
-              <div className="form-group bio-container">
-                <Label htmlFor="bio">Bio</Label>
-                <textarea 
-                  id="bio" 
-                  name="bio" 
-                  value={profileForm.bio} 
-                  onChange={handleProfileChange} 
-                  rows={4}
-                  className="bio-input" 
-                />
-              </div>
-              
-              {/* Add Change Password section */}
-              <div className="security-section">
-                <h3 className="section-title">Account Security</h3>
-                <div className="password-link-container">
-                  <div className="password-link-info">
-                    <h4 className="password-link-title">Password</h4>
-                    <p className="password-link-description">
-                      Set a unique password to protect your account
-                    </p>
+          {isLoading ? (
+            <Card className="profile-card">
+              <CardContent className="p-8">
+                <div className="text-center">Loading organization data...</div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="profile-card">
+              <CardHeader>
+                <CardTitle>Organization Profile</CardTitle>
+                <CardDescription>
+                  Manage your organization information and branding
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {error && (
+                  <div className="error-message mb-4">
+                    <FaExclamationTriangle className="mr-2" />
+                    {error}
                   </div>
-                  <Button 
-                    variant="link" 
-                    className="password-change-link"
-                    onClick={goToChangePassword}
-                  >
-                    Change password
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="form-actions">
-              <Button variant="outline">Cancel</Button>
-              <Button>Save Changes</Button>
-            </CardFooter>
-          </Card>
-          
-          <Card className="password-card">
-            <CardHeader>
-              <CardTitle>Password & Security</CardTitle>
-              <CardDescription>Update your password and security settings</CardDescription>
-            </CardHeader>
-            <CardContent className="password-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input id="currentPassword" type="password" placeholder="••••••••" />
-                </div>
-                <div className="spacer"></div>
-                <div className="form-group">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input id="newPassword" type="password" placeholder="••••••••" />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input id="confirmPassword" type="password" placeholder="••••••••" />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Update Password</Button>
-            </CardFooter>
-          </Card>
-          
-          <Card className="danger-card">
-            <CardHeader>
-              <CardTitle className="danger-title">Danger Zone</CardTitle>
-              <CardDescription>Irreversible account actions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="danger-zone">
-                <h3 className="danger-zone-title">Delete Account</h3>
-                <p className="danger-zone-description">
-                  Once you delete your account, there is no going back. This action cannot be undone.
-                </p>
-                <Button variant="destructive" className="delete-button">Delete Account</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="company" className="settings-tab-content">
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Information</CardTitle>
-              <CardDescription>Update your company details</CardDescription>
-            </CardHeader>
-            <CardContent className="company-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <Input id="companyName" defaultValue="XSCard Inc." />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="industry">Industry</Label>
-                  <Select 
-                    options={[
-                      { value: "technology", label: "Technology" },
-                      { value: "finance", label: "Finance" },
-                      { value: "healthcare", label: "Healthcare" },
-                      { value: "education", label: "Education" },
-                      { value: "retail", label: "Retail" }
-                    ]}
-                    defaultValue="technology"
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="companySize">Company Size</Label>
-                  <Select 
-                    options={[
-                      { value: "1-10", label: "1-10 employees" },
-                      { value: "11-50", label: "11-50 employees" },
-                      { value: "50-100", label: "50-100 employees" },
-                      { value: "101-500", label: "101-500 employees" },
-                      { value: "501+", label: "501+ employees" }
-                    ]}
-                    defaultValue="50-100"
-                  />
-                </div>
-                <div className="form-group">
-                  <Label htmlFor="website">Website</Label>
-                  <Input id="website" defaultValue="https://xscard.example.com" />
-                </div>
-              </div>
-              <div className="form-group address-container">
-                <Label htmlFor="companyAddress">Address</Label>
-                <textarea 
-                  id="companyAddress" 
-                  defaultValue="123 Business Avenue, Suite 200, San Francisco, CA 94107, United States"
-                  rows={4}
-                  className="address-input" 
-                />
-              </div>
-              
-              <div className="branding-section">
-                <h3 className="section-title">Company Branding</h3>
-                <div className="branding-container">
-                  <div className="logo-placeholder">
-                    <span>XS</span>
+                )}
+                {successMessage && (
+                  <div className="success-message mb-4">
+                    <FaCheck className="mr-2" />
+                    {successMessage}
                   </div>
-                  <div className="logo-actions">
-                    <Button size="sm" variant="outline" className="upload-button">Upload Logo</Button>
-                    <p className="logo-hint">Recommended size: 512x512px</p>
+                )}
+                
+                <div className="form-grid">
+                  <div className="form-group">
+                    <Label htmlFor="name">Organization Name</Label>
+                    <Input 
+                      id="name" 
+                      name="name" 
+                      value={enterpriseData.name} 
+                      onChange={handleEnterpriseChange} 
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label htmlFor="industry">Industry</Label>
+                    <Select 
+                      options={[
+                        { value: "Technology", label: "Technology" },
+                        { value: "Finance", label: "Finance" },
+                        { value: "Healthcare", label: "Healthcare" },
+                        { value: "Education", label: "Education" },
+                        { value: "Retail", label: "Retail" }
+                      ]}
+                      value={enterpriseData.industry}
+                      onChange={(e) => setEnterpriseData({...enterpriseData, industry: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label htmlFor="companySize">Company Size</Label>
+                    <Select 
+                      options={[
+                        { value: "1-10", label: "1-10 employees" },
+                        { value: "11-50", label: "11-50 employees" },
+                        { value: "50-100", label: "50-100 employees" },
+                        { value: "101-500", label: "101-500 employees" },
+                        { value: "501+", label: "501+ employees" },
+                        { value: "unknown", label: "Not specified" }
+                      ]}
+                      value={enterpriseData.companySize}
+                      onChange={(e) => setEnterpriseData({...enterpriseData, companySize: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <Label htmlFor="website">Website</Label>
+                    <Input 
+                      id="website" 
+                      name="website" 
+                      value={enterpriseData.website} 
+                      onChange={handleEnterpriseChange} 
+                      placeholder="https://example.com"
+                    />
                   </div>
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="form-actions">
-              <Button variant="outline">Cancel</Button>
-              <Button>Save Changes</Button>
-            </CardFooter>
-          </Card>
+                
+                <div className="form-group">
+                  <Label htmlFor="description">Description</Label>
+                  <textarea 
+                    id="description" 
+                    name="description" 
+                    value={enterpriseData.description} 
+                    onChange={handleEnterpriseChange} 
+                    rows={4}
+                    className="bio-input" 
+                    placeholder="Brief description of your organization"
+                  />
+                </div>
+                
+                <div className="address-section mt-6">
+                  <h3 className="section-title">Organization Address</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <Label htmlFor="street">Street Address</Label>
+                      <Input 
+                        id="street" 
+                        name="address.street" 
+                        value={enterpriseData.address?.street || ''} 
+                        onChange={handleEnterpriseChange} 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <Label htmlFor="city">City</Label>
+                      <Input 
+                        id="city" 
+                        name="address.city" 
+                        value={enterpriseData.address?.city || ''} 
+                        onChange={handleEnterpriseChange} 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <Label htmlFor="state">State/Province</Label>
+                      <Input 
+                        id="state" 
+                        name="address.state" 
+                        value={enterpriseData.address?.state || ''} 
+                        onChange={handleEnterpriseChange} 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <Label htmlFor="postalCode">Postal Code</Label>
+                      <Input 
+                        id="postalCode" 
+                        name="address.postalCode" 
+                        value={enterpriseData.address?.postalCode || ''} 
+                        onChange={handleEnterpriseChange} 
+                      />
+                    </div>
+                    <div className="form-group">
+                      <Label htmlFor="country">Country</Label>
+                      <Input 
+                        id="country" 
+                        name="address.country" 
+                        value={enterpriseData.address?.country || ''} 
+                        onChange={handleEnterpriseChange} 
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="branding-section mt-6">
+                  <h3 className="section-title">Organization Branding</h3>
+                  <div className="branding-container">
+                    <div className="logo-placeholder">
+                      {enterpriseData.logoUrl ? (
+                        <img src={enterpriseData.logoUrl} alt="Organization logo" className="logo-image" />
+                      ) : (
+                        <span>{enterpriseData.name ? enterpriseData.name.substring(0, 2).toUpperCase() : 'XS'}</span>
+                      )}
+                    </div>
+                    <div className="logo-actions">
+                      <Button size="sm" variant="outline" className="upload-button">Upload Logo</Button>
+                      <p className="logo-hint">Recommended size: 512x512px</p>
+                    </div>
+                  </div>
+                  
+                  <div className="form-group mt-4">
+                    <Label htmlFor="colorScheme">Brand Color</Label>
+                    <div className="flex items-center gap-4">
+                      <Input 
+                        id="colorScheme" 
+                        name="colorScheme" 
+                        type="color" 
+                        value={enterpriseData.colorScheme} 
+                        onChange={handleEnterpriseChange} 
+                        className="w-20 h-10"
+                      />
+                      <Input 
+                        value={enterpriseData.colorScheme} 
+                        onChange={handleEnterpriseChange}
+                        name="colorScheme"
+                        placeholder="#1B2B5B"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="form-actions">
+                <Button variant="outline" onClick={() => window.location.reload()}>Cancel</Button>
+                <Button onClick={handleSaveEnterprise} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
         </TabsContent>
         
         <TabsContent value="billing" className="settings-tab-content">
