@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../../styles/Calendar.css';
 
 interface CalendarProps {
@@ -8,6 +8,7 @@ interface CalendarProps {
   maxDate?: Date;
   initialMonth?: Date;
   className?: string;
+  events?: Date[]; // Add events prop to show indicators
 }
 
 export function Calendar({
@@ -17,9 +18,26 @@ export function Calendar({
   maxDate,
   initialMonth = new Date(),
   className,
+  events = [], // Default to empty array
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
-  const [internalSelectedDate, setInternalSelectedDate] = useState(selectedDate);
+  const [internalSelectedDate, setInternalSelectedDate] = useState<Date | undefined>(selectedDate);
+  
+  // Update internal state when props change
+  useEffect(() => {
+    if (selectedDate) {
+      setInternalSelectedDate(selectedDate);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    // If selected date changes to a different month, update current month view
+    if (selectedDate && 
+        (selectedDate.getMonth() !== currentMonth.getMonth() || 
+         selectedDate.getFullYear() !== currentMonth.getFullYear())) {
+      setCurrentMonth(new Date(selectedDate));
+    }
+  }, [selectedDate, currentMonth]);
   
   // Get days in month
   const getDaysInMonth = (year: number, month: number) => {
@@ -51,6 +69,7 @@ export function Calendar({
           date: new Date(prevMonthYear, prevMonth, daysInPrevMonth - i),
           isCurrentMonth: false,
           isToday: false,
+          hasEvents: hasEventsOnDate(new Date(prevMonthYear, prevMonth, daysInPrevMonth - i)),
         });
       }
     }
@@ -67,6 +86,7 @@ export function Calendar({
           date.getDate() === today.getDate() &&
           date.getMonth() === today.getMonth() &&
           date.getFullYear() === today.getFullYear(),
+        hasEvents: hasEventsOnDate(date),
       });
     }
     
@@ -84,11 +104,21 @@ export function Calendar({
           date: new Date(nextMonthYear, nextMonth, i),
           isCurrentMonth: false,
           isToday: false,
+          hasEvents: hasEventsOnDate(new Date(nextMonthYear, nextMonth, i)),
         });
       }
     }
     
     return [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
+  };
+  
+  // Check if a date has events
+  const hasEventsOnDate = (date: Date) => {
+    return events.some(eventDate => 
+      eventDate.getDate() === date.getDate() &&
+      eventDate.getMonth() === date.getMonth() &&
+      eventDate.getFullYear() === date.getFullYear()
+    );
   };
   
   // Handle month navigation
@@ -144,17 +174,27 @@ export function Calendar({
   return (
     <div className={`calendar-container ${className || ''}`}>
       {/* Header with month navigation */}
-      <div className="calendar-header">
-        <button onClick={goToPreviousMonth} className="calendar-nav-button">
-          <span className="calendar-chevron">←</span> {/* Left chevron */}
+      {/* <div className="calendar-header">
+        <button 
+          onClick={goToPreviousMonth} 
+          className="calendar-nav-button" 
+          aria-label="Previous month"
+          type="button"
+        >
+          <span className="calendar-chevron">←</span>
         </button>
         
         <span className="calendar-month-year">{formatMonthYear(currentMonth)}</span>
         
-        <button onClick={goToNextMonth} className="calendar-nav-button">
-          <span className="calendar-chevron">→</span> {/* Right chevron */}
+        <button 
+          onClick={goToNextMonth} 
+          className="calendar-nav-button" 
+          aria-label="Next month"
+          type="button"
+        >
+          <span className="calendar-chevron">→</span>
         </button>
-      </div>
+      </div> */}
       
       {/* Day names row */}
       <div className="calendar-day-names">
@@ -176,7 +216,8 @@ export function Calendar({
             !day.isCurrentMonth ? 'calendar-outside-month' : '',
             day.isToday ? 'calendar-today' : '',
             isSelected ? 'calendar-selected' : '',
-            isDisabled ? 'calendar-disabled' : ''
+            isDisabled ? 'calendar-disabled' : '',
+            day.hasEvents ? 'calendar-day-with-events' : ''
           ].filter(Boolean).join(' ');
           
           return (
