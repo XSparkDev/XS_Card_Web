@@ -9,7 +9,7 @@ export interface PasscreatorResponse {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImZlNjVjY2I4ZWFkMGJhZWY1ZmQzNjE5NWQ2NTI4YTA1NGZiYjc2ZjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzQ4NTI3MTU1LCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NDg1MjcxNTUsImV4cCI6MTc0ODUzMDc1NSwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.d2dJ04D0IyPhA92BYhJA46T5-0GvUqaCzTsgtt-GkJz9KSP3J2KhFWevggj3qRC6Z_AMI6wj7maWf2pVokXNOipASrZ0g3_E2M8GG5y-eYTwnv1kIukojLgIP9G9tqzjoo_xQXcZXF8UwutD8tmlsjmYn9VN0_QPJR1w5vinDhor5vpERlajYH9vTcfrELJu7t3FtcJXW0JDUls-XMsVKqIvl4RHp7IXPSVsthn7lSkKOgp0VK2cd5gu-6AbXihXZBsetO_4cQcecDWwONXiPogwrkGS_Q-VW6Wb-9-xmX-woSgpz5pzxYMp-8-ziQ1AHBx9HfcpnHeEzbYlUEyDAw";
+export const FIREBASE_TOKEN = "";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -58,6 +58,7 @@ export const ENDPOINTS = {
     ENTERPRISE_UPDATE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
     GET_ENTERPRISE: `/enterprises/:enterpriseId`,
     UPDATE_ENTERPRISE: `/enterprises/:enterpriseId`,
+
 };
 
 // Helper function to build enterprise endpoints with the enterpriseId
