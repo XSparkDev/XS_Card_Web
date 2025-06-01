@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../UI/card";
 import { Button } from "../UI/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
@@ -6,16 +6,170 @@ import { Input } from "../UI/input";
 import { Badge } from "../UI/badge";
 import "../../styles/Security.css";
 import { Switch } from "../UI/switch";
+import ManageRolesModal from "./ManageRolesModal";
+import { useSessionTimeoutContext } from "../../providers/SessionTimeoutProvider";
+import { sessionService } from "../../services/sessionService";
+import { rolesService, Role } from "../../services/rolesService";
 
 // Import icons
 import { FaShieldAlt, FaUserPlus, FaToggleOn, FaKey, FaLock, FaExclamationTriangle, FaBell, FaUserCog, FaSearch, FaFileExport } from "react-icons/fa";
 
 const Security = () => {
   const [activeTab, setActiveTab] = useState("access-control");
-  const [ipRestrictionEnabled, setIpRestrictionEnabled] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [dataEncryption, setDataEncryption] = useState(false);
   const [gdprCompliance, setGdprCompliance] = useState(false);
+  const [showManageRolesModal, setShowManageRolesModal] = useState(false);
+  const [sessionTimeout, setSessionTimeout] = useState("30 minutes");
+  const [concurrentSessions, setConcurrentSessions] = useState("2 sessions");
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [sessionData, setSessionData] = useState({
+    total: 8,
+    administrators: 2,
+    managers: 3,
+    employees: 3
+  });
+  const [isForceLogoutLoading, setIsForceLogoutLoading] = useState(false);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(false);
+  
+  const { updateSessionTimeout } = useSessionTimeoutContext();
+
+  // Load session data on component mount and tab change
+  useEffect(() => {
+    if (activeTab === "access-control") {
+      loadSessionData();
+      loadRoles();
+    }
+  }, [activeTab]);
+
+  // Load timeout settings on mount
+  useEffect(() => {
+    loadTimeoutSettings();
+  }, []);
+
+  const loadSessionData = async () => {
+    setIsLoadingSessions(true);
+    try {
+      const data = await sessionService.getActiveSessions();
+      setSessionData({
+        total: data.totalSessions,
+        administrators: data.sessionsByRole.Administrator,
+        managers: data.sessionsByRole.Manager,
+        employees: data.sessionsByRole.Employee
+      });
+    } catch (error) {
+      console.error("Failed to load session data:", error);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
+
+  const loadTimeoutSettings = async () => {
+    try {
+      const settings = await sessionService.getTimeoutSettings();
+      const timeoutString = 
+        settings.timeoutMinutes === 15 ? "15 minutes" :
+        settings.timeoutMinutes === 60 ? "1 hour" :
+        settings.timeoutMinutes === 1440 ? "24 hours" :
+        settings.timeoutMinutes === 20160 ? "14 days" : "30 minutes";
+      setSessionTimeout(timeoutString);
+      
+      const sessionString = `${settings.concurrentSessions} session${settings.concurrentSessions !== 1 ? 's' : ''}`;
+      setConcurrentSessions(sessionString);
+    } catch (error) {
+      console.error("Failed to load timeout settings:", error);
+    }
+  };
+
+  const loadRoles = async () => {
+    setIsLoadingRoles(true);
+    try {
+      const data = await rolesService.getRoles();
+      setRoles(data.roles);
+    } catch (error) {
+      console.error("Failed to load roles:", error);
+    } finally {
+      setIsLoadingRoles(false);
+    }
+  };
+
+  const handleSessionTimeoutChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setSessionTimeout(value);
+    
+    // Convert to minutes and update context
+    const timeoutMap: { [key: string]: number } = {
+      "15 minutes": 15,
+      "1 hour": 60,
+      "24 hours": 1440,
+      "14 days": 20160,
+    };
+    
+    const minutes = timeoutMap[value];
+    if (minutes) {
+      updateSessionTimeout(minutes);
+      
+      // Save to backend
+      try {
+        await sessionService.updateTimeoutSettings({ timeoutMinutes: minutes });
+        await sessionService.logSecurityAction({
+          type: 'SETTINGS_CHANGE',
+          description: `Session timeout changed to ${value}`,
+          metadata: { oldValue: sessionTimeout, newValue: value }
+        });
+      } catch (error) {
+        console.error("Failed to update timeout settings:", error);
+      }
+    }
+  };
+
+  const handleConcurrentSessionsChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setConcurrentSessions(value);
+    
+    // Extract number from string
+    const sessionCount = value === "Unlimited" ? -1 : parseInt(value.split(' ')[0]);
+    
+    try {
+      await sessionService.updateTimeoutSettings({ concurrentSessions: sessionCount });
+      await sessionService.logSecurityAction({
+        type: 'SETTINGS_CHANGE',
+        description: `Concurrent sessions changed to ${value}`,
+        metadata: { oldValue: concurrentSessions, newValue: value }
+      });
+    } catch (error) {
+      console.error("Failed to update concurrent sessions:", error);
+    }
+  };
+
+  const handleForceLogout = async () => {
+    if (window.confirm("Are you sure you want to force logout all users? This will immediately terminate all active sessions.")) {
+      setIsForceLogoutLoading(true);
+      try {
+        const result = await sessionService.forceLogoutAllUsers();
+        
+        if (result.success) {
+          alert(`${result.message}\n\nLogged out ${result.loggedOutCount} users.`);
+          
+          // Log the action
+          await sessionService.logSecurityAction({
+            type: 'FORCE_LOGOUT',
+            description: `Force logout initiated - ${result.loggedOutCount} users logged out`,
+            metadata: { loggedOutCount: result.loggedOutCount }
+          });
+          
+          // Refresh session data
+          await loadSessionData();
+        }
+      } catch (error) {
+        console.error("Failed to force logout users:", error);
+        alert("Failed to force logout users. Please try again.");
+      } finally {
+        setIsForceLogoutLoading(false);
+      }
+    }
+  };
 
   return (
     <div className="security-container">
@@ -34,7 +188,8 @@ const Security = () => {
         <TabsList>
           <TabsTrigger value="access-control">Access Control</TabsTrigger>
           <TabsTrigger value="authentication">Authentication</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
+          {/* DO NOT DELETE/REMOVE/EDIT - Compliance tab will be implemented in the future */}
+          {/* <TabsTrigger value="compliance">Compliance</TabsTrigger> */}
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
         </TabsList>
         
@@ -47,65 +202,119 @@ const Security = () => {
             </CardHeader>
             <CardContent>
               <div className="roles-container">
-                <div className="role-card">
-                  <div className="role-header">
-                    <h3 className="role-title">Administrator</h3>
-                    <Badge variant="default" className="role-badge">Active</Badge>
-                  </div>
-                  <p className="role-description">Full system access and permissions</p>
-                  <div className="role-users">
-                    <FaUserPlus className="role-icon" />
-                    <span>5 Users Assigned</span>
-                  </div>
-                </div>
-                
-                <div className="role-card">
-                  <div className="role-header">
-                    <h3 className="role-title">Manager</h3>
-                    <Badge variant="default" className="role-badge">Active</Badge>
-                  </div>
-                  <p className="role-description">Can manage cards and departments</p>
-                  <div className="role-users">
-                    <FaUserPlus className="role-icon" />
-                    <span>12 Users Assigned</span>
-                  </div>
-                </div>
-                
-                <div className="role-card">
-                  <div className="role-header">
-                    <h3 className="role-title">Employee</h3>
-                    <Badge variant="default" className="role-badge">Active</Badge>
-                  </div>
-                  <p className="role-description">View only their own cards</p>
-                  <div className="role-users">
-                    <FaUserPlus className="role-icon" />
-                    <span>38 Users Assigned</span>
-                  </div>
-                </div>
+                {isLoadingRoles ? (
+                  <div className="role-loading">Loading roles...</div>
+                ) : roles.length > 0 ? (
+                  roles.map((role) => (
+                    <div key={role.id} className="role-card">
+                      <div className="role-header">
+                        <h3 className="role-title">{role.name}</h3>
+                        <Badge variant="default" className="role-badge">Active</Badge>
+                      </div>
+                      <p className="role-description">{role.description}</p>
+                      <div className="role-users">
+                        <FaUserPlus className="role-icon" />
+                        <span>{role.userCount} Users Assigned</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="role-empty">No roles found</div>
+                )}
               </div>
               
-              <Button variant="outline" className="manage-roles-button">
+              <Button 
+                variant="outline" 
+                className="manage-roles-button" 
+                onClick={() => setShowManageRolesModal(true)}
+              >
                 Manage Roles
               </Button>
             </CardContent>
           </Card>
           
-          {/* IP Restrictions */}
+          {/* Session Management */}
           <Card>
             <CardHeader>
-              <CardTitle>IP Restrictions</CardTitle>
-              <CardDescription>Control which IP addresses can access your account</CardDescription>
+              <CardTitle>Session Management</CardTitle>
+              <CardDescription>Control user sessions and access policies</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="ip-restriction">
-                <div>
-                  <h3 className="ip-restriction-title">IP Restriction</h3>
-                  <p className="ip-restriction-description">Restrict access to specific IP addresses</p>
+              <div className="session-settings">
+                <div className="session-setting-item">
+                  <div>
+                    <h3 className="session-setting-title">Session Timeout</h3>
+                    <p className="session-setting-description">Automatically log out inactive users</p>
+                  </div>
+                  <div className="session-setting-control">
+                    <select className="session-select" value={sessionTimeout} onChange={handleSessionTimeoutChange}>
+                      <option>15 minutes</option>
+                      <option>1 hour</option>
+                      <option>24 hours</option>
+                      <option>14 days</option>
+                    </select>
+                  </div>
                 </div>
-                <Switch 
-                  checked={ipRestrictionEnabled} 
-                  onChange={setIpRestrictionEnabled} 
-                />
+                
+                <div className="session-setting-item">
+                  <div>
+                    <h3 className="session-setting-title">Concurrent Sessions</h3>
+                    <p className="session-setting-description">Maximum active sessions per user</p>
+                  </div>
+                  <div className="session-setting-control">
+                    <select className="session-select" value={concurrentSessions} onChange={handleConcurrentSessionsChange}>
+                      <option>1 session</option>
+                      <option>2 sessions</option>
+                      <option>3 sessions</option>
+                      <option>Unlimited</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="session-setting-item">
+                  <div>
+                    <h3 className="session-setting-title">Force Logout All Users</h3>
+                    <p className="session-setting-description">Immediately terminate all active sessions</p>
+                  </div>
+                  <div className="session-setting-control">
+                    <Button 
+                      variant="outline" 
+                      className="force-logout-button" 
+                      onClick={handleForceLogout}
+                      disabled={isForceLogoutLoading}
+                    >
+                      {isForceLogoutLoading ? "Processing..." : "Force Logout"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="active-sessions-summary">
+                <div className="active-sessions-header">
+                  <h4 className="active-sessions-title">
+                    Current Active Sessions: {isLoadingSessions ? "..." : sessionData.total}
+                  </h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={loadSessionData} 
+                    disabled={isLoadingSessions}
+                    className="refresh-sessions-button"
+                  >
+                    {isLoadingSessions ? "Loading..." : "Refresh"}
+                  </Button>
+                </div>
+                <div className="session-breakdown">
+                  {isLoadingSessions ? (
+                    <span className="session-loading">Loading session data...</span>
+                  ) : (
+                    <>
+                      <span className="session-type">Administrators: {sessionData.administrators}</span>
+                      <span className="session-type">Managers: {sessionData.managers}</span>
+                      <span className="session-type">Employees: {sessionData.employees}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -212,15 +421,22 @@ const Security = () => {
           </Card>
         </TabsContent>
         
+        {/* 
+        ==================================================================================
+        DO NOT DELETE/REMOVE/EDIT - COMPLIANCE TAB - FUTURE IMPLEMENTATION
+        ==================================================================================
+        This compliance tab is commented out for future implementation.
+        Keep all this code intact - it will be activated later.
+        ==================================================================================
+        */}
+        {/*
         <TabsContent value="compliance" className="security-tab-content">
-          {/* Data Protection Section */}
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Data Protection</CardTitle>
               <CardDescription>Compliance settings and data security</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Data Encryption Toggle */}
               <div className="compliance-setting">
                 <div>
                   <h3 className="compliance-setting-title">Data Encryption</h3>
@@ -233,7 +449,6 @@ const Security = () => {
                 </div>
               </div>
               
-              {/* GDPR Compliance Toggle */}
               <div className="compliance-setting mt-6">
                 <div>
                   <h3 className="compliance-setting-title">GDPR Compliance</h3>
@@ -246,7 +461,6 @@ const Security = () => {
                 </div>
               </div>
               
-              {/* Data Retention Policy */}
               <div className="compliance-setting mt-6">
                 <div>
                   <h3 className="compliance-setting-title">Data Retention Policy</h3>
@@ -257,7 +471,6 @@ const Security = () => {
             </CardContent>
           </Card>
           
-          {/* Compliance Audit Alert */}
           <div className="compliance-alert mb-6">
             <div className="compliance-alert-icon">
               <FaShieldAlt />
@@ -268,7 +481,6 @@ const Security = () => {
             </div>
           </div>
           
-          {/* Security Certifications */}
           <Card>
             <CardHeader>
               <CardTitle>Security Certifications</CardTitle>
@@ -303,6 +515,7 @@ const Security = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        */}
         
         <TabsContent value="audit-logs" className="security-tab-content">
           <Card>
@@ -408,6 +621,12 @@ const Security = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Manage Roles Modal */}
+      <ManageRolesModal 
+        isOpen={showManageRolesModal} 
+        onClose={() => setShowManageRolesModal(false)} 
+      />
     </div>
   );
 };
