@@ -9,10 +9,12 @@ export interface PasscreatorResponse {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = process.env.FIREBASE_TOKEN || '';
+export const FIREBASE_TOKEN = "";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
+
+// Default user ID specifically for meetings and user-specific features
 export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
 
 // Helper function to get the appropriate base URL
@@ -56,10 +58,11 @@ export const ENDPOINTS = {
     ENTERPRISE_CREATE_DEPARTMENT: `/enterprise/:enterpriseId/departments`,
     ENTERPRISE_DELETE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
     ENTERPRISE_UPDATE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
-    GET_ENTERPRISE: `/enterprises/:enterpriseId`,
-    UPDATE_ENTERPRISE: `/enterprises/:enterpriseId`,
+    GET_ENTERPRISE: `/enterprise/:enterpriseId`,
+    UPDATE_ENTERPRISE: `/enterprise/:enterpriseId`,   
     ENTERPRISE_CONTACTS: `/enterprise/:enterpriseId/contacts/details`,
     ENTERPRISE_DEPARTMENT_CONTACTS: `/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
+    ENTERPRISE_CONTACTS_SUMMARY: `/enterprise/:enterpriseId/contacts/summary`,
 };
 
 // Helper function to build enterprise endpoints with the enterpriseId
