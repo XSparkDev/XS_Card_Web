@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
-import { format, parseISO, parse } from "date-fns";
+import { format, parse } from "date-fns";
 import {
   MdAccessTime,
   MdLocationOn,
@@ -10,18 +10,13 @@ import {
   MdChevronRight,
   MdEvent,
   MdCreditCard,
-  MdEdit,
   MdDelete,
-  MdArrowDropDown,
   MdToday,
-  MdSchedule,
-  MdDescription,
-  MdPublic,
   MdErrorOutline,
   MdCheckCircle
 } from "react-icons/md";
 import '../../styles/Calendar.css';
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, DEFAULT_USER_ID } from "../../utils/api";
+import { ENDPOINTS, buildUrl, DEFAULT_USER_ID, getEnterpriseHeaders } from "../../utils/api";
 
 // Import UI components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../UI/card";
@@ -29,7 +24,6 @@ import { Button } from "../UI/button";
 import { Input } from "../UI/input";
 import { Calendar } from "../UI/calendarWeb";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../UI/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "../UI/popover";
 import { Badge } from "../UI/badge";
 import { Textarea } from "../UI/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../UI/selectRadix";
@@ -61,46 +55,6 @@ interface MeetingsResponse {
     meetings: Meeting[];
   };
 }
-
-// Sample events data - will be replaced with API data
-const sampleEvents = [
-  {
-    id: 1,
-    title: "Marketing Team Card Distribution",
-    date: new Date(2023, 4, 15),
-    time: "10:00 AM - 11:30 AM",
-    location: "Conference Room A",
-    type: "distribution",
-    attendees: ["John Smith", "Sarah Johnson", "Michael Brown"]
-  },
-  {
-    id: 2,
-    title: "New Template Design Review",
-    date: new Date(2023, 4, 18),
-    time: "2:00 PM - 3:00 PM",
-    location: "Virtual Meeting",
-    type: "design",
-    attendees: ["Emily Davis", "David Wilson"]
-  },
-  {
-    id: 3,
-    title: "Quarterly Card Inventory",
-    date: new Date(2023, 4, 22),
-    time: "9:00 AM - 12:00 PM",
-    location: "Storage Room",
-    type: "inventory",
-    attendees: ["John Smith", "Jessica Martinez"]
-  },
-  {
-    id: 4,
-    title: "Client Card Presentation",
-    date: new Date(2023, 4, 25),
-    time: "1:00 PM - 2:30 PM",
-    location: "Client Office",
-    type: "presentation",
-    attendees: ["Sarah Johnson", "Michael Brown", "David Wilson"]
-  }
-];
 
 // Time options
 const timeOptions = [
@@ -200,15 +154,11 @@ const CalendarPage = () => {
   };
 
   // Function to fetch events from API
-  const fetchEvents = async () => {
-    try {
+  const fetchEvents = async () => {    try {
       setIsLoading(true);
       
-      // Use the userId - using DEFAULT_USER_ID from api.ts as a fallback
-      const userId = localStorage.getItem('userId') || DEFAULT_USER_ID;
-      
-      // Use the enterprise API pattern (like in handleSubmitEvent)
-      const url = buildEnterpriseUrl(ENDPOINTS.CREATE_MEETING + `/${userId}`);
+      // Use Firebase token authentication for meetings with the DEFAULT_USER_ID
+      const url = buildUrl(ENDPOINTS.CREATE_MEETING + `/${DEFAULT_USER_ID}`);
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, {
@@ -501,9 +451,6 @@ const CalendarPage = () => {
   // Add new function to actually perform the deletion
   const confirmDeleteEvent = async () => {
     try {
-      // Get the user ID
-      const userId = localStorage.getItem('userId') || DEFAULT_USER_ID;
-      
       // Find the meeting index in the API response
       const meetingIndex = events.findIndex(e => e.id === eventToDelete.id);
       
@@ -521,10 +468,8 @@ const CalendarPage = () => {
       updatedEvents[meetingIndex] = deletedEvent;
       
       // Update events state to trigger animation
-      setEvents(updatedEvents);
-      
-      // Use the enterprise API pattern
-      const url = buildEnterpriseUrl(`${ENDPOINTS.CREATE_MEETING}/${userId}/${meetingIndex}`);
+      setEvents(updatedEvents);      // Use Firebase token authentication for meetings with the DEFAULT_USER_ID
+      const url = buildUrl(`${ENDPOINTS.CREATE_MEETING}/${DEFAULT_USER_ID}/${meetingIndex}`);
       const headers = getEnterpriseHeaders();
       
       // Make API call
@@ -796,9 +741,8 @@ const CalendarPage = () => {
     
     console.log('Event data to submit:', eventPayload);
     
-    try {
-      // Use the enterprise API pattern (like in Department.tsx)
-      const url = buildEnterpriseUrl(ENDPOINTS.MEETING_INVITE);
+    try {      // Use Firebase token authentication for meetings
+      const url = buildUrl(ENDPOINTS.MEETING_INVITE);
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, {
@@ -1165,8 +1109,7 @@ const CalendarPage = () => {
                   <p>Loading...</p>
                 </div>
               ) : filteredEvents.length > 0 ? (
-                <div className="events-list">
-                  {visibleEvents.map((event, index) => (
+                <div className="events-list">                  {visibleEvents.map((event) => (
                     <EventCard key={event.id} event={event} />
                   ))}
                   

@@ -4,7 +4,7 @@ import HeatmapLayer from './HeatmapLayer';
 import 'leaflet/dist/leaflet.css';
 import './styles.css';
 import fixLeafletIcons from './leaflet-icon-fix';
-import { ENDPOINTS, buildUrl, getEnterpriseHeaders, API_BASE_URL } from '../../../utils/api';
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from '../../../utils/api';
 
 // Fix Leaflet icon issues
 fixLeafletIcons();
@@ -18,8 +18,47 @@ const sampleData = [
   { lat: -29.8587, lng: 31.0218, intensity: 22, radius: 28 }, // Durban
 ];
 
-// User ID specifically for contacts
-const CONTACTS_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
+// Define contact interface based on enterprise API response
+interface Contact {
+  name: string;
+  surname: string;
+  phone: string;
+  howWeMet: string;
+  email: string;
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  ownerInfo: {
+    userId: string;
+    email: string;
+    department: string;
+    departmentName?: string;
+  };
+  enterpriseId: string;
+  enterpriseName?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+// Define API response interfaces
+interface EnterpriseContactsResponse {
+  success: boolean;
+  cached: boolean;
+  data: {
+    enterpriseId: string;
+    enterpriseName: string;
+    totalContacts: number;
+    totalDepartments: number;
+    departmentStats: Record<string, {
+      name: string;
+      contactCount: number;
+      contacts: Contact[];
+    }>;
+  };
+}
 
 interface LocationPoint {
   lat: number;
@@ -28,16 +67,8 @@ interface LocationPoint {
   radius: number;
 }
 
-// Minimal interface for the location data we need
-interface ContactWithLocation {
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-}
-
 // Function to cluster nearby points and adjust intensity
-const clusterLocationData = (contacts: ContactWithLocation[]): LocationPoint[] => {
+const clusterLocationData = (contacts: Contact[]): LocationPoint[] => {
   // First, filter valid locations
   const validContacts = contacts.filter(
     contact => contact.location && 
@@ -115,16 +146,14 @@ const EmployeeHeatmap: React.FC = () => {
   const [connectionData, setConnectionData] = useState<LocationPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>("");
   const [usingSampleData, setUsingSampleData] = useState<boolean>(false);
-
   useEffect(() => {
     const fetchContactLocations = async () => {
       try {
         setLoading(true);
         
-        // Use the exact endpoint format specified: http://localhost:8383/Contacts/:userId
-        const url = `${API_BASE_URL}/Contacts/${CONTACTS_USER_ID}`;
+        // Use enterprise contacts endpoint
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
         console.log('Fetching contact data from URL:', url);
         
         const headers = getEnterpriseHeaders();
@@ -135,27 +164,21 @@ const EmployeeHeatmap: React.FC = () => {
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        
-        // Parse the response
-        const responseData = await response.json();
+          // Parse the response
+        const responseData: EnterpriseContactsResponse = await response.json();
         console.log('Raw API response:', responseData);
-        setDebugInfo(JSON.stringify(responseData, null, 2));
         
-        // Extract contacts data from the response - try multiple possible formats
-        let contactsData = [];
+        // Extract contacts data from all departments
+        let contactsData: Contact[] = [];
         
-        if (responseData && responseData.contactList && Array.isArray(responseData.contactList)) {
-          contactsData = responseData.contactList;
-          console.log('Found contact list in response.contactList');
-        } else if (Array.isArray(responseData)) {
-          contactsData = responseData;
-          console.log('Response is directly an array of contacts');
-        } else if (responseData && responseData.data && Array.isArray(responseData.data)) {
-          contactsData = responseData.data;
-          console.log('Found contacts in response.data');
-        } else if (responseData && responseData.contacts && Array.isArray(responseData.contacts)) {
-          contactsData = responseData.contacts;
-          console.log('Found contacts in response.contacts');
+        if (responseData && responseData.data && responseData.data.departmentStats) {
+          // Flatten contacts from all departments
+          Object.values(responseData.data.departmentStats).forEach(department => {
+            if (department.contacts && Array.isArray(department.contacts)) {
+              contactsData.push(...department.contacts);
+            }
+          });
+          console.log('Found contacts from enterprise departments');
         } else {
           console.log('Unexpected response format, could not extract contacts');
         }

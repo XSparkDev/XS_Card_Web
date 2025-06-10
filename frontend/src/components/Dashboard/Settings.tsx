@@ -12,7 +12,7 @@ import "../../styles/Settings.css";
 // Import icons from react-icons
 import { 
   FaBuilding, FaCreditCard, FaPalette, FaBell, 
-  FaCheck, FaDownload, FaShieldAlt, FaExclamationTriangle
+  FaCheck, FaDownload, FaExclamationTriangle
 } from "react-icons/fa";
 
 // Import API utilities

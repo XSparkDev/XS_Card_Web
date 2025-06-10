@@ -1,14 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ENDPOINTS, getEnterpriseHeaders, API_BASE_URL } from '../../utils/api';
+import { ENDPOINTS, getEnterpriseHeaders, buildEnterpriseUrl } from '../../utils/api';
+import { calculateMonthOverMonthGrowth, sortMonthsChronologically } from '../../utils/environmentalImpact';
 import { FaChartLine } from 'react-icons/fa';
 
-// User ID specifically for contacts
-const CONTACTS_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
-
+// Define contact interface based on enterprise API response
 interface Contact {
-  createdAt: string | { _seconds: number, _nanoseconds: number };
-  [key: string]: any;
+  name: string;
+  surname: string;
+  phone: string;
+  howWeMet: string;
+  email: string;
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  ownerInfo: {
+    userId: string;
+    email: string;
+    department: string;
+    departmentName?: string;
+  };
+  enterpriseId: string;
+  enterpriseName?: string;
+}
+
+// Define API response interfaces
+interface EnterpriseContactsResponse {
+  success: boolean;
+  cached: boolean;
+  data: {
+    enterpriseId: string;
+    enterpriseName: string;
+    totalContacts: number;
+    totalDepartments: number;
+    departmentStats: Record<string, {
+      name: string;
+      contactCount: number;
+      contacts: Contact[];
+    }>;
+  };
 }
 
 interface GrowthDataPoint {
@@ -22,14 +53,13 @@ const ContactGrowth: React.FC = () => {
   const [growthData, setGrowthData] = useState<GrowthDataPoint[]>([]);
   const [growthPercentage, setGrowthPercentage] = useState<number>(0);
   const [totalContacts, setTotalContacts] = useState<number>(0);
-
   useEffect(() => {
     const fetchContactData = async () => {
       try {
         setLoading(true);
         
-        // Use the endpoint for contacts
-        const url = `${API_BASE_URL}/Contacts/${CONTACTS_USER_ID}`;
+        // Use enterprise contacts endpoint
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
         const headers = getEnterpriseHeaders();
         
         const response = await fetch(url, { headers });
@@ -38,15 +68,18 @@ const ContactGrowth: React.FC = () => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
-        const responseData = await response.json();
+        const responseData: EnterpriseContactsResponse = await response.json();
         
-        // Extract contacts array
+        // Extract contacts array from all departments
         let contactList: Contact[] = [];
         
-        if (responseData && responseData.contactList && Array.isArray(responseData.contactList)) {
-          contactList = responseData.contactList;
-        } else if (Array.isArray(responseData)) {
-          contactList = responseData;
+        if (responseData && responseData.data && responseData.data.departmentStats) {
+          // Flatten contacts from all departments
+          Object.values(responseData.data.departmentStats).forEach(department => {
+            if (department.contacts && Array.isArray(department.contacts)) {
+              contactList.push(...department.contacts);
+            }
+          });
         }
         
         if (contactList.length === 0) {
@@ -69,15 +102,18 @@ const ContactGrowth: React.FC = () => {
     
     fetchContactData();
   }, []);
-  
   // Generate sample data for demonstration when real data isn't available
   const generateSampleData = () => {
     const sampleData: GrowthDataPoint[] = [];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const monthlyNewContacts: number[] = [];
     let count = 5;
     
     months.forEach(month => {
-      count += Math.floor(Math.random() * 10) + 1;
+      // Generate random new contacts for each month (between 1 and 10)
+      const newContacts = Math.floor(Math.random() * 10) + 1;
+      monthlyNewContacts.push(newContacts);
+      count += newContacts;
       sampleData.push({
         date: month,
         totalContacts: count
@@ -87,14 +123,23 @@ const ContactGrowth: React.FC = () => {
     setGrowthData(sampleData);
     setTotalContacts(count);
     
-    // Calculate growth percentage from last two months
-    const lastMonthContacts = sampleData[sampleData.length - 1].totalContacts;
-    const previousMonthContacts = sampleData[sampleData.length - 2].totalContacts;
-    const growth = ((lastMonthContacts - previousMonthContacts) / previousMonthContacts) * 100;
-    setGrowthPercentage(Math.round(growth * 10) / 10);
+    // Calculate growth percentage based on new contacts added (not cumulative totals)
+    if (monthlyNewContacts.length >= 2) {
+      const lastMonthNew = monthlyNewContacts[monthlyNewContacts.length - 1];
+      const previousMonthNew = monthlyNewContacts[monthlyNewContacts.length - 2];
+        let growth = 0;
+      if (previousMonthNew > 0) {
+        growth = calculateMonthOverMonthGrowth(lastMonthNew, previousMonthNew);
+      } else if (lastMonthNew > 0) {
+        growth = 100;
+      }
+      
+      setGrowthPercentage(growth);
+    } else {
+      setGrowthPercentage(0);
+    }
   };
-  
-  // Process real contact data to generate growth chart data
+    // Process real contact data to generate growth chart data
   const processContactGrowthData = (contacts: Contact[]) => {
     // Sort contacts by creation date
     const sortedContacts = [...contacts].sort((a, b) => {
@@ -103,8 +148,9 @@ const ContactGrowth: React.FC = () => {
       return dateA.getTime() - dateB.getTime();
     });
     
-    // Group contacts by month
-    const monthlyData: { [key: string]: number } = {};
+    // Group contacts by month for counting new additions
+    const monthlyNewContacts: { [key: string]: number } = {};
+    const monthlyRunningTotals: { [key: string]: number } = {};
     let runningTotal = 0;
     
     sortedContacts.forEach(contact => {
@@ -117,20 +163,28 @@ const ContactGrowth: React.FC = () => {
         // Format as Month Year (e.g., "Jan 2023")
         const monthYearKey = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
         
+        // Count new contacts for this month
+        if (!monthlyNewContacts[monthYearKey]) {
+          monthlyNewContacts[monthYearKey] = 0;
+        }
+        monthlyNewContacts[monthYearKey]++;
+        
         // Increment running total
         runningTotal++;
         
         // Store the running total for this month
-        monthlyData[monthYearKey] = runningTotal;
+        monthlyRunningTotals[monthYearKey] = runningTotal;
       } catch (err) {
         console.warn('Could not process date for contact:', contact.createdAt);
       }
     });
+      // Sort months chronologically
+    const sortedMonths = Object.keys(monthlyRunningTotals).sort(sortMonthsChronologically);
     
-    // Convert to array format for chart
-    const growthDataPoints: GrowthDataPoint[] = Object.keys(monthlyData).map(date => ({
-      date,
-      totalContacts: monthlyData[date]
+    // Convert to array format for chart with running totals
+    const growthDataPoints: GrowthDataPoint[] = sortedMonths.map(month => ({
+      date: month,
+      totalContacts: monthlyRunningTotals[month]
     }));
     
     // Take the last 6 months if we have more data
@@ -139,31 +193,41 @@ const ContactGrowth: React.FC = () => {
     setGrowthData(recentData);
     setTotalContacts(runningTotal);
     
-    // Calculate growth percentage if we have at least 2 data points
+    // Calculate month-over-month growth percentage based on new contacts added
     if (recentData.length >= 2) {
-      const lastMonthContacts = recentData[recentData.length - 1].totalContacts;
-      const previousMonthContacts = recentData[recentData.length - 2].totalContacts;
-      const growth = ((lastMonthContacts - previousMonthContacts) / previousMonthContacts) * 100;
-      setGrowthPercentage(Math.round(growth * 10) / 10);
+      // Get the corresponding months for new contact calculation
+      const lastMonth = recentData[recentData.length - 1].date;
+      const previousMonth = recentData[recentData.length - 2].date;
+      
+      const newContactsLastMonth = monthlyNewContacts[lastMonth] || 0;
+      const newContactsPreviousMonth = monthlyNewContacts[previousMonth] || 0;
+      
+      // Use utility function for consistent growth calculation
+      const growth = calculateMonthOverMonthGrowth(newContactsLastMonth, newContactsPreviousMonth);
+      setGrowthPercentage(growth);
     } else {
       setGrowthPercentage(0);
     }
-  };
-  
-  // Helper function to handle different date formats
-  const getDateFromCreatedAt = (createdAt: string | { _seconds: number, _nanoseconds: number }): Date => {
-    if (typeof createdAt === 'string') {
-      // Try to parse the date string
-      let dateStr = createdAt;
-      if (dateStr.includes('at at')) {
-        // Handle the specific format like "May 11 2025 at at 1:51:57 AM GMT+2"
-        dateStr = dateStr.replace('at at', 'at');
-      }
-      return new Date(dateStr);
-    } else if (createdAt && '_seconds' in createdAt) {
+  };    // Helper function to handle different date formats
+  const getDateFromCreatedAt = (createdAt: { _seconds: number, _nanoseconds: number }): Date => {
+    try {
       // Handle Firebase timestamp format
-      return new Date(createdAt._seconds * 1000);
+      if (createdAt && '_seconds' in createdAt) {
+        const timestamp = createdAt._seconds * 1000;
+        const date = new Date(timestamp);
+        
+        // Validate the date is reasonable (not before 2020 or in the far future)
+        if (date.getFullYear() < 2020 || date.getFullYear() > new Date().getFullYear() + 1) {
+          console.warn("Invalid date detected:", date, "from timestamp:", timestamp);
+          return new Date('invalid');
+        }
+        
+        return date;
+      }
+    } catch (e) {
+      console.warn("Failed to parse Firebase timestamp:", createdAt, e);
     }
+    
     // Return an invalid date if we can't parse
     return new Date('invalid');
   };
