@@ -1,46 +1,94 @@
-import React, { useState, useEffect } from "react";
-import { FaStar, FaRegStar, FaSearch, FaFilter, FaDownload, FaUserPlus, FaEnvelope, FaPhone, FaEllipsisH, FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FaSearch, FaEnvelope, FaPhone, FaEllipsisV, FaTrash, FaBuilding } from "react-icons/fa";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../UI/card";
-import { Badge } from "../UI/badge";
+import { Card, CardContent } from "../UI/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../UI/selectRadix";
 import "../../styles/Contacts.css";
 import "../../styles/Dashboard.css";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../UI/dialog";
+import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS } from "../../utils/api";
 
-// Define contact interface
+// Define contact interface based on API response
 interface Contact {
+  name: string;
+  surname: string;
+  phone: string;
+  howWeMet: string;
+  email: string;
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  ownerInfo: {
+    userId: string;
+    email: string;
+    department: string;
+    departmentName?: string;
+  };
+  enterpriseId: string;
+  enterpriseName?: string;
+}
+
+// Define department interface based on API response
+interface Department {
   id: string;
   name: string;
-  title: string;
-  company: string;
-  email: string;
-  phone: string;
-  addedOn: string;
-  lastContact: string;
-  favorite: boolean;
-  avatar: string;
+  contactCount: number;
+}
+
+// Define API response interfaces
+interface EnterpriseContactsResponse {
+  success: boolean;
+  cached: boolean;
+  data: {
+    enterpriseId: string;
+    enterpriseName: string;
+    totalContacts: number;
+    totalDepartments: number;
+    departmentStats: Record<string, {
+      name: string;
+      contactCount: number;
+      employeeCount: number;
+    }>;
+    contactsByDepartment: Record<string, {
+      departmentName: string;
+      departmentId: string;
+      contacts: Contact[];
+      contactCount: number;
+    }>;
+  };
+}
+
+interface DepartmentContactsResponse {
+  success: boolean;
+  cached: boolean;
+  data: {
+    enterpriseId: string;
+    enterpriseName: string;
+    departmentId: string;
+    departmentName: string;
+    totalContacts: number;
+    contacts: Contact[];
+  };
 }
 
 const ContactItem = ({ contact }: { contact: Contact }) => {
-  const [favorite, setFavorite] = useState(contact.favorite);
-  const initials = contact.name.split(' ').map(n => n[0]).join('');
+  const fullName = `${contact.name} ${contact.surname}`;
+  const initials = `${contact.name[0]}${contact.surname[0]}`;
   
   const handleEmailClick = (email: string) => {
     window.location.href = `mailto:${email}`;
   };
 
-  const handleDeleteContact = (id: string) => {
+  const handleDeleteContact = (email: string) => {
     // Implement the delete logic
-    console.log(`Delete contact with id: ${id}`);
+    console.log(`Delete contact with email: ${email}`);
   };
 
-  const handleUpdateContact = (id: string) => {
-    // Implement the update logic
-    console.log(`Update contact with id: ${id}`);
-  };
+  // Convert Firebase timestamp to date
+  const createdDate = new Date(contact.createdAt._seconds * 1000);
 
   return (
     <Card className="contact-card">
@@ -51,8 +99,14 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
               <span className="avatar-text">{initials}</span>
             </div>
             <div>
-              <p className="contact-name">{contact.name}</p>
-              <p className="contact-title">{contact.title} at {contact.company}</p>
+              <p className="contact-name">{fullName}</p>
+              <p className="contact-title">Met: {contact.howWeMet}</p>
+              {contact.ownerInfo.departmentName && (
+                <p className="contact-department">
+                  <FaBuilding className="department-icon" />
+                  {contact.ownerInfo.departmentName}
+                </p>
+              )}
             </div>
           </div>
           <div className="contact-actions">
@@ -63,8 +117,7 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="dropdown-content">
-                
-                <DropdownMenuItem onClick={() => handleDeleteContact(contact.id)}>
+                <DropdownMenuItem onClick={() => handleDeleteContact(contact.email)}>
                   <FaTrash className="action-icon" />
                   <span>Delete</span>
                 </DropdownMenuItem>
@@ -86,9 +139,9 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
         
         <div className="contact-footer">
           <div className="contact-dates">
-            <p className="date-text">Added: {new Date(contact.addedOn).toLocaleDateString()}</p>
+            <p className="date-text">Added: {createdDate.toLocaleDateString()}</p>
             <p className="date-text separator">•</p>
-            <p className="date-text">Last contact: {new Date(contact.lastContact).toLocaleDateString()}</p>
+            <p className="date-text">Owner: {contact.ownerInfo.email}</p>
           </div>
           <div className="contact-actions">
             <Button 
@@ -107,27 +160,105 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
 };
 
 const Contacts = () => {
-  const [activeFilter, setActiveFilter] = useState("all");
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Fetch contacts from the API
+    // Fetch departments from the API
   useEffect(() => {
-    const fetchContacts = async () => {
+    const fetchDepartments = async () => {
       try {
-        setLoading(true);
-        // Using the Postman mock server URL from help.md
-        const userId = "current"; // This can be dynamic if needed
-        const response = await fetch(`https://96b20ff1-0262-4b5c-9df9-ce99f48cfc94.mock.pstmn.io/Contacts/${userId}`);
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
+        const response = await fetch(url, {
+          headers: getEnterpriseHeaders(),
+        });
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         
-        const data = await response.json();
-        setContacts(data);
+        const apiResponse: EnterpriseContactsResponse = await response.json();
+        
+        // Extract departments from departmentStats
+        const departmentList: Department[] = Object.entries(apiResponse.data.departmentStats).map(([id, stats]) => ({
+          id,
+          name: stats.name,
+          contactCount: stats.contactCount
+        }));
+        
+        setDepartments(departmentList);
+      } catch (err) {
+        console.error("Error fetching departments:", err);
+        // Don't set error here as departments are optional
+      }
+    };
+    
+    fetchDepartments();
+  }, []);
+    // Fetch contacts from the API
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        setLoading(true);
+        
+        if (selectedDepartment === "all") {
+          // Get all enterprise contacts
+          const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
+          const response = await fetch(url, {
+            headers: getEnterpriseHeaders(),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          
+          const apiResponse: EnterpriseContactsResponse = await response.json();
+          
+          // Flatten all contacts from all departments
+          const allContacts: Contact[] = [];
+          Object.values(apiResponse.data.contactsByDepartment).forEach(dept => {
+            // Add department name to each contact
+            const contactsWithDept = dept.contacts.map(contact => ({
+              ...contact,
+              ownerInfo: {
+                ...contact.ownerInfo,
+                departmentName: dept.departmentName
+              }
+            }));
+            allContacts.push(...contactsWithDept);
+          });
+          
+          setContacts(allContacts);
+        } else {
+          // Get contacts for specific department
+          const url = buildEnterpriseUrl(
+            ENDPOINTS.ENTERPRISE_DEPARTMENT_CONTACTS.replace(':departmentId', selectedDepartment)
+          );
+          
+          const response = await fetch(url, {
+            headers: getEnterpriseHeaders(),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          
+          const apiResponse: DepartmentContactsResponse = await response.json();
+          
+          // Add department name to each contact
+          const contactsWithDept = apiResponse.data.contacts.map(contact => ({
+            ...contact,
+            ownerInfo: {
+              ...contact.ownerInfo,
+              departmentName: apiResponse.data.departmentName
+            }
+          }));
+          
+          setContacts(contactsWithDept);
+        }
+        
         setError(null);
       } catch (err) {
         console.error("Error fetching contacts:", err);
@@ -138,23 +269,25 @@ const Contacts = () => {
     };
     
     fetchContacts();
-  }, []);
+  }, [selectedDepartment]);    // Filter contacts based on search term
+  const filteredContacts = contacts.filter(contact => {
+    const fullName = `${contact.name} ${contact.surname}`.toLowerCase();
+    const searchLower = searchTerm.toLowerCase();
+    
+    return fullName.includes(searchLower) ||
+           contact.email.toLowerCase().includes(searchLower) ||
+           contact.phone.includes(searchTerm) ||
+           contact.howWeMet.toLowerCase().includes(searchLower) ||
+           (contact.ownerInfo.departmentName && contact.ownerInfo.departmentName.toLowerCase().includes(searchLower));
+  });
   
-  // Filter contacts based on search term
-  const filteredContacts = contacts.filter(contact => 
-    contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  // Get recent contacts - sort by last contact date
+  // Get recent contacts - sort by creation date
   const recentContacts = [...filteredContacts]
-    .sort((a, b) => new Date(b.lastContact).getTime() - new Date(a.lastContact).getTime())
+    .sort((a, b) => b.createdAt._seconds - a.createdAt._seconds)
     .slice(0, 3);
   
-  // Get favorite contacts
-  const favoriteContacts = filteredContacts.filter(contact => contact.favorite);
+  // For favorites, we'll just show the most recent contacts since the API doesn't have a favorite field
+  const favoriteContacts = recentContacts;
   
   return (
     <div className="page-container">
@@ -177,8 +310,7 @@ const Contacts = () => {
           <TabsTrigger value="recent">Recent</TabsTrigger>
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
         </TabsList>
-        
-        <div className="contacts-search-actions">
+          <div className="contacts-search-actions">
           <div className="contacts-search">
             <FaSearch className="search-icon" />
             <Input 
@@ -189,6 +321,18 @@ const Contacts = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+            <SelectTrigger className="department-select">
+              <SelectValue placeholder="All Departments" />
+            </SelectTrigger>            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.id}>
+                  {dept.name} ({dept.contactCount} contacts)
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button variant="outline" className="filter-button">
             Filter
           </Button>
@@ -199,12 +343,11 @@ const Contacts = () => {
         ) : error ? (
           <div className="error-state">{error}</div>
         ) : (
-          <>
-            <TabsContent value="all" className="mt-4">
+          <>            <TabsContent value="all" className="mt-4">
               <div className="contacts-list">
                 {filteredContacts.length > 0 ? (
-                  filteredContacts.map(contact => (
-                    <ContactItem key={contact.id} contact={contact} />
+                  filteredContacts.map((contact, index) => (
+                    <ContactItem key={`${contact.email}-${index}`} contact={contact} />
                   ))
                 ) : (
                   <div className="no-results">No contacts found. Try adjusting your search.</div>
@@ -215,8 +358,8 @@ const Contacts = () => {
             <TabsContent value="recent">
               <div className="contacts-list">
                 {recentContacts.length > 0 ? (
-                  recentContacts.map(contact => (
-                    <ContactItem key={contact.id} contact={contact} />
+                  recentContacts.map((contact, index) => (
+                    <ContactItem key={`recent-${contact.email}-${index}`} contact={contact} />
                   ))
                 ) : (
                   <div className="no-results">No recent contacts found.</div>
@@ -227,8 +370,8 @@ const Contacts = () => {
             <TabsContent value="favorites">
               <div className="contacts-list">
                 {favoriteContacts.length > 0 ? (
-                  favoriteContacts.map(contact => (
-                    <ContactItem key={contact.id} contact={contact} />
+                  favoriteContacts.map((contact, index) => (
+                    <ContactItem key={`favorite-${contact.email}-${index}`} contact={contact} />
                   ))
                 ) : (
                   <div className="no-results">No favorite contacts found.</div>
