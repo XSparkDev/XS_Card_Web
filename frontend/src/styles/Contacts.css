@@ -148,6 +148,20 @@
   color: #64748b;
 }
 
+.contact-department {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.department-icon {
+  margin-right: 0.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
 .favorite-button {
   padding: 0.25rem;
   background: none;
@@ -222,6 +236,17 @@
   justify-content: center;
 }
 
+.department-select {
+  min-width: 200px;
+}
+
+.contacts-search-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -248,6 +273,14 @@
   .contact-actions {
     margin-top: 0.75rem;
     width: 100%;
+  }
+  
+  .contacts-search-actions {
+    flex-direction: column;
+  }
+  
+  .department-select {
+    min-width: 100%;
   }
 }
 
@@ -314,4 +347,4 @@
   margin-right: 0.5rem;
   width: 1rem;
   height: 1rem;
-} 
+}

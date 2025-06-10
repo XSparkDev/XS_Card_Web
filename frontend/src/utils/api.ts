@@ -9,7 +9,7 @@ export interface PasscreatorResponse {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "";
+export const FIREBASE_TOKEN = process.env.FIREBASE_TOKEN || '';
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -58,7 +58,8 @@ export const ENDPOINTS = {
     ENTERPRISE_UPDATE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
     GET_ENTERPRISE: `/enterprises/:enterpriseId`,
     UPDATE_ENTERPRISE: `/enterprises/:enterpriseId`,
-
+    ENTERPRISE_CONTACTS: `/enterprise/:enterpriseId/contacts/details`,
+    ENTERPRISE_DEPARTMENT_CONTACTS: `/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
 };
 
 // Helper function to build enterprise endpoints with the enterpriseId
