@@ -14,7 +14,8 @@ import {
   FaTint,
   FaCloud,
   FaArrowUp,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaEye
 } from "react-icons/fa";
 import { 
   LineChart, 
@@ -25,17 +26,71 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, buildUrl, DEFAULT_USER_ID } from "../../utils/api";
 import { 
   calculatePaperSaved, 
   calculateWaterSaved, 
   calculateCO2Saved,
-  calculateTreesSaved
+  calculateTreesSaved,
+  calculateMonthOverMonthGrowth,
+  sortMonthsChronologically
 } from "../../utils/environmentalImpact";
 import EmployeeHeatmap from "./EmployeeHeatmap";
 
 // User ID specifically for contacts - using the same ID as heatmap
-const CONTACTS_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
+// const CONTACTS_USER_ID = "EcccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // Removed hardcoded ID
+
+// Define contact interface based on API response
+interface Contact {
+  name: string;
+  surname: string;
+  phone: string;
+  howWeMet: string;
+  email: string;
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+  ownerInfo: {
+    userId: string;
+    email: string;
+    department: string;
+    departmentName?: string;
+  };
+  enterpriseId: string;
+  enterpriseName?: string;
+}
+
+// Define API response interfaces
+interface ContactsSummaryResponse {
+  success: boolean;
+  data: {
+    totalContacts: number;
+    totalDepartments: number;
+  };
+}
+
+interface EnterpriseContactsResponse {
+  success: boolean;
+  cached: boolean;
+  data: {
+    enterpriseId: string;
+    enterpriseName: string;
+    totalContacts: number;
+    totalDepartments: number;
+    departmentStats: Record<string, {
+      name: string;
+      contactCount: number;
+      employeeCount: number;
+    }>;
+    contactsByDepartment: Record<string, {
+      departmentName: string;
+      departmentId: string;
+      contacts: Contact[];
+      contactCount: number;
+    }>;
+  };
+}
 
 // Interface for meeting attendees
 interface MeetingAttendee {
@@ -45,13 +100,13 @@ interface MeetingAttendee {
 
 // Interface for meeting data
 interface Meeting {
-  title: string;
+  title?: string;
   meetingWith: string;
   meetingWhen: string;
   endTime?: { _seconds: number; _nanoseconds: number };
-  description: string;
-  location: string;
-  attendees: MeetingAttendee[];
+  description?: string;
+  location?: string;
+  attendees?: MeetingAttendee[]; // Made optional since some meetings don't have this field
   duration: number;
 }
 
@@ -61,17 +116,13 @@ interface GrowthDataPoint {
   totalContacts: number;
 }
 
-// Contact interface
-interface Contact {
-  createdAt?: string | { _seconds: number; _nanoseconds: number };
-  [key: string]: any;
-}
-
 const Analytics = () => {
   const [activeCardsCount, setActiveCardsCount] = useState<number>(0);
   const [connectionsCount, setConnectionsCount] = useState<number>(0);
+  const [totalScansCount, setTotalScansCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionsLoading, setConnectionsLoading] = useState<boolean>(true);
+  const [scansLoading, setScansLoading] = useState<boolean>(true);
   
   // Contact growth states
   const [growthData, setGrowthData] = useState<GrowthDataPoint[]>([]);
@@ -131,19 +182,17 @@ const Analytics = () => {
         setLoading(false);
       }
     };
-    
-    fetchCardsCount();
+      fetchCardsCount();
   }, []);
 
-  // Fetch connections count AND growth data
+  // Fetch total scans count
   useEffect(() => {
-    const fetchConnectionsData = async () => {
+    const fetchTotalScans = async () => {
       try {
-        setConnectionsLoading(true);
-        setGrowthLoading(true);
+        setScansLoading(true);
         
-        // Use the same endpoint as the heatmap with specific user ID
-        const url = `${API_BASE_URL}/Contacts/${CONTACTS_USER_ID}`;
+        // Use the same API utility functions as in BusinessCards component
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
         const headers = getEnterpriseHeaders();
         
         const response = await fetch(url, { headers });
@@ -155,34 +204,80 @@ const Analytics = () => {
         // Parse the response
         const responseData = await response.json();
         
-        // Extract connections data from the response
-        let contactsList = [];
+        // Extract cards data from the response
+        let cardsData = [];
         
-        if (responseData && responseData.contactList && Array.isArray(responseData.contactList)) {
-          contactsList = responseData.contactList;
-        } else if (Array.isArray(responseData)) {
-          contactsList = responseData;
+        if (Array.isArray(responseData)) {
+          cardsData = responseData;
         } else if (responseData && typeof responseData === 'object') {
           if (Array.isArray(responseData.data)) {
-            contactsList = responseData.data;
-          } else if (Array.isArray(responseData.contacts)) {
-            contactsList = responseData.contacts;
+            cardsData = responseData.data;
+          } else if (Array.isArray(responseData.cards)) {
+            cardsData = responseData.cards;
           } else {
-            // If the object itself contains the connection data
-            contactsList = [responseData];
+            cardsData = [responseData];
           }
         }
+          // Calculate total scans across all cards
+        const totalScans = cardsData.reduce((sum: number, card: any) => {
+          return sum + (card.scans || 0);
+        }, 0);
         
-        // Set the count of connections
-        setConnectionsCount(contactsList.length);
+        setTotalScansCount(totalScans);
+      } catch (err) {
+        console.error("Error fetching scans data:", err);
+      } finally {
+        setScansLoading(false);
+      }
+    };
+    
+    fetchTotalScans();
+  }, []);
+  // Fetch connections count AND growth data using enterprise endpoints
+  useEffect(() => {
+    const fetchConnectionsData = async () => {
+      try {
+        setConnectionsLoading(true);
+        setGrowthLoading(true);
         
-        // Process growth data
-        processGrowthData(contactsList);
+        // Use enterprise contacts summary endpoint first to get total count
+        const summaryUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS_SUMMARY);
+        const summaryResponse = await fetch(summaryUrl, {
+          headers: getEnterpriseHeaders(),
+        });
+        
+        if (summaryResponse.ok) {
+          const summaryData: ContactsSummaryResponse = await summaryResponse.json();
+          setConnectionsCount(summaryData.data.totalContacts);
+        }
+        
+        // Fetch detailed contacts for growth data
+        const detailsUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
+        const detailsResponse = await fetch(detailsUrl, {
+          headers: getEnterpriseHeaders(),
+        });
+        
+        if (detailsResponse.ok) {
+          const detailsData: EnterpriseContactsResponse = await detailsResponse.json();
+          
+          // Flatten contacts from all departments for growth processing
+          const allContacts: Contact[] = [];
+          Object.values(detailsData.data.contactsByDepartment).forEach(dept => {
+            allContacts.push(...dept.contacts);
+          });
+          
+          // Process growth data
+          processGrowthData(allContacts);
+        } else {
+          throw new Error(`Failed to fetch contact details: ${detailsResponse.status}`);
+        }
         
       } catch (err) {
         console.error("Error fetching connections:", err);
-        // Generate sample growth data on error
-        generateSampleGrowthData();
+        // Set empty data on error
+        setConnectionsCount(0);
+        setGrowthData([]);
+        setGrowthPercentage(0);
       } finally {
         setConnectionsLoading(false);
         setGrowthLoading(false);
@@ -191,14 +286,14 @@ const Analytics = () => {
     
     fetchConnectionsData();
   }, []);
-  
-  // Fetch meetings data
+    // Fetch meetings data
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
         setMeetingsLoading(true);
+        setMeetingsError(null);
         
-        const url = `${API_BASE_URL}${ENDPOINTS.CREATE_MEETING}/${CONTACTS_USER_ID}`;
+        const url = buildUrl(ENDPOINTS.CREATE_MEETING + `/${DEFAULT_USER_ID}`);
         const headers = getEnterpriseHeaders();
         
         const response = await fetch(url, { headers });
@@ -209,94 +304,59 @@ const Analytics = () => {
         
         const responseData = await response.json();
         
-        if (responseData.success && responseData.data) {
-          setMeetings(responseData.data.meetings || []);
-          console.log("Meetings data loaded:", responseData.data);
+        // Fix: Extract meetings from the nested response structure
+        if (responseData.success && responseData.data && responseData.data.meetings) {
+          setMeetings(responseData.data.meetings);
+          console.log("Meetings data loaded:", responseData.data.meetings.length, "meetings");
         } else {
           console.warn("Meetings data format unexpected:", responseData);
           setMeetings([]);
+          setMeetingsError('No meetings data found');
         }
-        
-        setMeetingsError(null);
       } catch (err) {
         setMeetingsError("Failed to fetch meetings data.");
         console.error("Error fetching meetings:", err);
-        setMeetings([]);
+        setMeetings([]); // Set empty array on error
       } finally {
         setMeetingsLoading(false);
       }
     };
     
     fetchMeetings();
-  }, []);
-  
-  // Helper to extract date from contact
+  }, []);    // Helper to extract date from contact
   const getDateFromContact = (contact: Contact): Date | null => {
     try {
       const createdAt = contact.createdAt;
       
       if (!createdAt) return null;
       
-      // Handle Firebase timestamp
+      // Handle Firebase timestamp format
       if (typeof createdAt === 'object' && '_seconds' in createdAt) {
-        return new Date(createdAt._seconds * 1000);
-      }
-      
-      // Handle string date with manual parsing
-      if (typeof createdAt === 'string') {
-        // Parse the date manually from format like "May 13 2025 at at 4:18:25 PM GMT+2"
-        try {
-          // Extract date components
-          const parts = createdAt.replace('at at', 'at').split(' at ');
-          if (parts.length < 2) return null;
-          
-          const datePart = parts[0]; // "May 13 2025"
-          const timePart = parts[1]; // "4:18:25 PM GMT+2"
-          
-          // Parse date components
-          const dateComponents = datePart.split(' ');
-          if (dateComponents.length !== 3) return null;
-          
-          const month = dateComponents[0]; // "May"
-          const day = parseInt(dateComponents[1]); // "13"
-          const year = parseInt(dateComponents[2]); // "2025"
-          
-          // Parse time components
-          const timeWithoutTZ = timePart.split(' GMT')[0]; // "4:18:25 PM"
-          const [time, period] = timeWithoutTZ.split(' '); // ["4:18:25", "PM"]
-          const [hours, minutes, seconds] = time.split(':').map(Number);
-          
-          // Convert to 24 hour format if PM
-          const adjustedHours = period === 'PM' && hours < 12 ? hours + 12 : hours;
-          
-          // Map month names to numbers
-          const monthMap: Record<string, number> = {
-            'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-            'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11,
-            'January': 0, 'February': 1, 'March': 2, 'April': 3, 'June': 5,
-            'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
-          };
-          
-          const monthIndex = monthMap[month];
-          if (monthIndex === undefined) return null;
-          
-          // Create the date (month is 0-indexed in JavaScript)
-          const date = new Date(year, monthIndex, day, adjustedHours, minutes, seconds);
-          return date;
-        } catch (e) {
-          console.warn("Failed to parse date with custom parser:", e);
+        const timestamp = createdAt._seconds * 1000;
+        const date = new Date(timestamp);
+        
+        // Validate the date is reasonable (not before 2020 or in the far future)
+        if (date.getFullYear() < 2020 || date.getFullYear() > new Date().getFullYear() + 1) {
+          console.warn("Invalid date detected:", date, "from timestamp:", timestamp);
           return null;
         }
+        
+        return date;
+      }
+      
+      // Handle string dates (fallback)
+      if (typeof createdAt === 'string') {
+        const date = new Date(createdAt);
+        return isNaN(date.getTime()) ? null : date;
       }
       
       return null;
     } catch (e) {
-      console.warn("Failed to parse date:", e);
+      console.warn("Failed to parse date for contact:", contact.name || 'unknown', e);
       return null;
     }
   };
-  
-  // Process contact data for growth chart
+    // Process contact data for growth chart
   const processGrowthData = (contacts: Contact[]) => {
     if (!contacts || contacts.length === 0) {
       // Set empty data and zero growth instead of generating fake data
@@ -318,12 +378,10 @@ const Analytics = () => {
         return dateA.getTime() - dateB.getTime();
       });
       
-      // Group by month
-      const monthlyData: Record<string, number> = {};
+      // Group by month for both running totals and new contact counts
+      const monthlyRunningTotals: Record<string, number> = {};
+      const monthlyNewContacts: Record<string, number> = {};
       let total = 0;
-      
-      // For debugging
-      const monthCounts: Record<string, number> = {};
       
       sortedContacts.forEach(contact => {
         const date = getDateFromContact(contact);
@@ -332,54 +390,53 @@ const Analytics = () => {
         // Format month
         const monthYear = `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
         
-        // Count contacts by month
-        if (!monthCounts[monthYear]) {
-          monthCounts[monthYear] = 1;
-        } else {
-          monthCounts[monthYear]++;
+        // Count new contacts for this month
+        if (!monthlyNewContacts[monthYear]) {
+          monthlyNewContacts[monthYear] = 0;
         }
+        monthlyNewContacts[monthYear]++;
         
         // Increment total for running total
         total++;
         
         // Store running total
-        monthlyData[monthYear] = total;
+        monthlyRunningTotals[monthYear] = total;
       });
       
       // Debug output
-      console.log("Contacts by month:", monthCounts);
-      console.log("Running totals:", monthlyData);
+      console.log("New contacts by month:", monthlyNewContacts);
+      console.log("Running totals:", monthlyRunningTotals);
+        // Sort months chronologically
+      const sortedMonths = Object.keys(monthlyRunningTotals).sort(sortMonthsChronologically);
       
-      // Convert to array for chart and growth calculation
-      const chartData = Object.keys(monthlyData).map(month => ({
+      // Convert to array for chart using running totals
+      const chartData = sortedMonths.map(month => ({
         date: month,
-        totalContacts: monthlyData[month]
+        totalContacts: monthlyRunningTotals[month]
       }));
       
-      // Take last 6 months and sort chronologically
-      const recentData = chartData.slice(-6).sort((a, b) => {
-        // Parse the month strings for proper chronological sorting
-        const monthA = new Date(a.date);
-        const monthB = new Date(b.date);
-        return monthA.getTime() - monthB.getTime();
-      });
+      // Take last 6 months
+      const recentData = chartData.slice(-6);
       
       console.log("Recent data for growth calculation:", recentData);
       setGrowthData(recentData);
       
-      // Calculate growth percentage
+      // Calculate month-over-month growth based on new contacts added
       if (recentData.length >= 2) {
-        const latest = recentData[recentData.length - 1].totalContacts;
-        const previous = recentData[recentData.length - 2].totalContacts;
+        const lastMonth = recentData[recentData.length - 1].date;
+        const previousMonth = recentData[recentData.length - 2].date;
+        
+        const newContactsLastMonth = monthlyNewContacts[lastMonth] || 0;
+        const newContactsPreviousMonth = monthlyNewContacts[previousMonth] || 0;
         
         // Log values for debugging
-        console.log(`Growth calculation: (${latest} - ${previous}) / ${previous} * 100`);
+        console.log(`Growth calculation: (${newContactsLastMonth} - ${newContactsPreviousMonth}) / ${newContactsPreviousMonth} * 100`);
         
-        const growth = previous > 0 ? ((latest - previous) / previous) * 100 : 0;
-        const roundedGrowth = Math.round(growth * 10) / 10;
+        // Use utility function for consistent growth calculation
+        const growth = calculateMonthOverMonthGrowth(newContactsLastMonth, newContactsPreviousMonth);
         
-        console.log("Growth percentage:", roundedGrowth);
-        setGrowthPercentage(roundedGrowth);
+        console.log("Growth percentage:", growth);
+        setGrowthPercentage(growth);
       } else {
         console.log("Not enough months to calculate growth");
         setGrowthPercentage(0);
@@ -390,12 +447,6 @@ const Analytics = () => {
       setGrowthData([]);
       setGrowthPercentage(0);
     }
-  };
-  
-  // Replace sample data generator with a no-op function
-  const generateSampleGrowthData = () => {
-    setGrowthData([]);
-    setGrowthPercentage(0);
   };
   
   // Parse and format meeting time from the unusual format
@@ -543,14 +594,13 @@ const Analytics = () => {
     // Check for overlap
     return (meetingStart < otherEnd && meetingEnd > otherStart);
   };
-  
-  // Find overlapping meetings
+    // Find overlapping meetings
   const findOverlappingMeetings = (meetings: Meeting[]): Record<string, number> => {
     const overlaps: Record<string, number> = {};
     
     meetings.forEach((meeting) => {
-      // Use meeting title as a key
-      const key = meeting.title;
+      // Use meeting title as a key, fallback to meetingWith if title is undefined
+      const key = meeting.title || meeting.meetingWith || 'Untitled Meeting';
       overlaps[key] = 0;
       
       meetings.forEach((otherMeeting) => {
@@ -582,9 +632,8 @@ const Analytics = () => {
   
   // Get meeting conflicts
   const meetingOverlaps = findOverlappingMeetings([...currentMeetings.active, ...currentMeetings.upcoming]);
-
   // Calculate environmental impact metrics
-  const paperSavedKg = calculatePaperSaved(connectionsCount);
+  const paperSavedKg = calculatePaperSaved(totalScansCount);
   const waterSavedLitres = calculateWaterSaved(paperSavedKg);
   const co2SavedKg = calculateCO2Saved(paperSavedKg);
   const treesSaved = calculateTreesSaved(paperSavedKg);
@@ -598,9 +647,16 @@ const Analytics = () => {
   const toggleGrowthExpand = () => {
     setGrowthExpanded(!growthExpanded);
   };
-
   // Calculate filtered meeting stats for display
   const calculateFilteredMeetingStats = () => {
+    // Add safety check for meetings array
+    if (!meetings || !Array.isArray(meetings)) {
+      return {
+        meetingsCount: 0,
+        participantsCount: 0
+      };
+    }
+
     // Only include active and upcoming meetings
     const filteredMeetings = meetings.filter(meeting => 
       isMeetingActive(meeting) || isMeetingUpcoming(meeting)
@@ -609,9 +665,19 @@ const Analytics = () => {
     // Count the total number of filtered meetings
     const activeAndUpcomingCount = filteredMeetings.length;
     
-    // Count total participants in filtered meetings
+    // Count total participants in filtered meetings - Fixed with proper null checks
     const totalParticipants = filteredMeetings.reduce(
-      (sum, meeting) => sum + meeting.attendees.length, 
+      (sum, meeting) => {
+        // Handle missing attendees field entirely
+        if (!meeting.attendees) {
+          return sum;
+        }
+        // Handle attendees being null or not an array
+        if (!Array.isArray(meeting.attendees)) {
+          return sum;
+        }
+        return sum + meeting.attendees.length;
+      },
       0
     );
     
@@ -634,11 +700,10 @@ const Analytics = () => {
       </div>
 
       {/* Metrics Cards */}
-      <div className="metrics-grid">
-        <Card className="metric-card">
+      <div className="metrics-grid">        <Card className="metric-card">
           <CardContent className="metric-card-content">
             <div className="metric-header">
-              <div className="metric-label">Total Connections</div>
+              <div className="metric-label">Total Contacts</div>
               <div className="metric-icon-container blue">
                 <FaUsers />
               </div>
@@ -662,28 +727,10 @@ const Analytics = () => {
             <div className="metric-change positive">
               <span className="arrow">↑</span> 8.3% increase
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="metric-card">
+          </CardContent>        </Card>          <Card className="metric-card">
           <CardContent className="metric-card-content">
             <div className="metric-header">
-              <div className="metric-label">Paper Saved</div>
-              <div className="metric-icon-container green">
-                <FaLeaf />
-              </div>
-            </div>
-            <div className="metric-value">{connectionsLoading ? "Loading..." : `${paperSavedKg} kg`}</div>
-            <div className="metric-change positive">
-              <span className="arrow">↑</span> 15.2% increase
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="metric-card">
-          <CardContent className="metric-card-content">
-            <div className="metric-header">
-              <div className="metric-label">Connection Growth</div>
+              <div className="metric-label">Contact Growth</div>
               <div className="metric-icon-container green">
                 <FaArrowUp />
               </div>
@@ -694,6 +741,41 @@ const Analytics = () => {
             <div className={`metric-change ${growthPercentage >= 0 ? 'positive' : 'negative'}`}>
               <span className="arrow">{growthPercentage >= 0 ? '↑' : '↓'}</span> 
               {growthPercentage >= 0 ? 'increase' : 'decrease'} from previous period
+            </div>
+          </CardContent>
+        </Card>
+          <Card className="metric-card">
+          <CardContent className="metric-card-content">
+            <div className="metric-header">
+              <div className="metric-label">Total Scans</div>
+              <div className="metric-icon-container orange">
+                <FaEye />
+              </div>
+            </div>
+            <div className="metric-value">{scansLoading ? "Loading..." : totalScansCount.toLocaleString()}</div>
+            <div className="metric-change positive">
+              <span className="arrow">↑</span> Card views this month
+            </div>
+          </CardContent>
+        </Card>
+          <Card className="metric-card">
+          <CardContent className="metric-card-content">
+            <div className="metric-header">
+              <div className="metric-label">Average Scans</div>
+              <div className="metric-icon-container green">
+                <FaChartLine />
+              </div>
+            </div>
+            <div className="metric-value">
+              {(scansLoading || loading) ? "Loading..." : 
+                activeCardsCount > 0 ? 
+                  (totalScansCount / activeCardsCount).toFixed(1) : 
+                  "0.0"
+              }
+            </div>
+            <div className="metric-change positive">
+              <span className="arrow">↑</span> 
+              Scans per business card
             </div>
           </CardContent>
         </Card>
@@ -746,70 +828,68 @@ const Analytics = () => {
                         </div>
                       </div>
                       
-                      {currentMeetings.active.length > 0 ? (
-                        <div className="next-meeting active-meeting">
+                      {currentMeetings.active.length > 0 ? (                        <div className="next-meeting active-meeting">
                           <h4>Happening Now</h4>
-                          <div className={`meeting-card ${meetingOverlaps[currentMeetings.active[0].title] > 0 ? 'meeting-overlap' : ''}`}>
+                          <div className={`meeting-card ${meetingOverlaps[currentMeetings.active[0].title || currentMeetings.active[0].meetingWith || 'Untitled Meeting'] > 0 ? 'meeting-overlap' : ''}`}>
                             <div className="meeting-title">{currentMeetings.active[0].title}</div>
                             <div className="meeting-time">
                               {formatMeetingTime(currentMeetings.active[0].meetingWhen)}
                             </div>
-                            <div className="meeting-location">{currentMeetings.active[0].location}</div>
-                            <div className="meeting-attendees">
-                              {currentMeetings.active[0].attendees.length} attendees
+                            <div className="meeting-location">{currentMeetings.active[0].location}</div>                            <div className="meeting-attendees">
+                              {currentMeetings.active[0].attendees?.length || 0} attendees
                             </div>
                             {meetingsExpanded && (
                               <div className="meeting-details">
                                 <div className="meeting-description">
                                   {currentMeetings.active[0].description || "No description available"}
                                 </div>
-                                <div className="meeting-attendees-list">
-                                  <h5>Attendees:</h5>
-                                  <ul>
-                                    {currentMeetings.active[0].attendees.map((attendee, i) => (
-                                      <li key={i}>{attendee.name} ({attendee.email})</li>
-                                    ))}
-                                  </ul>
-                                </div>
+                                {currentMeetings.active[0].attendees && currentMeetings.active[0].attendees.length > 0 && (
+                                  <div className="meeting-attendees-list">
+                                    <h5>Attendees:</h5>
+                                    <ul>
+                                      {currentMeetings.active[0].attendees.map((attendee, i) => (
+                                        <li key={i}>{attendee.name} ({attendee.email})</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            {meetingOverlaps[currentMeetings.active[0].title] > 0 && (
+                            )}                            {meetingOverlaps[currentMeetings.active[0].title || currentMeetings.active[0].meetingWith || 'Untitled Meeting'] > 0 && (
                               <div className="meeting-overlap-warning">
-                                Conflicts with {meetingOverlaps[currentMeetings.active[0].title]} other meeting(s)
+                                Conflicts with {meetingOverlaps[currentMeetings.active[0].title || currentMeetings.active[0].meetingWith || 'Untitled Meeting']} other meeting(s)
                               </div>
                             )}
                           </div>
                         </div>
                       ) : currentMeetings.upcoming.length > 0 ? (
                         <div className="next-meeting">
-                          <h4>Next Meeting</h4>
-                          <div className={`meeting-card ${meetingOverlaps[currentMeetings.upcoming[0].title] > 0 ? 'meeting-overlap' : ''}`}>
+                          <h4>Next Meeting</h4>                          <div className={`meeting-card ${meetingOverlaps[currentMeetings.upcoming[0].title || currentMeetings.upcoming[0].meetingWith || 'Untitled Meeting'] > 0 ? 'meeting-overlap' : ''}`}>
                             <div className="meeting-title">{currentMeetings.upcoming[0].title}</div>
                             <div className="meeting-time">
                               {formatMeetingTime(currentMeetings.upcoming[0].meetingWhen)}
                             </div>
-                            <div className="meeting-location">{currentMeetings.upcoming[0].location}</div>
-                            <div className="meeting-attendees">
-                              {currentMeetings.upcoming[0].attendees.length} attendees
+                            <div className="meeting-location">{currentMeetings.upcoming[0].location}</div>                            <div className="meeting-attendees">
+                              {currentMeetings.upcoming[0].attendees?.length || 0} attendees
                             </div>
                             {meetingsExpanded && (
                               <div className="meeting-details">
                                 <div className="meeting-description">
                                   {currentMeetings.upcoming[0].description || "No description available"}
                                 </div>
-                                <div className="meeting-attendees-list">
-                                  <h5>Attendees:</h5>
-                                  <ul>
-                                    {currentMeetings.upcoming[0].attendees.map((attendee, i) => (
-                                      <li key={i}>{attendee.name} ({attendee.email})</li>
-                                    ))}
-                                  </ul>
-                                </div>
+                                {currentMeetings.upcoming[0].attendees && currentMeetings.upcoming[0].attendees.length > 0 && (
+                                  <div className="meeting-attendees-list">
+                                    <h5>Attendees:</h5>
+                                    <ul>
+                                      {currentMeetings.upcoming[0].attendees.map((attendee, i) => (
+                                        <li key={i}>{attendee.name} ({attendee.email})</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            {meetingOverlaps[currentMeetings.upcoming[0].title] > 0 && (
+                            )}                            {meetingOverlaps[currentMeetings.upcoming[0].title || currentMeetings.upcoming[0].meetingWith || 'Untitled Meeting'] > 0 && (
                               <div className="meeting-overlap-warning">
-                                Conflicts with {meetingOverlaps[currentMeetings.upcoming[0].title]} other meeting(s)
+                                Conflicts with {meetingOverlaps[currentMeetings.upcoming[0].title || currentMeetings.upcoming[0].meetingWith || 'Untitled Meeting']} other meeting(s)
                               </div>
                             )}
                           </div>
@@ -819,9 +899,8 @@ const Analytics = () => {
                       {currentMeetings.upcoming.length > 0 && (
                         <div className="upcoming-meetings">
                           <h4>Upcoming Meetings</h4>
-                          <div className="meetings-list">
-                            {currentMeetings.upcoming.slice(currentMeetings.active.length > 0 ? 0 : 1, meetingsExpanded ? currentMeetings.upcoming.length : 3).map((meeting, index) => (
-                              <div className={`meeting-list-item ${meetingOverlaps[meeting.title] > 0 ? 'meeting-overlap' : ''}`} key={index}>
+                          <div className="meetings-list">                            {currentMeetings.upcoming.slice(currentMeetings.active.length > 0 ? 0 : 1, meetingsExpanded ? currentMeetings.upcoming.length : 3).map((meeting, index) => (
+                              <div className={`meeting-list-item ${meetingOverlaps[meeting.title || meeting.meetingWith || 'Untitled Meeting'] > 0 ? 'meeting-overlap' : ''}`} key={index}>
                                 <div className="meeting-list-title">{meeting.title}</div>
                                 <div className="meeting-list-time">
                                   {formatMeetingTime(meeting.meetingWhen)}
@@ -833,10 +912,9 @@ const Analytics = () => {
                                       {meeting.description ? meeting.description.substring(0, 50) + (meeting.description.length > 50 ? '...' : '') : 'No description'}
                                     </div>
                                   </div>
-                                )}
-                                {meetingOverlaps[meeting.title] > 0 && (
+                                )}                                {meetingOverlaps[meeting.title || meeting.meetingWith || 'Untitled Meeting'] > 0 && (
                                   <div className="meeting-overlap-warning">
-                                    Conflicts with {meetingOverlaps[meeting.title]} other meeting(s)
+                                    Conflicts with {meetingOverlaps[meeting.title || meeting.meetingWith || 'Untitled Meeting']} other meeting(s)
                                   </div>
                                 )}
                               </div>
@@ -1027,14 +1105,12 @@ const Analytics = () => {
         <Card className="environmental-card">
           <CardHeader>
             <CardTitle>Environmental Impact</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="environmental-impact-grid">
-              <div className="impact-box trees-box">
+          </CardHeader>          <CardContent>
+            <div className="environmental-impact-grid">              <div className="impact-box trees-box">
                 <div className="impact-content">
                   <div className="impact-title">Trees Saved</div>
                   <div className="impact-value trees-value">
-                    {connectionsLoading ? "Loading..." : treesSaved}
+                    {scansLoading ? "Loading..." : treesSaved}
                   </div>
                 </div>
                 <div className="impact-icon-container">
@@ -1046,7 +1122,7 @@ const Analytics = () => {
                 <div className="impact-content">
                   <div className="impact-title">Water Saved</div>
                   <div className="impact-value water-value">
-                    {connectionsLoading ? "Loading..." : `${waterSavedLitres}L`}
+                    {scansLoading ? "Loading..." : `${waterSavedLitres}L`}
                   </div>
                 </div>
                 <div className="impact-icon-container">
@@ -1058,11 +1134,23 @@ const Analytics = () => {
                 <div className="impact-content">
                   <div className="impact-title">CO<sub>2</sub> Reduced</div>
                   <div className="impact-value co2-value">
-                    {connectionsLoading ? "Loading..." : `${co2SavedKg} kg`}
+                    {scansLoading ? "Loading..." : `${co2SavedKg} kg`}
                   </div>
                 </div>
                 <div className="impact-icon-container">
                   <FaCloud className="impact-icon" />
+                </div>
+              </div>
+              
+              <div className="impact-box paper-box">
+                <div className="impact-content">
+                  <div className="impact-title">Paper Saved</div>
+                  <div className="impact-value paper-value">
+                    {scansLoading ? "Loading..." : `${paperSavedKg} kg`}
+                  </div>
+                </div>
+                <div className="impact-icon-container">
+                  <FaLeaf className="impact-icon" />
                 </div>
               </div>
             </div>

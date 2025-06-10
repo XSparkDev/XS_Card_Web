@@ -4,15 +4,15 @@
 
 /**
  * Calculates the amount of paper saved (in kilograms) by using digital business cards
- * Based on the formula: (connections × cardWeight) / 1000
+ * Based on the formula: (scans × cardWeight) / 1000
  * Where cardWeight is 1.5 grams per card
  * 
- * @param connections - Number of digital connections made
+ * @param scans - Number of digital card scans/views
  * @returns Amount of paper saved in kilograms, rounded to 2 decimal places
  */
-export const calculatePaperSaved = (connections: number): number => {
+export const calculatePaperSaved = (scans: number): number => {
   const cardWeight = 1.5; // approximate grams per card
-  const paperSavedKg = (connections * cardWeight) / 1000;
+  const paperSavedKg = (scans * cardWeight) / 1000;
   return Number(paperSavedKg.toFixed(2)); // Round to 2 decimal places
 };
 
@@ -75,5 +75,58 @@ export const calculateGrowthRate = (currentValue: number, previousValue: number)
 };
 
 /**
+ * Calculates month-over-month growth percentage based on new additions (not cumulative totals)
+ * This is more accurate for measuring actual growth rates
+ * 
+ * @param currentMonthNew - Number of new items added in current month
+ * @param previousMonthNew - Number of new items added in previous month
+ * @returns Growth rate as percentage, rounded to 1 decimal place
+ */
+export const calculateMonthOverMonthGrowth = (currentMonthNew: number, previousMonthNew: number): number => {
+  if (previousMonthNew === 0) {
+    // If previous month had no new additions but current month does, show 100% growth
+    return currentMonthNew > 0 ? 100 : 0;
+  }
+  
+  const growthRate = ((currentMonthNew - previousMonthNew) / previousMonthNew) * 100;
+  return Number(growthRate.toFixed(1)); // Round to 1 decimal place
+};
+
+/**
+ * Sorts month-year strings chronologically (e.g., "Jan 2023", "Feb 2023")
+ * 
+ * @param a - First month string
+ * @param b - Second month string
+ * @returns Comparison result for sorting
+ */
+export const sortMonthsChronologically = (a: string, b: string): number => {
+  try {
+    // Parse month strings like "Jan 2023" to Date objects
+    const dateA = new Date(a);
+    const dateB = new Date(b);
+    
+    // Fallback: if Date parsing fails, try manual parsing
+    if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+      const [monthA, yearA] = a.split(' ');
+      const [monthB, yearB] = b.split(' ');
+      
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthIndexA = months.indexOf(monthA);
+      const monthIndexB = months.indexOf(monthB);
+      
+      const yearDiff = parseInt(yearA) - parseInt(yearB);
+      if (yearDiff !== 0) return yearDiff;
+      
+      return monthIndexA - monthIndexB;
+    }
+    
+    return dateA.getTime() - dateB.getTime();
+  } catch (e) {
+    console.warn('Error sorting months:', a, b, e);
+    return 0;
+  }
+};
+
+/**
  * Future environmental calculations can be added here
- */ 
+ */
