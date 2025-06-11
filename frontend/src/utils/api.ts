@@ -46,10 +46,21 @@ export const ENDPOINTS = {
     CREATE_MEETING: '/meetings',
     MEETING_INVITE: '/meetings/invite',
     DELETE_CARD: '/Cards/:id',
-    UPGRADE_USER: '/Users/:id/upgrade',
-    INITIALIZE_PAYMENT: '/payment/initialize',
+    UPGRADE_USER: '/Users/:id/upgrade',    INITIALIZE_PAYMENT: '/payment/initialize',
     SUBSCRIPTION_STATUS: '/subscription/status',
     CANCEL_SUBSCRIPTION: '/subscription/cancel',
+
+    // Billing endpoints (Premium/Free plans)
+    BILLING_SUBSCRIPTION_STATUS: '/subscription/status',
+    BILLING_SUBSCRIPTION_PLANS: '/subscription/plans',
+    BILLING_SUBSCRIPTION_LOGS: '/subscription/logs',
+    BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',
+    BILLING_INITIALIZE_PAYMENT: '/payment/initialize',
+
+    // Enterprise inquiry endpoints
+    ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
+    ENTERPRISE_DEMO_REQUEST: '/enterprise/demo',
+    ENTERPRISE_SALES_CONTACT: '/enterprise/contact-sales',
 
     // Enterprise-related endpoints
     ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,

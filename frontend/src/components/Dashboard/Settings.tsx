@@ -23,8 +23,34 @@ import {
   DEFAULT_ENTERPRISE_ID 
 } from "../../utils/api";
 
+// Import billing types
+import { 
+  SubscriptionStatus,
+  BillingLog,
+  PaymentMethod,
+  Invoice
+} from "../../types/billing";
+
+// Import billing API functions
+import {
+  fetchSubscriptionStatus,
+  fetchBillingLogs,
+  fetchPaymentMethods,
+  fetchEnterpriseInvoices,
+  downloadInvoice,
+  formatCurrency,
+  formatDate,
+  setMockUserScenario,
+  getCurrentUserScenario
+} from "../../utils/billingApi";
+
 // Import useNavigate from react-router-dom if you're using React Router
 import { useNavigate } from "react-router-dom";
+
+// Import modal components
+import { PaymentMethodModal } from "../Billing/PaymentMethodModal";
+import { CancelSubscriptionModal } from "../Billing/CancelSubscriptionModal";
+import { EnterpriseInquiryModal } from "../Billing/EnterpriseInquiryModal";
 
 // Define interface for enterprise data
 interface EnterpriseData {
@@ -84,12 +110,25 @@ const Settings = () => {
     mentions: true,
     teamUpdates: true
   });
-
   const [appearanceSettings, setAppearanceSettings] = useState({
     theme: "system",
     fontSize: "medium",
     compactView: false
-  });
+  });  // Billing-related state variables
+  const [subscriptionData, setSubscriptionData] = useState<SubscriptionStatus | null>(null);
+  const [billingLogs, setBillingLogs] = useState<BillingLog[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [enterpriseInvoices, setEnterpriseInvoices] = useState<Invoice[]>([]);
+  const [isBillingLoading, setIsBillingLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
+    // Phase 2: Enhanced state for testing different user scenarios
+  const [currentUserScenario, setCurrentUserScenario] = useState<string>('free');
+
+  // Modal state management
+  const [isPaymentMethodModalOpen, setIsPaymentMethodModalOpen] = useState(false);
+  const [isCancelSubscriptionModalOpen, setIsCancelSubscriptionModalOpen] = useState(false);
+  const [isEnterpriseInquiryModalOpen, setIsEnterpriseInquiryModalOpen] = useState(false);
+  const [paymentMethodToEdit, setPaymentMethodToEdit] = useState<PaymentMethod | null>(null);
 
   // Add this type to specify valid notification setting keys
   type NotificationSettingKey = keyof typeof notificationSettings;
@@ -144,6 +183,42 @@ const Settings = () => {
     };
     
     fetchEnterpriseData();
+  }, []);  // Fetch billing data on component mount
+  const fetchBillingData = async () => {
+    try {
+      setIsBillingLoading(true);
+      setBillingError(null);
+      
+      // TEMPORARY: Uncomment the line below to test error handling
+      // throw new Error('Test error - API unavailable');
+      
+      // Fetch subscription status (always needed)
+      const subscriptionStatus = await fetchSubscriptionStatus();
+      setSubscriptionData(subscriptionStatus);      // Fetch additional data based on plan type
+      if (subscriptionData && subscriptionData.plan === 'premium') {
+        // Premium users need payment methods and billing logs
+        const promises = [
+          fetchPaymentMethods().then(setPaymentMethods),
+          fetchBillingLogs().then(setBillingLogs)
+        ];
+        await Promise.allSettled(promises);
+      } else if (subscriptionData && subscriptionData.plan === 'enterprise') {
+        // Enterprise users need invoices
+        const enterpriseInvoicesData = await fetchEnterpriseInvoices();
+        setEnterpriseInvoices(enterpriseInvoicesData);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching billing data:', error);
+      setBillingError('Failed to load billing information');
+    } finally {
+      setIsBillingLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchBillingData();
+    // Initialize current scenario from the billing API
+    setCurrentUserScenario(getCurrentUserScenario());
   }, []);
 
   const handleEnterpriseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -225,14 +300,436 @@ const Settings = () => {
       setIsSaving(false);
     }
   };
-
   const handleToggleNotification = (setting: NotificationSettingKey) => {
     setNotificationSettings({
       ...notificationSettings,
       [setting]: !notificationSettings[setting]
     });
   };
+    // Handle enterprise inquiry
+  const handleEnterpriseInquiry = () => {
+    setIsEnterpriseInquiryModalOpen(true);
+  };
+
+  // Render Free Plan Billing Content
+  const renderFreePlanBilling = () => (
+    <div className="billing-content">
+      <div className="current-plan">
+        <div className="plan-header">
+          <div>
+            <h3 className="plan-title">Free Plan</h3>
+            <p className="plan-price">R0/month</p>
+          </div>
+          <Badge>Current Plan</Badge>
+        </div>
+        <div className="plan-features">
+          <h4 className="features-title">What's included:</h4>
+          <ul className="features-list">
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              1 basic digital business card
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Standard QR code sharing
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Email support within 48 hours
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Basic card customization options
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Up to 20 contacts
+            </li>
+          </ul>
+        </div>
+        <div className="upgrade-section">
+          <h4>Ready to upgrade?</h4>
+          <div className="upgrade-options">
+            <Button onClick={goToPricing}>
+              Upgrade to Premium - R159.99/month
+            </Button>
+            <Button variant="outline" onClick={handleEnterpriseInquiry}>
+              Contact Sales for Enterprise
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  // Render Premium Plan Billing Content (Enhanced for Phase 2)
+  const renderPremiumPlanBilling = () => (
+    <div className="billing-content">
+      <div className="current-plan">
+        <div className="plan-header">
+          <div>
+            <h3 className="plan-title">Premium Plan</h3>
+            <p className="plan-price">{formatCurrency(subscriptionData?.amount || 159.99)}/month</p>
+          </div>
+          <Badge variant="default">
+            {subscriptionData?.subscriptionStatus === 'trial' ? 'Trial' : 'Active'}
+          </Badge>
+        </div>
+        
+        <div className="subscription-details">
+          <p>Next billing: {formatDate(subscriptionData?.subscriptionEnd)}</p>
+          <p>Status: {subscriptionData?.subscriptionStatus}</p>
+          {subscriptionData?.subscriptionStatus === 'trial' && (
+            <p className="trial-info">
+              Trial ends: {formatDate(subscriptionData?.trialEndDate)}
+            </p>
+          )}
+        </div>
+        
+        {/* Payment Method Section */}
+        <div className="payment-section">
+          <h3 className="section-title">Payment Method</h3>
+          {paymentMethods.length > 0 ? (
+            <div className="payment-method">
+              <div className="payment-info">
+                <FaCreditCard className="payment-icon" />
+                <div className="card-details">
+                  <p className="card-number">•••• •••• •••• {paymentMethods[0].last4}</p>
+                  <p className="card-expiry">
+                    Expires {paymentMethods[0].expiryMonth}/{paymentMethods[0].expiryYear}
+                  </p>
+                  <p className="card-brand">{paymentMethods[0].brand.toUpperCase()}</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => handleUpdatePaymentMethod()}>
+                Update
+              </Button>
+            </div>
+          ) : (
+            <div className="no-payment-method">
+              <p>No payment method on file</p>
+              <Button size="sm" onClick={() => handleAddPaymentMethod()}>
+                Add Payment Method
+              </Button>
+            </div>
+          )}
+        </div>
+        
+        {/* Billing History Section */}
+        <div className="billing-history-section">
+          <h3 className="section-title">Recent Billing Activity</h3>
+          {billingLogs.length > 0 ? (
+            <div className="billing-logs">
+              {billingLogs.slice(0, 5).map((log) => (
+                <div key={log.id} className="billing-log-item">
+                  <div className="log-info">
+                    <p className="log-action">{log.action.replace('_', ' ').toUpperCase()}</p>
+                    <p className="log-date">{formatDate(log.timestamp)}</p>
+                  </div>
+                  {log.details.amount && (
+                    <p className="log-amount">{formatCurrency(log.details.amount)}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="no-billing-history">No billing activity yet</p>
+          )}
+        </div>
+        
+        {/* Plan Actions */}
+        <div className="plan-actions">
+          <Button size="sm" variant="outline" onClick={() => handleCancelSubscription()}>
+            Cancel Subscription
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleEnterpriseInquiry}>
+            Upgrade to Enterprise
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+  // Render Enterprise Plan Billing Content (Enhanced for Phase 2)
+  const renderEnterprisePlanBilling = () => (
+    <div className="billing-content">
+      <div className="current-plan enterprise-plan">
+        <div className="plan-header">
+          <div>
+            <h3 className="plan-title">Enterprise Plan</h3>
+            <p className="plan-price">Custom Pricing</p>
+          </div>
+          <Badge variant="default">Enterprise</Badge>
+        </div>
+        
+        {/* Account Manager Section */}
+        <div className="account-manager-section">
+          <h4 className="section-title">Your Account Manager</h4>
+          <div className="contact-card">
+            <div className="manager-info">
+              <p className="manager-name">John Smith</p>
+              <p className="manager-email">john.smith@xscard.com</p>
+              <p className="manager-phone">+27 11 123 4567</p>
+            </div>
+            <Button size="sm" onClick={() => handleContactAccountManager()}>
+              Contact Manager
+            </Button>
+          </div>
+        </div>
+        
+        {/* Billing & Invoices Section */}
+        <div className="enterprise-billing">
+          <h4 className="section-title">Billing & Invoices</h4>
+          <p className="text-sm text-gray-600 mb-4">
+            Your custom invoices are managed by your account manager
+          </p>
+            {enterpriseInvoices.length > 0 ? (
+            <div className="invoice-list">
+              {enterpriseInvoices.map((invoice) => (
+                <div key={invoice.id} className="invoice-item" data-invoice-id={invoice.id}>
+                  <div className="invoice-info">
+                    <p className="invoice-date">{formatDate(invoice.date)}</p>
+                    <p className="invoice-number">{invoice.number}</p>
+                    <p className="invoice-description">
+                      {invoice.lineItems[0]?.description || 'Enterprise Services'}
+                    </p>
+                  </div>
+                  <div className="invoice-details">
+                    <p className="invoice-amount">{formatCurrency(invoice.amount)}</p>
+                    <div className="invoice-actions">
+                      <Badge 
+                        variant={invoice.status === 'paid' ? 'default' : 'outline'} 
+                        className={`invoice-status ${invoice.status}`}
+                      >
+                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                      </Badge>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="download-button"
+                        onClick={() => handleDownloadInvoice(invoice.id)}
+                        title={`Download ${invoice.number}`}
+                      >
+                        <FaDownload className="download-icon" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-invoices">
+              <p>No invoices available</p>
+              <p className="text-sm text-gray-500">
+                Contact your account manager for billing history
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {/* Enterprise Features */}
+        <div className="enterprise-features-section">
+          <h4 className="section-title">Enterprise Features</h4>
+          <ul className="features-list">
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Unlimited users and business cards
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Advanced analytics and reporting
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Custom integrations and API access
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Dedicated account manager
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Priority support and SLA
+            </li>
+            <li className="feature-item">
+              <FaCheck className="feature-check" />
+              Custom invoicing and billing
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Dynamic billing content renderer
+  const renderBillingContent = () => {
+    if (isBillingLoading) {
+      return (
+        <Card className="billing-loading">
+          <CardContent className="p-8">
+            <div className="text-center">Loading billing information...</div>
+          </CardContent>
+        </Card>
+      );
+    }    if (billingError) {
+      return (
+        <Card className="billing-error">
+          <CardContent className="p-8">
+            <div className="error-message">
+              <FaExclamationTriangle className="error-icon" />
+              <p>{billingError}</p>
+              <Button onClick={() => {
+                setIsBillingLoading(true);
+                setBillingError(null);
+                // Retry billing data fetch by refetching
+                fetchBillingData();
+              }} className="mt-4">
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Determine which billing view to show based on user's plan
+    const userPlan = subscriptionData?.plan || 'free';
+    
+    switch (userPlan) {
+      case 'free':
+        return renderFreePlanBilling();
+      case 'premium':
+        return renderPremiumPlanBilling();
+      case 'enterprise':
+        return renderEnterprisePlanBilling();
+      default:
+        return renderFreePlanBilling();
+    }
+  };    // Phase 2: Enhanced billing action handlers
+  const handleUpdatePaymentMethod = async () => {
+    if (paymentMethods.length > 0) {
+      setPaymentMethodToEdit(paymentMethods[0]);
+    } else {
+      setPaymentMethodToEdit(null);
+    }
+    setIsPaymentMethodModalOpen(true);
+  };
   
+  const handleAddPaymentMethod = () => {
+    setPaymentMethodToEdit(null);
+    setIsPaymentMethodModalOpen(true);
+  };
+  
+  const handleCancelSubscription = async () => {
+    if (!subscriptionData?.subscriptionCode) {
+      setBillingError('No active subscription found to cancel.');
+      return;
+    }
+    setIsCancelSubscriptionModalOpen(true);
+  };
+  const handleContactAccountManager = () => {
+    console.log('📧 Opening contact form for account manager...');
+    
+    const confirmed = window.confirm(
+      '📧 Contact Account Manager\n\nThis will open your email client with a pre-filled message to your account manager.\n\nAccount Manager: John Smith\nEmail: john.smith@xscard.com\n\nClick OK to open email client.'
+    );
+    
+    if (confirmed) {
+      // In a real implementation, this could:
+      // 1. Open an email client with pre-filled message
+      // 2. Open a contact modal
+      // 3. Navigate to a dedicated contact page
+      const subject = encodeURIComponent('Enterprise Support Request');
+      const body = encodeURIComponent('Hello John,\n\nI need assistance with my XSCard Enterprise account.\n\n[Please describe your request here]\n\nBest regards');
+      window.open(`mailto:john.smith@xscard.com?subject=${subject}&body=${body}`, '_blank');
+    }
+  };
+  const handleDownloadInvoice = async (invoiceId: string) => {
+    try {
+      setBillingError(null);
+      console.log('📄 Initiating invoice download:', invoiceId);
+        // Show visual feedback
+      const downloadBtn = document.querySelector(`[data-invoice-id="${invoiceId}"] .download-button`) as HTMLButtonElement;
+      if (downloadBtn) {
+        downloadBtn.innerHTML = '⏳';
+        downloadBtn.disabled = true;
+      }
+      
+      const downloadUrl = await downloadInvoice(invoiceId);
+      
+      console.log('✅ Invoice download completed:', downloadUrl);
+      
+      // Reset button state
+      if (downloadBtn) {
+        downloadBtn.innerHTML = '<svg class="download-icon">📄</svg>';
+        downloadBtn.disabled = false;
+      }
+      
+      // Show success message
+      alert('✅ Invoice Downloaded!\n\nYour invoice has been downloaded successfully.\nCheck your Downloads folder for the PDF file.');
+      
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      setBillingError('Failed to download invoice');
+      alert('❌ Download Failed\n\nWe encountered an error while downloading your invoice.\nPlease try again or contact your account manager.');
+      
+      // Reset button state on error
+      const downloadBtn = document.querySelector(`[data-invoice-id="${invoiceId}"] .download-button`) as HTMLButtonElement;
+      if (downloadBtn) {
+        downloadBtn.innerHTML = '<svg class="download-icon">📄</svg>';
+        downloadBtn.disabled = false;
+      }
+    }
+  };  // Phase 2: User scenario testing (for development)
+  const handleSwitchUserScenario = (scenario: string) => {
+    console.log('🔄 Switching user scenario to:', scenario);
+    setCurrentUserScenario(scenario);
+    setMockUserScenario(scenario);
+    
+    // Show loading state briefly
+    setIsBillingLoading(true);
+    
+    // Refresh billing data with new scenario
+    setTimeout(() => {
+      fetchBillingData();
+    }, 200); // Small delay to show loading state
+  };
+  // Modal success handlers
+  const handlePaymentMethodSuccess = async () => {
+    try {
+      setBillingError(null);
+      setIsPaymentMethodModalOpen(false);
+      setPaymentMethodToEdit(null);
+      
+      // Refresh payment methods
+      const updatedMethods = await fetchPaymentMethods();
+      setPaymentMethods(updatedMethods);
+      
+      console.log('Payment method updated successfully');
+    } catch (error) {
+      console.error('Error refreshing payment methods:', error);
+      setBillingError('Payment method was updated but failed to refresh the list');
+    }
+  };
+
+  const handleCancelSubscriptionSuccess = async () => {
+    try {
+      setBillingError(null);
+      setIsCancelSubscriptionModalOpen(false);
+      
+      // Refresh billing data to show updated status
+      await fetchBillingData();
+      
+      console.log('Subscription cancelled successfully');
+    } catch (error) {
+      console.error('Error refreshing billing data:', error);
+      setBillingError('Subscription was cancelled but failed to refresh billing information');
+    }
+  };
+
+  const handleEnterpriseInquirySuccess = () => {
+    setIsEnterpriseInquiryModalOpen(false);
+    console.log('Enterprise inquiry submitted successfully');
+  };
+
   return (
     <div className="settings-container">
       <div className="settings-header">
@@ -454,110 +951,51 @@ const Settings = () => {
             </Card>
           )}
         </TabsContent>
-        
-        <TabsContent value="billing" className="settings-tab-content">
+          <TabsContent value="billing" className="settings-tab-content">
           <Card>
             <CardHeader>
               <CardTitle>Billing & Subscription</CardTitle>
               <CardDescription>Manage your billing information and subscription plan</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="billing-content">
-                <div className="current-plan">
-                  <div className="plan-header">
-                    <div>
-                      <h3 className="plan-title">Enterprise Plan</h3>
-                      <p className="plan-price">$499/month, billed annually</p>
-                    </div>
-                    <Badge>Current Plan</Badge>
-                  </div>
-                  <div className="plan-features">
-                    <h4 className="features-title">Features:</h4>
-                    <ul className="features-list">
-                      <li className="feature-item">
-                        <FaCheck className="feature-check" />
-                        Unlimited business cards
-                      </li>
-                      <li className="feature-item">
-                        <FaCheck className="feature-check" />
-                        Advanced analytics
-                      </li>
-                      <li className="feature-item">
-                        <FaCheck className="feature-check" />
-                        Custom branding
-                      </li>
-                      <li className="feature-item">
-                        <FaCheck className="feature-check" />
-                        Priority support
-                      </li>
-                      <li className="feature-item">
-                        <FaCheck className="feature-check" />
-                        All integrations
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="plan-actions">
-                    <Button size="sm">Manage Subscription</Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={goToPricing}
-                    >
-                      See All Plans
-                    </Button>
-                  </div>
+            <CardContent>              {/* Phase 2: Developer Testing Section (Remove in production) */}
+              <div className="developer-testing-section mb-6 p-4 bg-gray-100 rounded-lg">
+                <h4 className="text-sm font-semibold mb-2">🔧 Developer Testing - User Scenarios</h4>
+                <div className="flex gap-2 flex-wrap">
+                  <Button 
+                    size="sm" 
+                    variant={currentUserScenario === 'free' ? 'default' : 'outline'}
+                    onClick={() => handleSwitchUserScenario('free')}
+                  >
+                    Free User
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={currentUserScenario === 'premium' ? 'default' : 'outline'}
+                    onClick={() => handleSwitchUserScenario('premium')}
+                  >
+                    Premium User
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={currentUserScenario === 'premium_trial' ? 'default' : 'outline'}
+                    onClick={() => handleSwitchUserScenario('premium_trial')}
+                  >
+                    Premium Trial
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={currentUserScenario === 'enterprise' ? 'default' : 'outline'}
+                    onClick={() => handleSwitchUserScenario('enterprise')}
+                  >
+                    Enterprise User
+                  </Button>
                 </div>
-                
-                <div className="payment-section">
-                  <h3 className="section-title">Payment Method</h3>
-                  <div className="payment-method">
-                    <div className="payment-info">
-                      <FaCreditCard className="payment-icon" />
-                      <div className="card-details">
-                        <p className="card-number">•••• •••• •••• 4242</p>
-                        <p className="card-expiry">Expires 12/2025</p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="outline">Update</Button>
-                  </div>
-                </div>
-                
-                <div className="billing-history">
-                  <h3 className="section-title">Billing History</h3>
-                  <div className="invoice-list">
-                    <div className="invoice-item">
-                      <div className="invoice-info">
-                        <p className="invoice-date">Jan 1, 2023</p>
-                        <p className="invoice-number">Invoice #INV-001</p>
-                      </div>
-                      <div className="invoice-details">
-                        <p className="invoice-amount">$499.00</p>
-                        <div className="invoice-actions">
-                          <Badge variant="outline" className="invoice-status">Paid</Badge>
-                          <Button size="sm" variant="ghost" className="download-button">
-                            <FaDownload className="download-icon" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="invoice-item">
-                      <div className="invoice-info">
-                        <p className="invoice-date">Dec 1, 2022</p>
-                        <p className="invoice-number">Invoice #INV-002</p>
-                      </div>
-                      <div className="invoice-details">
-                        <p className="invoice-amount">$499.00</p>
-                        <div className="invoice-actions">
-                          <Badge variant="outline" className="invoice-status">Paid</Badge>
-                          <Button size="sm" variant="ghost" className="download-button">
-                            <FaDownload className="download-icon" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Current scenario: <strong>{currentUserScenario}</strong> - Switch between user types to test different billing interfaces
+                </p>
               </div>
+
+              {renderBillingContent()}
               
               {/* Add Pricing section */}
               <div className="pricing-section">
@@ -717,10 +1155,44 @@ const Settings = () => {
             </CardContent>
             <CardFooter>
               <Button>Save Preferences</Button>
-            </CardFooter>
-          </Card>
+            </CardFooter>          </Card>
         </TabsContent>
-      </Tabs>
+      </Tabs>      {/* Modal Components */}
+      <PaymentMethodModal
+        isOpen={isPaymentMethodModalOpen}
+        onClose={() => {
+          setIsPaymentMethodModalOpen(false);
+          setPaymentMethodToEdit(null);
+        }}
+        onSuccess={handlePaymentMethodSuccess}
+        mode={paymentMethodToEdit ? 'update' : 'add'}
+        existingPaymentMethod={paymentMethodToEdit ? {
+          id: paymentMethodToEdit.id,
+          last4: paymentMethodToEdit.last4,
+          brand: paymentMethodToEdit.brand,
+          expiryMonth: paymentMethodToEdit.expiryMonth,
+          expiryYear: paymentMethodToEdit.expiryYear
+        } : undefined}
+      />      {subscriptionData && subscriptionData.subscriptionCode && (
+        <CancelSubscriptionModal
+          isOpen={isCancelSubscriptionModalOpen}
+          onClose={() => setIsCancelSubscriptionModalOpen(false)}
+          onSuccess={handleCancelSubscriptionSuccess}
+          subscriptionData={{
+            subscriptionCode: subscriptionData.subscriptionCode,
+            plan: subscriptionData.plan,
+            amount: subscriptionData.amount || 0,
+            subscriptionEnd: subscriptionData.subscriptionEnd
+          }}
+        />
+      )}
+
+      <EnterpriseInquiryModal
+        isOpen={isEnterpriseInquiryModalOpen}
+        onClose={() => setIsEnterpriseInquiryModalOpen(false)}
+        onSuccess={handleEnterpriseInquirySuccess}
+        inquiryType="upgrade"
+      />
     </div>
   );
 };
