@@ -647,18 +647,18 @@
 
 /* Environmental Impact updated styles */
 .environmental-impact-grid {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 }
 
 .impact-box {
-  flex: 1;
-  padding: 1rem;
+  background-color: #f9fafb;
   border-radius: 0.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .trees-box {
@@ -674,43 +674,54 @@
 }
 
 .impact-content {
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  z-index: 2;
 }
 
 .impact-title {
   font-size: 0.875rem;
-  color: #64748b;
+  font-weight: 500;
+  color: #4b5563;
   margin-bottom: 0.5rem;
 }
 
-.trees-value {
-  color: #10b981;
+.impact-value {
   font-size: 1.5rem;
   font-weight: 700;
+  color: #111827;
+}
+
+.trees-value {
+  color: #047857;
 }
 
 .water-value {
-  color: #3b82f6;
-  font-size: 1.5rem;
-  font-weight: 700;
+  color: #1d4ed8;
 }
 
 .co2-value {
-  color: #8b5cf6;
-  font-size: 1.5rem;
-  font-weight: 700;
+  color: #7e22ce;
 }
 
-.impact-check-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.impact-icon-container {
+  position: absolute;
+  top: 0.5rem;
+  right: -0.5rem;
+  font-size: 1.25rem;
+  opacity: 0.5;
+  z-index: 2;
 }
 
-.impact-check {
-  color: #10b981;
-  font-weight: bold;
+.trees-box .impact-icon {
+  color: #047857;
+}
+
+.water-box .impact-icon {
+  color: #1d4ed8;
+}
+
+.co2-box .impact-icon {
+  color: #7e22ce;
 }
 
 /* Responsive Adjustments */
