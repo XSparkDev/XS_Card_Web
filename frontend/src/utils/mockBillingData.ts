@@ -12,7 +12,7 @@ export const MOCK_SUBSCRIPTION_STATUS: Record<string, SubscriptionStatus> = {
   },
   premium: {
     subscriptionStatus: 'active',
-    subscriptionPlan: 'premium_monthly',
+    subscriptionPlan: 'MONTHLY_PLAN',
     subscriptionReference: 'sub_1234567890',
     subscriptionStart: '2025-01-01T00:00:00Z',
     subscriptionEnd: '2025-07-01T00:00:00Z',
@@ -24,7 +24,7 @@ export const MOCK_SUBSCRIPTION_STATUS: Record<string, SubscriptionStatus> = {
   },
   premium_trial: {
     subscriptionStatus: 'trial',
-    subscriptionPlan: 'premium_monthly',
+    subscriptionPlan: 'MONTHLY_PLAN',
     subscriptionStart: '2025-06-01T00:00:00Z',
     subscriptionEnd: '2025-07-01T00:00:00Z',
     trialStartDate: '2025-06-01T00:00:00Z',
@@ -58,13 +58,13 @@ export const MOCK_AVAILABLE_PLANS: SubscriptionPlan[] = [
     ]
   },
   {
-    id: 'premium_monthly',
-    name: 'Premium Plan',
+    id: 'MONTHLY_PLAN',
+    name: 'Monthly Subscription',
     amount: 159.99,
     interval: 'monthly',
-    description: 'Advanced features for growing businesses',
-    trialDays: 14,
-    planCode: 'PLN_premium_monthly',
+    description: 'XS Card Monthly Subscription',
+    trialDays: 0,
+    planCode: 'PLN_25xliarx7epm9ct',
     features: [
       'Unlimited digital business cards',
       'Advanced QR code features',
@@ -77,16 +77,16 @@ export const MOCK_AVAILABLE_PLANS: SubscriptionPlan[] = [
     ]
   },
   {
-    id: 'premium_annual',
-    name: 'Premium Plan (Annual)',
-    amount: 1599.99,
+    id: 'ANNUAL_PLAN',
+    name: 'Annual Subscription',
+    amount: 1800.00,
     interval: 'annually',
-    description: 'Save 17% with annual billing',
-    trialDays: 14,
-    planCode: 'PLN_premium_annual',
+    description: 'XS Card Annual Subscription',
+    trialDays: 0,
+    planCode: 'PLN_kzb7lj21vrehzeq',
     features: [
       'All Premium features',
-      '2 months free (17% savings)',
+      'Save R120 compared to monthly (6.7% savings)',
       'Priority support',
       'Advanced reporting'
     ]
@@ -103,7 +103,7 @@ export const MOCK_BILLING_LOGS: BillingLog[] = [
     timestamp: '2025-06-01T10:30:00Z',
     details: {
       type: 'subscription',
-      plan: 'premium_monthly',
+      plan: 'MONTHLY_PLAN',
       amount: 159.99,
       interval: 'monthly'
     }
@@ -118,7 +118,7 @@ export const MOCK_BILLING_LOGS: BillingLog[] = [
     details: {
       type: 'payment',
       amount: 159.99,
-      plan: 'premium_monthly'
+      plan: 'MONTHLY_PLAN'
     }
   },
   {
@@ -130,7 +130,7 @@ export const MOCK_BILLING_LOGS: BillingLog[] = [
     timestamp: '2025-06-01T10:30:00Z',
     details: {
       type: 'trial',
-      plan: 'premium_monthly'
+      plan: 'MONTHLY_PLAN'
     }
   }
 ];

@@ -9,7 +9,7 @@ export interface PasscreatorResponse {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImE0YTEwZGVjZTk4MzY2ZDZmNjNlMTY3Mjg2YWU5YjYxMWQyYmFhMjciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzQ5Njc1Mzk3LCJ1c2VyX2lkIjoiM3VCZnVqSWxUQWFrQ0JKb0dMcTA1T1RTcTY4MiIsInN1YiI6IjN1QmZ1aklsVEFha0NCSm9HTHEwNU9UU3E2ODIiLCJpYXQiOjE3NDk2NzUzOTcsImV4cCI6MTc0OTY3ODk5NywiZW1haWwiOiJkYWRlY2U4NDQ0QGFkcmV3aXJlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImRhZGVjZTg0NDRAYWRyZXdpcmUuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.BLpBqfR42VasbgE3jgKapudU8nEkEpvb_k2To2BdElsxtOK9bbzbgC41tyy3MleRRNFP0XPAFkL6wL1aLTF5wiTnHw6uOGr8ePF5polGt_IaEuqXrwy-xQ_aHknncNpJPqisob2uOGhj__EzgnwK0Wzncimvd2brp7Ajfb3UKp6TWdEz4Dgwh899hTW_B5Z1ND2qWikZX8T6Tbpw6PqAvfkzEkrKXHoHPDSypkM2VcTT4GqqYYnafvhk52iXzfLlS4GIjqwCnzzT12UIitatzFNGigLE5WBFJ3itCvZK-biy971-sOHCurxgm8y_rgGp654alTfltdwwIfUEYorUqg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -117,10 +117,13 @@ export const getUserId = (): string | null => {
 // Helper function to make authenticated requests
 export const authenticatedFetch = async (endpoint: string, options: RequestInit = {}) => {
   try {
-    const token = localStorage.getItem('userToken');
+    // Try to get token from localStorage first, fallback to FIREBASE_TOKEN
+    const localToken = localStorage.getItem('userToken');
+    const token = localToken || FIREBASE_TOKEN;
+    
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `${token}`, // Token from login is used here
+      'Authorization': `Bearer ${token}`, // Fixed: Added "Bearer " prefix
       ...options.headers,
     };
 

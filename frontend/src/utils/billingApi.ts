@@ -23,7 +23,7 @@ import {
 } from './mockBillingData';
 
 // Environment detection - set this based on your environment
-const USE_MOCK_DATA = true; // Set to false when connecting to real backend
+const USE_MOCK_DATA = false; // Set to false when connecting to real backend
 
 // Dynamic user scenario that can be changed at runtime
 let currentMockUserScenario = USER_SCENARIOS.FREE_USER;
@@ -119,17 +119,53 @@ export const submitEnterpriseInquiry = async (inquiryData: EnterpriseInquiry): P
 
 // Initialize payment for Premium plan upgrade
 export const initializePayment = async (planId: string): Promise<any> => {
+  // Get user email from localStorage or use a default
+  const getUserEmail = () => {
+    try {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        return user.email || 'user@example.com';
+      }
+    } catch (error) {
+      console.error('Error getting user email:', error);
+    }
+    return 'dadece8444@adrewire.com'; // Fallback email
+  };
+
+  // Get amount based on plan (using cents as your backend expects)
+  const getAmountForPlan = (planId: string): number => {
+    switch (planId) {
+      case 'MONTHLY_PLAN':
+        return 15999; // R159.99 in cents
+      case 'ANNUAL_PLAN':
+        return 180000; // R1800.00 in cents
+      default:
+        return 100; // Default test amount
+    }
+  };
+  const payload = {
+    email: getUserEmail(),
+    amount: getAmountForPlan(planId)
+  };
+
+  console.log('🚀 Initializing payment with payload:', payload);
+
   const response = await authenticatedFetch(ENDPOINTS.BILLING_INITIALIZE_PAYMENT, {
     method: 'POST',
-    body: JSON.stringify({ planId })
+    body: JSON.stringify(payload)
   });
   
   if (!response.ok) {
+    console.error('❌ Payment initialization failed:', response.status, response.statusText);
     throw new Error('Failed to initialize payment');
   }
   
-  const data: BillingAPIResponse<any> = await response.json();
-  return data.data;
+  const data = await response.json();
+  console.log('✅ Payment response received:', data);
+  
+  // Return the data directly since your backend might not wrap it in a 'data' property
+  return data.data || data;
 };
 
 // Utility function to format currency (South African Rand)
