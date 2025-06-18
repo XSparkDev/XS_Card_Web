@@ -9,7 +9,7 @@ export interface PasscreatorResponse {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImE0YTEwZGVjZTk4MzY2ZDZmNjNlMTY3Mjg2YWU5YjYxMWQyYmFhMjciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzQ5Njc1Mzk3LCJ1c2VyX2lkIjoiM3VCZnVqSWxUQWFrQ0JKb0dMcTA1T1RTcTY4MiIsInN1YiI6IjN1QmZ1aklsVEFha0NCSm9HTHEwNU9UU3E2ODIiLCJpYXQiOjE3NDk2NzUzOTcsImV4cCI6MTc0OTY3ODk5NywiZW1haWwiOiJkYWRlY2U4NDQ0QGFkcmV3aXJlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImRhZGVjZTg0NDRAYWRyZXdpcmUuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.BLpBqfR42VasbgE3jgKapudU8nEkEpvb_k2To2BdElsxtOK9bbzbgC41tyy3MleRRNFP0XPAFkL6wL1aLTF5wiTnHw6uOGr8ePF5polGt_IaEuqXrwy-xQ_aHknncNpJPqisob2uOGhj__EzgnwK0Wzncimvd2brp7Ajfb3UKp6TWdEz4Dgwh899hTW_B5Z1ND2qWikZX8T6Tbpw6PqAvfkzEkrKXHoHPDSypkM2VcTT4GqqYYnafvhk52iXzfLlS4GIjqwCnzzT12UIitatzFNGigLE5WBFJ3itCvZK-biy971-sOHCurxgm8y_rgGp654alTfltdwwIfUEYorUqg";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjNiZjA1MzkxMzk2OTEzYTc4ZWM4MGY0MjcwMzM4NjM2NDA2MTBhZGMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUwMjU3MzYzLCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NTAyNTczNjMsImV4cCI6MTc1MDI2MDk2MywiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.kJ_XQ8hLszCStYRrw2TwHq69a5QXBeQw6FTWQDIT2ewC6-doHUpSOIGeQwEL5c09_XPuR-NOZqW8EqOsPRVXEXd6Y5BtWXscXu0SNPcnnQnu8R-X7WOSq74o3pZUshfzkGW-ZpuI4uIwpYkYXSD9CqTi25JfzMMHgyPdWP-WJ7FxJ05YqUenHc8e8oYOc2wGrtmO21OPfZu8lVdUZ_DZH65pT4v4KXuOvXrPSA3rt22dGegw-sX2-Yqc3c1wzx80OTXe_FNlUSHUHn151xPp0VGno29BhNJS6MfzDjOHPsGzBoI1E37aUOWmuF-yedwFjfzWAzkc3-UpVeSFX7VWUg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -46,16 +46,15 @@ export const ENDPOINTS = {
     CREATE_MEETING: '/meetings',
     MEETING_INVITE: '/meetings/invite',
     DELETE_CARD: '/Cards/:id',
-    UPGRADE_USER: '/Users/:id/upgrade',    INITIALIZE_PAYMENT: '/payment/initialize',
+    UPGRADE_USER: '/Users/:id/upgrade',    
+    INITIALIZE_PAYMENT: '/payment/initialize',
     SUBSCRIPTION_STATUS: '/subscription/status',
-    CANCEL_SUBSCRIPTION: '/subscription/cancel',
-
-    // Billing endpoints (Premium/Free plans)
-    BILLING_SUBSCRIPTION_STATUS: '/subscription/status',
-    BILLING_SUBSCRIPTION_PLANS: '/subscription/plans',
-    BILLING_SUBSCRIPTION_LOGS: '/subscription/logs',
-    BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',
-    BILLING_INITIALIZE_PAYMENT: '/payment/initialize',
+    CANCEL_SUBSCRIPTION: '/subscription/cancel',    // Billing endpoints (Premium/Free plans) - These map to existing backend routes
+    BILLING_SUBSCRIPTION_STATUS: '/subscription/status',  // ✅ EXISTS
+    BILLING_SUBSCRIPTION_PLANS: '/subscription/plans',   // ❌ NEED TO ADD  
+    BILLING_SUBSCRIPTION_LOGS: '/subscription/logs',     // ✅ EXISTS
+    BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel', // ✅ EXISTS
+    BILLING_INITIALIZE_PAYMENT: '/subscription/initialize', // ✅ EXISTS
 
     // Enterprise inquiry endpoints
     ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
