@@ -41,7 +41,9 @@ import {
   formatCurrency,
   formatDate,
   setMockUserScenario,
-  getCurrentUserScenario
+  getCurrentUserScenario,
+  deletePaymentMethod,
+  updateSubscriptionPlan
 } from "../../utils/billingApi";
 
 // Import useNavigate from react-router-dom if you're using React Router
@@ -122,12 +124,13 @@ const Settings = () => {
   const [isBillingLoading, setIsBillingLoading] = useState(true);
   const [billingError, setBillingError] = useState<string | null>(null);
     // Phase 2: Enhanced state for testing different user scenarios
-  const [currentUserScenario, setCurrentUserScenario] = useState<string>('free');
+  const [currentUserScenario, setCurrentUserScenario] = useState<string>('premium');
 
   // Modal state management
   const [isPaymentMethodModalOpen, setIsPaymentMethodModalOpen] = useState(false);
   const [isCancelSubscriptionModalOpen, setIsCancelSubscriptionModalOpen] = useState(false);
   const [isEnterpriseInquiryModalOpen, setIsEnterpriseInquiryModalOpen] = useState(false);
+  const [isDemoRequestModalOpen, setIsDemoRequestModalOpen] = useState(false);
   const [paymentMethodToEdit, setPaymentMethodToEdit] = useState<PaymentMethod | null>(null);
 
   // Add this type to specify valid notification setting keys
@@ -189,30 +192,42 @@ const Settings = () => {
       setIsBillingLoading(true);
       setBillingError(null);
       
+      console.log('🔍 Fetching billing data...');
+      
       // TEMPORARY: Uncomment the line below to test error handling
       // throw new Error('Test error - API unavailable');
       
       // Fetch subscription status (always needed)
       const subscriptionStatus = await fetchSubscriptionStatus();
-      setSubscriptionData(subscriptionStatus);      // Fetch additional data based on plan type
-      if (subscriptionData && subscriptionData.plan === 'premium') {
+      console.log('📊 Subscription status received:', subscriptionStatus);
+      setSubscriptionData(subscriptionStatus);
+
+      // Fetch additional data based on plan type (use the fetched data, not the state)
+      if (subscriptionStatus && subscriptionStatus.plan === 'premium') {
+        console.log('💎 Fetching premium plan data...');
         // Premium users need payment methods and billing logs
         const promises = [
           fetchPaymentMethods().then(setPaymentMethods),
           fetchBillingLogs().then(setBillingLogs)
         ];
         await Promise.allSettled(promises);
-      } else if (subscriptionData && subscriptionData.plan === 'enterprise') {
+        console.log('✅ Premium plan data fetched');
+      } else if (subscriptionStatus && subscriptionStatus.plan === 'enterprise') {
+        console.log('🏢 Fetching enterprise plan data...');
         // Enterprise users need invoices
         const enterpriseInvoicesData = await fetchEnterpriseInvoices();
         setEnterpriseInvoices(enterpriseInvoicesData);
+        console.log('✅ Enterprise plan data fetched');
+      } else {
+        console.log('🆓 Using free plan data');
       }
       
     } catch (error) {
-      console.error('Error fetching billing data:', error);
+      console.error('❌ Error fetching billing data:', error);
       setBillingError('Failed to load billing information');
     } finally {
       setIsBillingLoading(false);
+      console.log('🏁 Billing data fetch completed');
     }
   };
   useEffect(() => {
@@ -311,6 +326,11 @@ const Settings = () => {
     setIsEnterpriseInquiryModalOpen(true);
   };
 
+  // Handle demo request
+  const handleDemoRequest = () => {
+    setIsDemoRequestModalOpen(true);
+  };
+
   // Render Free Plan Billing Content
   const renderFreePlanBilling = () => (
     <div className="billing-content">
@@ -355,6 +375,15 @@ const Settings = () => {
             </Button>
             <Button variant="outline" onClick={handleEnterpriseInquiry}>
               Contact Sales for Enterprise
+            </Button>
+          </div>
+          <div className="demo-section">
+            <h4>Want to see XSCard in action?</h4>
+            <p>
+              Schedule a personalized demo to see how XSCard can transform your business networking
+            </p>
+            <Button variant="outline" onClick={handleDemoRequest} className="demo-button">
+              📅 Request Free Demo
             </Button>
           </div>
         </div>
@@ -443,6 +472,9 @@ const Settings = () => {
           </Button>
           <Button size="sm" variant="outline" onClick={handleEnterpriseInquiry}>
             Upgrade to Enterprise
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDemoRequest}>
+            📅 Request Enterprise Demo
           </Button>
         </div>
       </div>
@@ -562,6 +594,7 @@ const Settings = () => {
   // Dynamic billing content renderer
   const renderBillingContent = () => {
     if (isBillingLoading) {
+      console.log('⏳ Billing loading...');
       return (
         <Card className="billing-loading">
           <CardContent className="p-8">
@@ -569,7 +602,10 @@ const Settings = () => {
           </CardContent>
         </Card>
       );
-    }    if (billingError) {
+    }
+
+    if (billingError) {
+      console.log('❌ Billing error:', billingError);
       return (
         <Card className="billing-error">
           <CardContent className="p-8">
@@ -592,15 +628,20 @@ const Settings = () => {
 
     // Determine which billing view to show based on user's plan
     const userPlan = subscriptionData?.plan || 'free';
+    console.log('🎯 Rendering billing content for plan:', userPlan, 'subscriptionData:', subscriptionData);
     
     switch (userPlan) {
       case 'free':
+        console.log('🆓 Rendering free plan billing');
         return renderFreePlanBilling();
       case 'premium':
+        console.log('💎 Rendering premium plan billing');
         return renderPremiumPlanBilling();
       case 'enterprise':
+        console.log('🏢 Rendering enterprise plan billing');
         return renderEnterprisePlanBilling();
       default:
+        console.log('❓ Unknown plan, defaulting to free plan billing');
         return renderFreePlanBilling();
     }
   };    // Phase 2: Enhanced billing action handlers
@@ -728,6 +769,14 @@ const Settings = () => {
   const handleEnterpriseInquirySuccess = () => {
     setIsEnterpriseInquiryModalOpen(false);
     console.log('Enterprise inquiry submitted successfully');
+  };
+
+  const handleDemoRequestSuccess = () => {
+    setIsDemoRequestModalOpen(false);
+    console.log('Demo request submitted successfully');
+    
+    // Show a success message to the user
+    alert('🎉 Demo Request Submitted!\n\nThank you for your interest in XSCard Enterprise.\n\nOur team will contact you within 24 hours to schedule your personalized demo.');
   };
 
   return (
@@ -990,6 +1039,25 @@ const Settings = () => {
                     Enterprise User
                   </Button>
                 </div>
+                <div className="mt-3 pt-3 border-t border-gray-300">
+                  <h5 className="text-xs font-semibold mb-2">🧪 Test Modal Functions:</h5>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleDemoRequest}
+                    >
+                      📅 Test Demo Request
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleEnterpriseInquiry}
+                    >
+                      🏢 Test Enterprise Inquiry
+                    </Button>
+                  </div>
+                </div>
                 <p className="text-xs text-gray-600 mt-2">
                   Current scenario: <strong>{currentUserScenario}</strong> - Switch between user types to test different billing interfaces
                 </p>
@@ -1192,6 +1260,13 @@ const Settings = () => {
         onClose={() => setIsEnterpriseInquiryModalOpen(false)}
         onSuccess={handleEnterpriseInquirySuccess}
         inquiryType="upgrade"
+      />
+
+      <EnterpriseInquiryModal
+        isOpen={isDemoRequestModalOpen}
+        onClose={() => setIsDemoRequestModalOpen(false)}
+        onSuccess={handleDemoRequestSuccess}
+        inquiryType="demo"
       />
     </div>
   );

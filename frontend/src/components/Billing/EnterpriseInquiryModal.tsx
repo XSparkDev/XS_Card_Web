@@ -4,6 +4,8 @@ import { Button } from '../UI/button';
 import { Input } from '../UI/input';
 import { Label } from '../UI/label';
 import { authenticatedFetch, ENDPOINTS } from '../../utils/api';
+import { submitDemoRequest } from '../../utils/billingApi';
+import { EnterpriseInquiry } from '../../types/billing';
 
 interface EnterpriseInquiryModalProps {
   isOpen: boolean;
@@ -158,24 +160,35 @@ export const EnterpriseInquiryModal: React.FC<EnterpriseInquiryModalProps> = ({
       const payload = {
         ...formData,
         estimatedUsers: parseInt(formData.estimatedUsers) || 0,
+        companySize: formData.companySize as 'small' | 'medium' | 'large' | 'enterprise',
+        inquiryType: inquiryType as 'pricing' | 'demo' | 'consultation' | 'trial',
         submittedAt: new Date().toISOString()
       };
 
-      const response = await authenticatedFetch(ENDPOINTS.ENTERPRISE_INQUIRY_SUBMIT, {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
+      // Use dedicated demo request function for demo inquiries
+      if (inquiryType === 'demo') {
+        await submitDemoRequest(payload);
+      } else {
+        // Use regular enterprise inquiry endpoint for other types
+        const response = await authenticatedFetch(ENDPOINTS.ENTERPRISE_INQUIRY_SUBMIT, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit enterprise inquiry');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to submit enterprise inquiry');
+        }
       }
 
       setStep('success');
       
     } catch (err) {
-      console.error('Error submitting enterprise inquiry:', err);
-      setError(err instanceof Error ? err.message : 'Failed to submit enterprise inquiry');
+      console.error(`Error submitting ${inquiryType} request:`, err);
+      const errorMessage = inquiryType === 'demo' 
+        ? 'Failed to submit demo request'
+        : 'Failed to submit enterprise inquiry';
+      setError(err instanceof Error ? err.message : errorMessage);
     } finally {
       setIsLoading(false);
     }
