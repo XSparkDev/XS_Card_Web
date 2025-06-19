@@ -374,6 +374,9 @@ const Settings = () => {
             <Button onClick={goToPricing}>
               Upgrade to Premium - R159.99/month
             </Button>
+            <Button variant="outline" onClick={() => alert('Premium Trial: Start your 14-day free trial with full premium features!')}>
+              Start Premium Trial (14 days free)
+            </Button>
             <Button variant="outline" onClick={handleEnterpriseInquiry}>
               Contact Sales for Enterprise
             </Button>
@@ -1007,59 +1010,23 @@ const Settings = () => {
             </CardHeader>
             <CardContent>              {/* Phase 2: Developer Testing Section (Remove in production) */}
               <div className="developer-testing-section mb-6 p-4 bg-gray-100 rounded-lg">
-                <h4 className="text-sm font-semibold mb-2">🔧 Developer Testing - User Scenarios</h4>
+                <h5 className="text-xs font-semibold mb-2">🧪 Test Modal Functions:</h5>
                 <div className="flex gap-2 flex-wrap">
                   <Button 
                     size="sm" 
-                    variant={currentUserScenario === 'free' ? 'default' : 'outline'}
-                    onClick={() => handleSwitchUserScenario('free')}
+                    variant="outline"
+                    onClick={handleDemoRequest}
                   >
-                    Free User
+                    📅 Test Demo Request
                   </Button>
                   <Button 
                     size="sm" 
-                    variant={currentUserScenario === 'premium' ? 'default' : 'outline'}
-                    onClick={() => handleSwitchUserScenario('premium')}
+                    variant="outline"
+                    onClick={handleEnterpriseInquiry}
                   >
-                    Premium User
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant={currentUserScenario === 'premium_trial' ? 'default' : 'outline'}
-                    onClick={() => handleSwitchUserScenario('premium_trial')}
-                  >
-                    Premium Trial
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant={currentUserScenario === 'enterprise' ? 'default' : 'outline'}
-                    onClick={() => handleSwitchUserScenario('enterprise')}
-                  >
-                    Enterprise User
+                    🏢 Test Enterprise Inquiry
                   </Button>
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-300">
-                  <h5 className="text-xs font-semibold mb-2">🧪 Test Modal Functions:</h5>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={handleDemoRequest}
-                    >
-                      📅 Test Demo Request
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={handleEnterpriseInquiry}
-                    >
-                      🏢 Test Enterprise Inquiry
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600 mt-2">
-                  Current scenario: <strong>{currentUserScenario}</strong> - Switch between user types to test different billing interfaces
-                </p>
               </div>
 
               {renderBillingContent()}

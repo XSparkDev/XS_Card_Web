@@ -95,7 +95,8 @@ export const fetchSubscriptionStatus = async (): Promise<SubscriptionStatus> => 
       subscriptionStatus: 'none',
       subscriptionPlan: null,
       isActive: false,
-      plan: 'free'
+      plan: 'free',
+      emailToken: 'fallback_email_token'
     };
   } catch (error: any) {
     console.error('❌ Subscription status fetch failed:', error.message);
@@ -108,7 +109,8 @@ export const fetchSubscriptionStatus = async (): Promise<SubscriptionStatus> => 
         subscriptionPlan: 'MONTHLY_PLAN',
         isActive: true,
         plan: 'premium',
-        amount: 159.99
+        amount: 159.99,
+        emailToken: 'dev_fallback_email_token'
       };
     }
     
@@ -216,15 +218,31 @@ export const cancelSubscription = async (subscriptionCode: string, reason?: stri
   try {
     console.log('🔄 Cancelling subscription:', subscriptionCode);
     
-    // The backend expects the subscription code in the 'code' field, not 'subscriptionCode'
-    const response = await authenticatedFetch('/subscription/cancel', {
+    // First, fetch the current subscription status to get the email_token
+    console.log('🔄 Fetching subscription details for email token...');
+    const subscriptionStatus = await fetchSubscriptionStatus();
+    
+    console.log('📄 Subscription status received:', JSON.stringify(subscriptionStatus, null, 2));
+    
+    if (!subscriptionStatus.emailToken) {
+      console.error('❌ Email token missing from subscription status:', subscriptionStatus);
+      throw new Error('Email token not found in subscription details. Cannot cancel subscription.');
+    }
+    
+    const payload = {
+      code: subscriptionCode, // Backend expects 'code' field
+      token: subscriptionStatus.emailToken, // Backend expects 'token' field from subscription
+      reason: reason || 'User requested cancellation',
+      feedback: reason,
+      effectiveDate: 'end_of_period'
+    };
+    
+    console.log('📤 Sending cancel payload:', JSON.stringify(payload, null, 2));
+    
+    // The backend expects the subscription code in the 'code' field and token in 'token' field
+    const response = await authenticatedFetch(ENDPOINTS.CANCEL_SUBSCRIPTION, {
       method: 'POST',
-      body: JSON.stringify({
-        code: subscriptionCode, // Backend expects 'code' field
-        reason: reason || 'User requested cancellation',
-        feedback: reason,
-        effectiveDate: 'end_of_period'
-      })
+      body: JSON.stringify(payload)
     });
     
     if (!response.ok) {

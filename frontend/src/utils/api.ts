@@ -19,6 +19,7 @@ export interface SubscriptionStatus {
   trialEndDate?: string;
   customerCode?: string;
   subscriptionCode?: string;
+  emailToken?: string; // Add email token for subscription operations
   isActive: boolean;
   plan: 'free' | 'premium' | 'enterprise';
   amount?: number;
@@ -59,13 +60,13 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjNiZjA1MzkxMzk2OTEzYTc4ZWM4MGY0MjcwMzM4NjM2NDA2MTBhZGMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUwMzUwMTMxLCJ1c2VyX2lkIjoiVHJXdWNYZ012RWhtMTN5MVFEdk1WVWQyNzdlMiIsInN1YiI6IlRyV3VjWGdNdkVobTEzeTFRRHZNVlVkMjc3ZTIiLCJpYXQiOjE3NTAzNTAxMzEsImV4cCI6MTc1MDM1MzczMSwiZW1haWwiOiJ2aXBlYjMyMzEwQG5hYjQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidmlwZWIzMjMxMEBuYWI0LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.EX8dLiEjKOPfQu1gKeZzdcqJ4PJKZZSxxzP9_7_SLItqgLBh30Hkxo_kX_3-ozx1ZYRyo5NPEGotpToOlVj8HeuVDG2nSZ0RWzIo098-ufB1sJ7iuj12MIwvGubDTzPVLhsxacdfMbhFIOelFehujo7RKLOujS8gx81Qw5Sa6OITV6uLXs0_m0EyrrTOh7gmSqWqvc7qfdeaYMPQ0hJj2sPYXnhVAUnDYJiz9QSwBbup_7mNyKZlm7TIHLxfcNaQ4t65G_-APfrqe6MKXgx3i8BrjFjPM9cgcwDEAZ1xMT195DusIfK1U29f-VHXphke1RolF1ApRz6L5lVsWiwANg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
 
 // Default user ID specifically for meetings and user-specific features
-export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
+export const DEFAULT_USER_ID = "TrWucXgMvEhm13y1QDvMVUd277e2";
 
 // Helper function to get the appropriate base URL
 const getBaseUrl = () => {
@@ -103,10 +104,10 @@ export const ENDPOINTS = {
     BILLING_SUBSCRIPTION_STATUS: '/subscription/status',  // ✅ EXISTS
     BILLING_SUBSCRIPTION_PLANS: '/subscription/plans',   // ❌ NEED TO ADD  
     BILLING_SUBSCRIPTION_LOGS: '/subscription/logs',     // ✅ EXISTS
-    BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel', // ✅ EXISTS - expects 'code' field in body
     BILLING_INITIALIZE_PAYMENT: '/subscription/initialize', // ✅ EXISTS
     BILLING_UPDATE_PLAN: '/subscription/plan',           // NEW: Direct plan changes
     BILLING_PAYMENT_METHODS: '/billing/payment-methods', // NEW: Payment method CRUD
+    BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
 
     // Enterprise inquiry endpoints
     ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
