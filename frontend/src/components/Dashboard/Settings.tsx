@@ -26,10 +26,13 @@ import {
 // Import billing types
 import { 
   SubscriptionStatus,
-  BillingLog,
+  BillingLog
+} from "../../utils/api";
+
+import {
   PaymentMethod,
   Invoice
-} from "../../types/billing";
+} from "../../services/billingService";
 
 // Import billing API functions
 import {
@@ -41,10 +44,8 @@ import {
   formatCurrency,
   formatDate,
   setMockUserScenario,
-  getCurrentUserScenario,
-  deletePaymentMethod,
-  updateSubscriptionPlan
-} from "../../utils/billingApi";
+  getCurrentUserScenario
+} from "../../services/billingService";
 
 // Import useNavigate from react-router-dom if you're using React Router
 import { useNavigate } from "react-router-dom";
@@ -403,13 +404,12 @@ const Settings = () => {
             {subscriptionData?.subscriptionStatus === 'trial' ? 'Trial' : 'Active'}
           </Badge>
         </div>
-        
-        <div className="subscription-details">
-          <p>Next billing: {formatDate(subscriptionData?.subscriptionEnd)}</p>
+          <div className="subscription-details">
+          <p>Next billing: {subscriptionData?.subscriptionEnd ? formatDate(subscriptionData.subscriptionEnd) : 'N/A'}</p>
           <p>Status: {subscriptionData?.subscriptionStatus}</p>
-          {subscriptionData?.subscriptionStatus === 'trial' && (
+          {subscriptionData?.subscriptionStatus === 'trial' && subscriptionData?.trialEndDate && (
             <p className="trial-info">
-              Trial ends: {formatDate(subscriptionData?.trialEndDate)}
+              Trial ends: {formatDate(subscriptionData.trialEndDate)}
             </p>
           )}
         </div>
@@ -426,7 +426,7 @@ const Settings = () => {
                   <p className="card-expiry">
                     Expires {paymentMethods[0].expiryMonth}/{paymentMethods[0].expiryYear}
                   </p>
-                  <p className="card-brand">{paymentMethods[0].brand.toUpperCase()}</p>
+                  <p className="card-brand">{paymentMethods[0].brand?.toUpperCase() || 'CARD'}</p>
                 </div>
               </div>
               <Button size="sm" variant="outline" onClick={() => handleUpdatePaymentMethod()}>
@@ -519,9 +519,8 @@ const Settings = () => {
                 <div key={invoice.id} className="invoice-item" data-invoice-id={invoice.id}>
                   <div className="invoice-info">
                     <p className="invoice-date">{formatDate(invoice.date)}</p>
-                    <p className="invoice-number">{invoice.number}</p>
-                    <p className="invoice-description">
-                      {invoice.lineItems[0]?.description || 'Enterprise Services'}
+                    <p className="invoice-number">{invoice.number}</p>                    <p className="invoice-description">
+                      {invoice.lineItems?.[0]?.description || 'Enterprise Services'}
                     </p>
                   </div>
                   <div className="invoice-details">
@@ -658,8 +657,7 @@ const Settings = () => {
     setPaymentMethodToEdit(null);
     setIsPaymentMethodModalOpen(true);
   };
-  
-  const handleCancelSubscription = async () => {
+    const handleCancelSubscription = async () => {
     if (!subscriptionData?.subscriptionCode) {
       setBillingError('No active subscription found to cancel.');
       return;
@@ -714,16 +712,17 @@ const Settings = () => {
       
       // Reset button state on error
       const downloadBtn = document.querySelector(`[data-invoice-id="${invoiceId}"] .download-button`) as HTMLButtonElement;
-      if (downloadBtn) {
-        downloadBtn.innerHTML = '<svg class="download-icon">📄</svg>';
+      if (downloadBtn) {        downloadBtn.innerHTML = '<svg class="download-icon">📄</svg>';
         downloadBtn.disabled = false;
       }
     }
-  };  // Phase 2: User scenario testing (for development)
+  };
+
+  // Phase 2: User scenario testing (for development)
   const handleSwitchUserScenario = (scenario: string) => {
     console.log('🔄 Switching user scenario to:', scenario);
     setCurrentUserScenario(scenario);
-    setMockUserScenario(scenario);
+    setMockUserScenario(scenario as 'free' | 'premium' | 'enterprise');
     
     // Show loading state briefly
     setIsBillingLoading(true);
@@ -1233,21 +1232,19 @@ const Settings = () => {
           setPaymentMethodToEdit(null);
         }}
         onSuccess={handlePaymentMethodSuccess}
-        mode={paymentMethodToEdit ? 'update' : 'add'}
-        existingPaymentMethod={paymentMethodToEdit ? {
+        mode={paymentMethodToEdit ? 'update' : 'add'}        existingPaymentMethod={paymentMethodToEdit ? {
           id: paymentMethodToEdit.id,
           last4: paymentMethodToEdit.last4,
-          brand: paymentMethodToEdit.brand,
-          expiryMonth: paymentMethodToEdit.expiryMonth,
-          expiryYear: paymentMethodToEdit.expiryYear
-        } : undefined}
-      />      {subscriptionData && subscriptionData.subscriptionCode && (
+          brand: paymentMethodToEdit.brand || 'card',
+          expiryMonth: paymentMethodToEdit.expiryMonth || 12,
+          expiryYear: paymentMethodToEdit.expiryYear || 2025
+        } : undefined}      />      {subscriptionData && subscriptionData.subscriptionCode && (
         <CancelSubscriptionModal
           isOpen={isCancelSubscriptionModalOpen}
           onClose={() => setIsCancelSubscriptionModalOpen(false)}
           onSuccess={handleCancelSubscriptionSuccess}
           subscriptionData={{
-            subscriptionCode: subscriptionData.subscriptionCode,
+            code: subscriptionData.subscriptionCode, // Changed from subscriptionData.code to subscriptionData.subscriptionCode
             plan: subscriptionData.plan,
             amount: subscriptionData.amount || 0,
             subscriptionEnd: subscriptionData.subscriptionEnd

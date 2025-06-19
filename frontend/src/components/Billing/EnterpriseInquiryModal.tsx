@@ -4,8 +4,7 @@ import { Button } from '../UI/button';
 import { Input } from '../UI/input';
 import { Label } from '../UI/label';
 import { authenticatedFetch, ENDPOINTS } from '../../utils/api';
-import { submitDemoRequest } from '../../utils/billingApi';
-import { EnterpriseInquiry } from '../../types/billing';
+import { submitDemoRequest } from '../../services/billingService';
 
 interface EnterpriseInquiryModalProps {
   isOpen: boolean;

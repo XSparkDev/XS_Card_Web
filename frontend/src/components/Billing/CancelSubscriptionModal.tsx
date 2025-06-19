@@ -9,7 +9,7 @@ interface CancelSubscriptionModalProps {
   onClose: () => void;
   onSuccess: () => void;
   subscriptionData: {
-    subscriptionCode: string;
+    code: string;
     plan: string;
     amount: number;
     subscriptionEnd?: string;
@@ -74,7 +74,7 @@ export const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = (
 
     try {
       const payload = {
-        subscriptionCode: subscriptionData.subscriptionCode,
+        code: subscriptionData.code,
         reason: formData.reason,
         feedback: formData.feedback,
         effectiveDate: formData.effectiveDate

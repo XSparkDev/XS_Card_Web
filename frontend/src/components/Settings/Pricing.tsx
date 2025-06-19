@@ -20,8 +20,8 @@ import "../../styles/Pricing.css";
 import { 
   fetchSubscriptionStatus,
   initializePayment
-} from "../../utils/billingApi";
-import { SubscriptionStatus } from "../../types/billing";
+} from "../../services/billingService";
+import { SubscriptionStatus } from "../../utils/api";
 import { EnterpriseInquiryModal } from "../Billing/EnterpriseInquiryModal";
 
 const Pricing = () => {
