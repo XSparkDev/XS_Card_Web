@@ -60,7 +60,7 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjNiZjA1MzkxMzk2OTEzYTc4ZWM4MGY0MjcwMzM4NjM2NDA2MTBhZGMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUwMzUwMTMxLCJ1c2VyX2lkIjoiVHJXdWNYZ012RWhtMTN5MVFEdk1WVWQyNzdlMiIsInN1YiI6IlRyV3VjWGdNdkVobTEzeTFRRHZNVlVkMjc3ZTIiLCJpYXQiOjE3NTAzNTAxMzEsImV4cCI6MTc1MDM1MzczMSwiZW1haWwiOiJ2aXBlYjMyMzEwQG5hYjQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidmlwZWIzMjMxMEBuYWI0LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.EX8dLiEjKOPfQu1gKeZzdcqJ4PJKZZSxxzP9_7_SLItqgLBh30Hkxo_kX_3-ozx1ZYRyo5NPEGotpToOlVj8HeuVDG2nSZ0RWzIo098-ufB1sJ7iuj12MIwvGubDTzPVLhsxacdfMbhFIOelFehujo7RKLOujS8gx81Qw5Sa6OITV6uLXs0_m0EyrrTOh7gmSqWqvc7qfdeaYMPQ0hJj2sPYXnhVAUnDYJiz9QSwBbup_7mNyKZlm7TIHLxfcNaQ4t65G_-APfrqe6MKXgx3i8BrjFjPM9cgcwDEAZ1xMT195DusIfK1U29f-VHXphke1RolF1ApRz6L5lVsWiwANg";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjNiZjA1MzkxMzk2OTEzYTc4ZWM4MGY0MjcwMzM4NjM2NDA2MTBhZGMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUwNjg0MzAwLCJ1c2VyX2lkIjoiVHJXdWNYZ012RWhtMTN5MVFEdk1WVWQyNzdlMiIsInN1YiI6IlRyV3VjWGdNdkVobTEzeTFRRHZNVlVkMjc3ZTIiLCJpYXQiOjE3NTA2ODQzMDAsImV4cCI6MTc1MDY4NzkwMCwiZW1haWwiOiJ2aXBlYjMyMzEwQG5hYjQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidmlwZWIzMjMxMEBuYWI0LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.gKFWgf-IyHYYlsAjbTyqckSdgjrbdTrntdUljWJ2vuo4D5QPCYP2TJMIoJTyykL3rHbVF5LVZYY5z9LdrplAzcZfe44t1JpA9lDj54LhQYC5BqRowurCguqQKb749pYYTgCJj-QojZDvwDpIle5sTX0nYL40TQmwj8HUBTVw2FIZSAIlNW_ENfuoa0wxV-qRS_Gglqwlhwg-3FV93OxYEv3-L1nJBjOJht_3ALMtRR2df-Gk5CFt9DCFXx11GWNrm5R8D29jHmRUsgj7wUy_Nzg82biY-82_jdMfHZMjTgM9FO6zScGvs1lpNJRElynTluRLLwuVAlg2VsLHHlnzpg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -71,16 +71,18 @@ export const DEFAULT_USER_ID = "TrWucXgMvEhm13y1QDvMVUd277e2";
 // Helper function to get the appropriate base URL
 const getBaseUrl = () => {
   // return 'https://xscard-app.onrender.com';
-  return 'http://localhost:8383';
+  return 'http://localhost:8384';
 };
 
 export const API_BASE_URL = getBaseUrl();
 
 // API endpoints
 export const ENDPOINTS = {
+    // Shared endpoints
+    SIGN_IN: '/SignIn',
+    INITIALIZE_PAYMENT: '/payment/initialize',
     ADD_USER: '/AddUser',
     GENERATE_QR_CODE: '/generateQR',
-    SIGN_IN: '/SignIn',
     GET_USER: '/Users',
     GET_CARD: '/Cards',
     ADD_CARD: '/AddCard',
@@ -98,21 +100,16 @@ export const ENDPOINTS = {
     MEETING_INVITE: '/meetings/invite',
     DELETE_CARD: '/Cards/:id',
     UPGRADE_USER: '/Users/:id/upgrade',    
-    INITIALIZE_PAYMENT: '/payment/initialize',
     SUBSCRIPTION_STATUS: '/subscription/status',
     CANCEL_SUBSCRIPTION: '/subscription/cancel',    // Billing endpoints (Premium/Free plans) - These map to existing backend routes
     BILLING_SUBSCRIPTION_STATUS: '/subscription/status',  // ✅ EXISTS
     BILLING_SUBSCRIPTION_PLANS: '/subscription/plans',   // ❌ NEED TO ADD  
     BILLING_SUBSCRIPTION_LOGS: '/subscription/logs',     // ✅ EXISTS
-    BILLING_INITIALIZE_PAYMENT: '/subscription/initialize', // ✅ EXISTS
     BILLING_UPDATE_PLAN: '/subscription/plan',           // NEW: Direct plan changes
     BILLING_PAYMENT_METHODS: '/billing/payment-methods', // NEW: Payment method CRUD
     BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
 
-    // Enterprise inquiry endpoints
-    ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
-    ENTERPRISE_DEMO_REQUEST: '/enterprise/demo',
-    ENTERPRISE_SALES_CONTACT: '/enterprise/contact-sales',
+
 
     // Enterprise-related endpoints
     ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,
@@ -126,6 +123,10 @@ export const ENDPOINTS = {
     ENTERPRISE_CONTACTS: `/enterprise/:enterpriseId/contacts/details`,
     ENTERPRISE_DEPARTMENT_CONTACTS: `/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
     ENTERPRISE_CONTACTS_SUMMARY: `/enterprise/:enterpriseId/contacts/summary`,
+    ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
+    ENTERPRISE_DEMO_REQUEST: '/enterprise/demo',
+    ENTERPRISE_SALES_CONTACT: '/enterprise/contact-sales',
+    
 };
 
 // Helper function to build enterprise endpoints with the enterpriseId

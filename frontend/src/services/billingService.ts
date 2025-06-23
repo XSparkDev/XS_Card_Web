@@ -294,7 +294,7 @@ export const initializePayment = async (planId: string): Promise<any> => {
     };
 
     console.log('🚀 Initializing payment for plan:', planId);
-    const response = await authenticatedFetch(ENDPOINTS.BILLING_INITIALIZE_PAYMENT, {
+    const response = await authenticatedFetch(ENDPOINTS.INITIALIZE_PAYMENT, {
       method: 'POST',
       body: JSON.stringify(payload)
     });
