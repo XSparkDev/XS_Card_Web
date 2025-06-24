@@ -60,7 +60,7 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjNiZjA1MzkxMzk2OTEzYTc4ZWM4MGY0MjcwMzM4NjM2NDA2MTBhZGMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUwNjg0MzAwLCJ1c2VyX2lkIjoiVHJXdWNYZ012RWhtMTN5MVFEdk1WVWQyNzdlMiIsInN1YiI6IlRyV3VjWGdNdkVobTEzeTFRRHZNVlVkMjc3ZTIiLCJpYXQiOjE3NTA2ODQzMDAsImV4cCI6MTc1MDY4NzkwMCwiZW1haWwiOiJ2aXBlYjMyMzEwQG5hYjQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidmlwZWIzMjMxMEBuYWI0LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.gKFWgf-IyHYYlsAjbTyqckSdgjrbdTrntdUljWJ2vuo4D5QPCYP2TJMIoJTyykL3rHbVF5LVZYY5z9LdrplAzcZfe44t1JpA9lDj54LhQYC5BqRowurCguqQKb749pYYTgCJj-QojZDvwDpIle5sTX0nYL40TQmwj8HUBTVw2FIZSAIlNW_ENfuoa0wxV-qRS_Gglqwlhwg-3FV93OxYEv3-L1nJBjOJht_3ALMtRR2df-Gk5CFt9DCFXx11GWNrm5R8D29jHmRUsgj7wUy_Nzg82biY-82_jdMfHZMjTgM9FO6zScGvs1lpNJRElynTluRLLwuVAlg2VsLHHlnzpg";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjNiZjA1MzkxMzk2OTEzYTc4ZWM4MGY0MjcwMzM4NjM2NDA2MTBhZGMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUwNzY3MzAzLCJ1c2VyX2lkIjoiVHJXdWNYZ012RWhtMTN5MVFEdk1WVWQyNzdlMiIsInN1YiI6IlRyV3VjWGdNdkVobTEzeTFRRHZNVlVkMjc3ZTIiLCJpYXQiOjE3NTA3NjczMDMsImV4cCI6MTc1MDc3MDkwMywiZW1haWwiOiJ2aXBlYjMyMzEwQG5hYjQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidmlwZWIzMjMxMEBuYWI0LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.mXVmbVhWJugqtAPIFMqbJTRhNvyTG7UHuKIKvU0iOH1tTk50bgCRwGNHOE8bXeEIVHnV5rCHRyeQ5-Wl0HGA3-jJAUx4cFsNRPA3V0Sr8XY_QS_B1q9fympB2omMfkgNFUMBZnyGUekjb0QP1VKNPlz2loLoyvlrVg0bP5onjO8yKqlNb78y3XMRWyiJL9cqBHfTRLlTiAXy6_MHyia2_08-dnzOGcKisclqjgX1tadpwXhY_KBJoUoF9D2AWuGBnxiiuK9_tvWu3PWq9kE_0L4pjl3tDKbw2YIZtMZDep43SgSakDHxcujYmRp_siSMu40BssWbp8Li-10fPNXOlg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
@@ -71,7 +71,7 @@ export const DEFAULT_USER_ID = "TrWucXgMvEhm13y1QDvMVUd277e2";
 // Helper function to get the appropriate base URL
 const getBaseUrl = () => {
   // return 'https://xscard-app.onrender.com';
-  return 'http://localhost:8384';
+  return 'http://localhost:8383';
 };
 
 export const API_BASE_URL = getBaseUrl();
@@ -108,8 +108,6 @@ export const ENDPOINTS = {
     BILLING_UPDATE_PLAN: '/subscription/plan',           // NEW: Direct plan changes
     BILLING_PAYMENT_METHODS: '/billing/payment-methods', // NEW: Payment method CRUD
     BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
-
-
 
     // Enterprise-related endpoints
     ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,

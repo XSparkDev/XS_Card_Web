@@ -54,6 +54,7 @@ import { useNavigate } from "react-router-dom";
 import { PaymentMethodModal } from "../Billing/PaymentMethodModal";
 import { CancelSubscriptionModal } from "../Billing/CancelSubscriptionModal";
 import { EnterpriseInquiryModal } from "../Billing/EnterpriseInquiryModal";
+import { DemoRequestModal } from "../Billing/DemoRequestModal";
 
 // Define interface for enterprise data
 interface EnterpriseData {
@@ -1226,11 +1227,10 @@ const Settings = () => {
         inquiryType="upgrade"
       />
 
-      <EnterpriseInquiryModal
+      <DemoRequestModal
         isOpen={isDemoRequestModalOpen}
         onClose={() => setIsDemoRequestModalOpen(false)}
         onSuccess={handleDemoRequestSuccess}
-        inquiryType="demo"
       />
     </div>
   );
