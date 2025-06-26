@@ -137,14 +137,41 @@ export const MOCK_BILLING_LOGS: BillingLog[] = [
 
 export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
   {
-    id: 'pm_001',
+    id: 'y5uYEnHbx2xAFU2IVY0x',
     type: 'card',
     brand: 'visa',
     last4: '4242',
     expiryMonth: 12,
     expiryYear: 2025,
     isDefault: true,
-    customerCode: 'CUS_abcd1234'
+    lastUsed: '2025-06-20T14:30:00Z',
+    createdAt: '2025-01-15T09:00:00Z',
+    cardholderName: 'John Doe',
+    billingAddress: {
+      street: '123 Main Street',
+      city: 'Cape Town',
+      state: 'Western Cape',
+      postalCode: '8001',
+      country: 'South Africa'
+    }
+  },  {
+    id: 'pm_002',
+    type: 'card',
+    brand: 'mastercard',
+    last4: '8888',
+    expiryMonth: 8,
+    expiryYear: 2026,
+    isDefault: false,
+    lastUsed: '2025-06-15T10:15:00Z',
+    createdAt: '2025-03-10T11:30:00Z',
+    cardholderName: 'Jane Smith',
+    billingAddress: {
+      street: '', // Empty to test no-prefilling
+      city: '', // Empty to test no-prefilling
+      state: '', // Empty to test no-prefilling
+      postalCode: '', // Empty to test no-prefilling
+      country: 'South Africa'
+    }
   }
 ];
 

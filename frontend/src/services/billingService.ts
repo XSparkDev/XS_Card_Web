@@ -4,35 +4,11 @@ import {
   BillingAPIResponse,
   SubscriptionStatus,
   SubscriptionPlan,
-  BillingLog,
-  buildBillingUrl 
+  BillingLog 
 } from '../utils/api';
+import { PaymentMethod, Invoice } from '../types/billing';
 
 // Add missing types that were being imported
-export interface PaymentMethod {
-  id: string;
-  type: 'card' | 'bank_account';
-  last4: string;
-  brand?: string;
-  bank?: string;
-  isDefault: boolean;
-  expiryMonth?: number;
-  expiryYear?: number;
-}
-
-export interface Invoice {
-  id: string;
-  number: string;
-  date: string;
-  amount: number;
-  status: 'paid' | 'pending' | 'failed';
-  downloadUrl?: string;
-  lineItems?: Array<{
-    description: string;
-    amount: number;
-    quantity: number;
-  }>;
-}
 
 export interface EnterpriseInquiry {
   companyName: string;
@@ -263,7 +239,7 @@ export const cancelSubscription = async (subscriptionCode: string, reason?: stri
   }
 };
 
-// Initialize payment
+// Initialize payment for regular subscriptions
 export const initializePayment = async (planId: string): Promise<any> => {
   try {
     const getUserEmail = () => {
@@ -313,6 +289,55 @@ export const initializePayment = async (planId: string): Promise<any> => {
     return data.data || data;
   } catch (error: any) {
     console.error('❌ Payment initialization failed:', error.message);
+    throw error;
+  }
+};
+
+// Initialize trial payment (uses different endpoint)
+export const initializeTrialPayment = async (planId: string): Promise<any> => {
+  try {
+    const getUserEmail = () => {
+      try {
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          const user = JSON.parse(userData);
+          return user.email || 'user@example.com';
+        }
+      } catch (error) {
+        console.error('Error getting user email:', error);
+      }
+      return 'dadece8444@adrewire.com';
+    };
+
+    const getAmountForPlan = (planId: string): number => {
+      switch (planId) {
+        case 'MONTHLY_PLAN': return 15999; // R159.99 in cents
+        case 'ANNUAL_PLAN': return 180000; // R1800.00 in cents
+        default: return 100;
+      }
+    };
+
+    const payload = {
+      email: getUserEmail(),
+      amount: getAmountForPlan(planId),
+      planId: planId
+    };
+
+    console.log('🚀 Initializing trial payment for plan:', planId);
+    const response = await authenticatedFetch(ENDPOINTS.BILLING_TRIAL_INITIALIZE, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      handleBillingError(response, 'initializing trial payment');
+    }
+
+    const data = await response.json();
+    console.log('✅ Trial payment initialization successful:', data);
+    return data;
+  } catch (error: any) {
+    console.error('❌ Trial payment initialization failed:', error.message);
     throw error;
   }
 };
@@ -412,16 +437,19 @@ export const fetchEnterpriseInvoices = async (): Promise<Invoice[]> => {
       console.warn('🔄 Using fallback invoices in development');      return [
         {
           id: 'inv_001',
+          waveAppsInvoiceId: 'WA_INV_001',
           number: 'INV-2025-001',
           date: new Date().toISOString(),
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
           amount: 159.99,
+          currency: 'ZAR',
           status: 'paid',
-          downloadUrl: '#',
-          lineItems: [
+          downloadUrl: '#',          lineItems: [
             {
               description: 'XS Card Monthly Subscription',
-              amount: 159.99,
-              quantity: 1
+              quantity: 1,
+              rate: 159.99,
+              amount: 159.99
             }
           ]
         }
@@ -521,12 +549,30 @@ export const formatCurrency = (amount: number): string => {
   }).format(amount);
 };
 
-export const formatDate = (dateString: string): string => {
-  return new Intl.DateTimeFormat('en-ZA', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(new Date(dateString));
+export const formatDate = (dateString: string | null | undefined): string => {
+  // Handle null, undefined, or empty string cases
+  if (!dateString) {
+    return 'Date not available';
+  }
+  
+  try {
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date string provided to formatDate:', dateString);
+      return 'Invalid date';
+    }
+    
+    return new Intl.DateTimeFormat('en-ZA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  } catch (error) {
+    console.error('Error formatting date:', error, 'dateString:', dateString);
+    return 'Date formatting error';
+  }
 };
 
 // Mock user scenarios for development

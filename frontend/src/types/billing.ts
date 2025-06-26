@@ -36,7 +36,7 @@ export interface BillingLog {
   resource: string;
   userId: string;
   resourceId: string;
-  timestamp: string;
+  timestamp: string | null | undefined; // Allow null/undefined timestamps
   details: {
     type?: string;
     plan?: string;
@@ -49,13 +49,23 @@ export interface BillingLog {
 // Payment Methods (Paystack)
 export interface PaymentMethod {
   id: string;
-  type: 'card';
-  brand: string;
+  type: 'card' | 'bank_account';
+  brand?: string;
   last4: string;
-  expiryMonth: number;
-  expiryYear: number;
+  expiryMonth?: number;
+  expiryYear?: number;
   isDefault: boolean;
   customerCode?: string;
+  lastUsed?: string; // ISO date string of when this method was last used
+  createdAt?: string; // ISO date string of when this method was created
+  cardholderName?: string;
+  billingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  };
 }
 
 // Enterprise Inquiry System

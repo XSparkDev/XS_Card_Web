@@ -32,7 +32,7 @@ import {
 import {
   PaymentMethod,
   Invoice
-} from "../../services/billingService";
+} from "../../types/billing";
 
 // Import billing API functions
 import {
@@ -42,10 +42,11 @@ import {
   fetchEnterpriseInvoices,
   downloadInvoice,
   formatCurrency,
-  formatDate,
-  setMockUserScenario,
-  getCurrentUserScenario
+  initializeTrialPayment
 } from "../../services/billingService";
+
+// Import safe date formatting
+import { safeFormatDate } from "../../utils/api";
 
 // Import useNavigate from react-router-dom if you're using React Router
 import { useNavigate } from "react-router-dom";
@@ -81,6 +82,25 @@ const Settings = () => {
   // Add a function to handle navigation to pricing page
   const goToPricing = () => {
     navigate("/pricing");
+  };
+
+  // Handle trial initialization
+  const handleStartTrial = async () => {
+    try {
+      console.log('🔄 Starting premium trial...');
+      const result = await initializeTrialPayment('MONTHLY_PLAN');
+      
+      if (result && result.authorization_url) {
+        // Redirect to Paystack payment page
+        window.location.href = result.authorization_url;
+      } else {
+        console.error('❌ No authorization URL received');
+        alert('Error: Could not initialize trial payment. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Trial initialization failed:', error);
+      alert('Error starting trial. Please try again or contact support.');
+    }
   };
 
   const [enterpriseData, setEnterpriseData] = useState<EnterpriseData>({
@@ -123,11 +143,7 @@ const Settings = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [enterpriseInvoices, setEnterpriseInvoices] = useState<Invoice[]>([]);
   const [isBillingLoading, setIsBillingLoading] = useState(true);
-  const [billingError, setBillingError] = useState<string | null>(null);
-    // Phase 2: Enhanced state for testing different user scenarios
-  const [currentUserScenario, setCurrentUserScenario] = useState<string>('premium');
-
-  // Modal state management
+  const [billingError, setBillingError] = useState<string | null>(null);  // Modal state management
   const [isPaymentMethodModalOpen, setIsPaymentMethodModalOpen] = useState(false);
   const [isCancelSubscriptionModalOpen, setIsCancelSubscriptionModalOpen] = useState(false);
   const [isEnterpriseInquiryModalOpen, setIsEnterpriseInquiryModalOpen] = useState(false);
@@ -230,11 +246,8 @@ const Settings = () => {
       setIsBillingLoading(false);
       console.log('🏁 Billing data fetch completed');
     }
-  };
-  useEffect(() => {
+  };  useEffect(() => {
     fetchBillingData();
-    // Initialize current scenario from the billing API
-    setCurrentUserScenario(getCurrentUserScenario());
   }, []);
 
   const handleEnterpriseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -373,8 +386,7 @@ const Settings = () => {
           <div className="upgrade-options">
             <Button onClick={goToPricing}>
               Upgrade to Premium - R159.99/month
-            </Button>
-            <Button variant="outline" onClick={() => alert('Premium Trial: Start your 14-day free trial with full premium features!')}>
+            </Button>            <Button variant="outline" onClick={handleStartTrial}>
               Start Premium Trial (14 days free)
             </Button>
             <Button variant="outline" onClick={handleEnterpriseInquiry}>
@@ -408,11 +420,11 @@ const Settings = () => {
           </Badge>
         </div>
           <div className="subscription-details">
-          <p>Next billing: {subscriptionData?.subscriptionEnd ? formatDate(subscriptionData.subscriptionEnd) : 'N/A'}</p>
+          <p>Next billing: {subscriptionData?.subscriptionEnd ? safeFormatDate(subscriptionData.subscriptionEnd) : 'N/A'}</p>
           <p>Status: {subscriptionData?.subscriptionStatus}</p>
           {subscriptionData?.subscriptionStatus === 'trial' && subscriptionData?.trialEndDate && (
             <p className="trial-info">
-              Trial ends: {formatDate(subscriptionData.trialEndDate)}
+              Trial ends: {safeFormatDate(subscriptionData.trialEndDate)}
             </p>
           )}
         </div>
@@ -445,19 +457,21 @@ const Settings = () => {
             </div>
           )}
         </div>
-        
-        {/* Billing History Section */}
+          {/* Billing History Section */}
         <div className="billing-history-section">
           <h3 className="section-title">Recent Billing Activity</h3>
           {billingLogs.length > 0 ? (
             <div className="billing-logs">
-              {billingLogs.slice(0, 5).map((log) => (
+              {billingLogs
+                .filter((log) => log && log.id && log.action) // Filter out invalid logs
+                .slice(0, 5)
+                .map((log) => (
                 <div key={log.id} className="billing-log-item">
                   <div className="log-info">
                     <p className="log-action">{log.action.replace('_', ' ').toUpperCase()}</p>
-                    <p className="log-date">{formatDate(log.timestamp)}</p>
+                    <p className="log-date">{safeFormatDate(log.timestamp)}</p>
                   </div>
-                  {log.details.amount && (
+                  {log.details?.amount && (
                     <p className="log-amount">{formatCurrency(log.details.amount)}</p>
                   )}
                 </div>
@@ -521,7 +535,7 @@ const Settings = () => {
               {enterpriseInvoices.map((invoice) => (
                 <div key={invoice.id} className="invoice-item" data-invoice-id={invoice.id}>
                   <div className="invoice-info">
-                    <p className="invoice-date">{formatDate(invoice.date)}</p>
+                    <p className="invoice-date">{safeFormatDate(invoice.date)}</p>
                     <p className="invoice-number">{invoice.number}</p>                    <p className="invoice-description">
                       {invoice.lineItems?.[0]?.description || 'Enterprise Services'}
                     </p>
@@ -646,13 +660,10 @@ const Settings = () => {
         console.log('❓ Unknown plan, defaulting to free plan billing');
         return renderFreePlanBilling();
     }
-  };    // Phase 2: Enhanced billing action handlers
+  };  // Phase 2: Enhanced billing action handlers
   const handleUpdatePaymentMethod = async () => {
-    if (paymentMethods.length > 0) {
-      setPaymentMethodToEdit(paymentMethods[0]);
-    } else {
-      setPaymentMethodToEdit(null);
-    }
+    const mostRecentMethod = getMostRecentPaymentMethod();
+    setPaymentMethodToEdit(mostRecentMethod);
     setIsPaymentMethodModalOpen(true);
   };
   
@@ -720,21 +731,20 @@ const Settings = () => {
       }
     }
   };
-
-  // Phase 2: User scenario testing (for development)
-  const handleSwitchUserScenario = (scenario: string) => {
-    console.log('🔄 Switching user scenario to:', scenario);
-    setCurrentUserScenario(scenario);
-    setMockUserScenario(scenario as 'free' | 'premium' | 'enterprise');
-    
-    // Show loading state briefly
-    setIsBillingLoading(true);
-    
-    // Refresh billing data with new scenario
-    setTimeout(() => {
-      fetchBillingData();
-    }, 200); // Small delay to show loading state
-  };
+  // Phase 2: User scenario testing (for development) - Currently unused but kept for future testing
+  // const handleSwitchUserScenario = (scenario: string) => {
+  //   console.log('🔄 Switching user scenario to:', scenario);
+  //   setCurrentUserScenario(scenario);
+  //   setMockUserScenario(scenario as 'free' | 'premium' | 'enterprise');
+  //   
+  //   // Show loading state briefly
+  //   setIsBillingLoading(true);
+  //   
+  //   // Refresh billing data with new scenario
+  //   setTimeout(() => {
+  //     fetchBillingData();
+  //   }, 200); // Small delay to show loading state
+  // };
   // Modal success handlers
   const handlePaymentMethodSuccess = async () => {
     try {
@@ -779,6 +789,42 @@ const Settings = () => {
     
     // Show a success message to the user
     alert('🎉 Demo Request Submitted!\n\nThank you for your interest in XSCard Enterprise.\n\nOur team will contact you within 24 hours to schedule your personalized demo.');
+  };
+
+  // Helper function to get the most recently used payment method
+  const getMostRecentPaymentMethod = (): PaymentMethod | null => {
+    if (!paymentMethods || paymentMethods.length === 0) {
+      return null;
+    }
+
+    // First, try to find the default payment method
+    const defaultMethod = paymentMethods.find(method => method.isDefault);
+    if (defaultMethod) {
+      return defaultMethod;
+    }
+
+    // If no default, find the most recently used one
+    const methodsWithLastUsed = paymentMethods.filter(method => method.lastUsed);
+    if (methodsWithLastUsed.length > 0) {
+      return methodsWithLastUsed.reduce((mostRecent, current) => {
+        const currentDate = new Date(current.lastUsed!);
+        const mostRecentDate = new Date(mostRecent.lastUsed!);
+        return currentDate > mostRecentDate ? current : mostRecent;
+      });
+    }
+
+    // If no lastUsed dates, find the most recently created one
+    const methodsWithCreatedAt = paymentMethods.filter(method => method.createdAt);
+    if (methodsWithCreatedAt.length > 0) {
+      return methodsWithCreatedAt.reduce((mostRecent, current) => {
+        const currentDate = new Date(current.createdAt!);
+        const mostRecentDate = new Date(mostRecent.createdAt!);
+        return currentDate > mostRecentDate ? current : mostRecent;
+      });
+    }
+
+    // Fallback to the first method
+    return paymentMethods[0];
   };
 
   return (
@@ -1204,8 +1250,10 @@ const Settings = () => {
           last4: paymentMethodToEdit.last4,
           brand: paymentMethodToEdit.brand || 'card',
           expiryMonth: paymentMethodToEdit.expiryMonth || 12,
-          expiryYear: paymentMethodToEdit.expiryYear || 2025
-        } : undefined}      />      {subscriptionData && subscriptionData.subscriptionCode && (
+          expiryYear: paymentMethodToEdit.expiryYear || 2025,
+          cardholderName: paymentMethodToEdit.cardholderName,
+          billingAddress: paymentMethodToEdit.billingAddress
+        } : undefined}/>      {subscriptionData && subscriptionData.subscriptionCode && (
         <CancelSubscriptionModal
           isOpen={isCancelSubscriptionModalOpen}
           onClose={() => setIsCancelSubscriptionModalOpen(false)}

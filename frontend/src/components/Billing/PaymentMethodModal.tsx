@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../UI/modal';
 import { Button } from '../UI/button';
 import { Input } from '../UI/input';
 import { Label } from '../UI/label';
-import { authenticatedFetch } from '../../utils/api';
+import { authenticatedFetch, configureFormForAutofill, ENDPOINTS } from '../../utils/api';
 
 interface PaymentMethodModalProps {
   isOpen: boolean;
@@ -16,6 +16,14 @@ interface PaymentMethodModalProps {
     brand: string;
     expiryMonth: number;
     expiryYear: number;
+    cardholderName?: string;
+    billingAddress?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      postalCode?: string;
+      country?: string;
+    };
   };
 }
 
@@ -59,6 +67,90 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Ref for the form to configure autofill
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Configure form for credit card autofill when modal opens
+  useEffect(() => {
+    if (isOpen && formRef.current) {
+      // Small delay to ensure form is rendered
+      setTimeout(() => {
+        if (formRef.current) {
+          configureFormForAutofill(formRef.current);
+        }
+      }, 100);
+    }
+  }, [isOpen]);
+
+  // Prefill form when in update mode with existing payment method
+  useEffect(() => {
+    if (mode === 'update' && existingPaymentMethod && isOpen) {
+      // Get user data for prefilling
+      const getUserData = () => {
+        try {
+          const userData = localStorage.getItem('userData');
+          if (userData) {
+            return JSON.parse(userData);
+          }
+        } catch (error) {
+          console.error('Error getting user data:', error);
+        }
+        return null;
+      };
+
+      const user = getUserData();      setFormData({
+        cardNumber: `**** **** **** ${existingPaymentMethod.last4}`, // Masked card number
+        expiryMonth: existingPaymentMethod.expiryMonth?.toString().padStart(2, '0') || '',
+        expiryYear: existingPaymentMethod.expiryYear?.toString() || '',
+        cvv: '', // Never prefill CVV for security
+        // Use stored cardholder name if available, otherwise fallback to user data
+        cardholderName: existingPaymentMethod.cardholderName || 
+          (user?.name || user?.firstName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : ''),
+        billingAddress: {
+          // Only use stored billing address from existing payment method, no user data fallback
+          street: existingPaymentMethod.billingAddress?.street || '',
+          city: existingPaymentMethod.billingAddress?.city || '',
+          state: existingPaymentMethod.billingAddress?.state || '',
+          postalCode: existingPaymentMethod.billingAddress?.postalCode || '',
+          country: existingPaymentMethod.billingAddress?.country || 'South Africa'
+        }
+      });
+
+      console.log('✅ Prefilled payment method form with existing payment method data (no user address fallback)');
+    } else if (mode === 'add' && isOpen) {
+      // Reset form for add mode but still prefill with user data for convenience
+      const getUserData = () => {
+        try {
+          const userData = localStorage.getItem('userData');
+          if (userData) {
+            return JSON.parse(userData);
+          }
+        } catch (error) {
+          console.error('Error getting user data:', error);
+        }
+        return null;
+      };
+
+      const user = getUserData();      setFormData({
+        cardNumber: '',
+        expiryMonth: '',
+        expiryYear: '',
+        cvv: '',
+        cardholderName: user?.name || user?.firstName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '',
+        billingAddress: {
+          // No address prefilling - leave all fields empty
+          street: '',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: 'South Africa' // Only set default country
+        }
+      });
+
+      console.log('✅ Initialized new payment method form (no address prefilling)');
+    }
+  }, [mode, existingPaymentMethod, isOpen]);
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -147,6 +239,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
     setFormData(prev => ({ ...prev, cardNumber: formatted }));
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -165,11 +258,9 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         cvv: formData.cvv,
         cardholderName: formData.cardholderName,
         billingAddress: formData.billingAddress
-      };
-
-      const endpoint = mode === 'add' 
-        ? '/api/billing/payment-methods'
-        : `/api/billing/payment-methods/${existingPaymentMethod?.id}`;
+      };      const endpoint = mode === 'add' 
+        ? ENDPOINTS.BILLING_PAYMENT_METHODS
+        : ENDPOINTS.BILLING_PAYMENT_METHOD_BY_ID.replace(':id', existingPaymentMethod?.id || '');
 
       const response = await authenticatedFetch(endpoint, {
         method: mode === 'add' ? 'POST' : 'PUT',
@@ -223,7 +314,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       title={mode === 'add' ? 'Add Payment Method' : 'Update Payment Method'}
       size="lg"
     >
-      <form onSubmit={handleSubmit} className="modal-form">
+      <form onSubmit={handleSubmit} className="modal-form" ref={formRef}>
         {error && (
           <div className="modal-form-error">
             ⚠️ {error}
