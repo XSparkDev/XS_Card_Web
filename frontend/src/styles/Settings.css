@@ -666,44 +666,64 @@
 
 .log-action {
   font-weight: 600;
-  color: #2d3748;
+  color: #374151;
   text-transform: capitalize;
 }
 
 .log-date {
-  color: #718096;
+  color: #6b7280;
   font-size: 0.875rem;
 }
 
 .log-amount {
   font-weight: 600;
-  color: #2b6cb0;
+  color: #059669;
 }
 
 .no-billing-history {
   text-align: center;
-  color: #718096;
-  padding: 1rem;
+  color: #6b7280;
+  font-style: italic;
+  padding: 2rem;
 }
 
-/* Enhanced Enterprise Styles */
+/* Enterprise Plan Styling */
 .enterprise-plan {
-  border: 2px solid #805ad5;
-  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
 }
 
+.enterprise-plan .plan-title,
+.enterprise-plan .plan-price {
+  color: white;
+}
+
+.enterprise-plan .plan-header {
+  margin-bottom: 1.5rem;
+}
+
+/* Account Manager Section */
 .account-manager-section {
-  margin: 1.5rem 0;
+  margin-top: 1.5rem;
   padding: 1rem;
-  background-color: #ffffff;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+}
+
+.account-manager-section .section-title {
+  color: white;
+  margin-bottom: 1rem;
 }
 
 .contact-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .manager-info p {
@@ -712,18 +732,31 @@
 
 .manager-name {
   font-weight: 600;
-  color: #2d3748;
+  color: #1f2937;
 }
 
-.manager-email, .manager-phone {
-  color: #4a5568;
+.manager-email,
+.manager-phone {
   font-size: 0.875rem;
+  color: #6b7280;
 }
 
-/* Enhanced Invoice Styles */
+/* Enterprise Billing Section */
+.enterprise-billing {
+  margin-top: 1.5rem;
+}
+
+.enterprise-billing .section-title {
+  color: white;
+  margin-bottom: 1rem;
+}
+
 .invoice-list {
   max-height: 400px;
   overflow-y: auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 0.5rem;
+  padding: 1rem;
 }
 
 .invoice-item {
@@ -731,40 +764,50 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
-  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s;
 }
 
-.invoice-info p {
-  margin: 0.25rem 0;
+.invoice-item:hover {
+  background-color: #f8fafc;
+}
+
+.invoice-item:last-child {
+  border-bottom: none;
+}
+
+.invoice-info {
+  flex: 1;
 }
 
 .invoice-date {
-  color: #718096;
   font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
 }
 
 .invoice-number {
   font-weight: 600;
-  color: #2d3748;
+  color: #374151;
+  margin: 0.25rem 0;
 }
 
 .invoice-description {
-  color: #4a5568;
   font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
 }
 
 .invoice-details {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .invoice-amount {
-  font-weight: 700;
-  color: #2b6cb0;
-  font-size: 1.125rem;
-  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #059669;
+  margin: 0;
 }
 
 .invoice-actions {
@@ -776,116 +819,152 @@
 .invoice-status {
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .invoice-status.paid {
-  background-color: #c6f6d5;
-  color: #22543d;
+  background-color: #dcfce7;
+  color: #166534;
 }
 
 .invoice-status.pending {
-  background-color: #fefcbf;
-  color: #744210;
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 .invoice-status.overdue {
-  background-color: #fed7d7;
-  color: #742a2a;
+  background-color: #fee2e2;
+  color: #dc2626;
 }
 
 .download-button {
-  padding: 0.25rem;
-  min-width: auto;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.download-button:hover {
+  color: #374151;
 }
 
 .download-icon {
-  font-size: 0.875rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .no-invoices {
   text-align: center;
   padding: 2rem;
-  color: #718096;
+  color: #6b7280;
 }
 
 /* Enterprise Features Section */
 .enterprise-features-section {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
+}
+
+.enterprise-features-section .section-title {
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.enterprise-features-section .features-list {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
   padding: 1rem;
-  background-color: #ffffff;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
 }
 
-/* Trial Information Styles */
-.trial-info {
-  color: #d69e2e;
-  font-weight: 600;
-  background-color: #fefcbf;
-  padding: 0.5rem;
-  border-radius: 4px;
-  margin-top: 0.5rem;
+.enterprise-features-section .feature-item {
+  color: white;
+  margin-bottom: 0.75rem;
 }
 
-/* Responsive Design for Phase 2 */
-@media (max-width: 768px) {
-  .payment-method,
-  .contact-card,
-  .invoice-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .invoice-details {
-    text-align: left;
-    width: 100%;
-  }
-  
-  .developer-testing-section .flex {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.enterprise-features-section .feature-check {
+  color: #10b981;
 }
 
-/* Demo Request Section */
+/* Demo Section Styling */
 .demo-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e2e8f0;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f0f9ff;
+  border-radius: 0.5rem;
+  border: 1px solid #bae6fd;
 }
 
 .demo-section h4 {
-  font-size: 1rem;
-  font-weight: 600;
+  color: #0369a1;
   margin-bottom: 0.5rem;
-  color: #1f2937;
 }
 
 .demo-section p {
+  color: #0284c7;
   font-size: 0.875rem;
-  color: #64748b;
   margin-bottom: 1rem;
-  line-height: 1.5;
 }
 
-.demo-section .demo-button {
-  width: 100%;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+.demo-button {
+  background-color: #0ea5e9;
   color: white;
   border: none;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border-radius: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.demo-section .demo-button:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+.demo-button:hover {
+  background-color: #0284c7;
 }
 
-.demo-section .demo-button:active {
-  transform: translateY(0);
+/* Trial Info Styling */
+.trial-info {
+  color: #f59e0b;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Subscription Details */
+.subscription-details {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 0.375rem;
+  border: 1px solid #e2e8f0;
+}
+
+.subscription-details p {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0.25rem 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .contact-card {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .invoice-item {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .invoice-details {
+    justify-content: center;
+  }
+  
+  .upgrade-options {
+    flex-direction: column;
+  }
 }

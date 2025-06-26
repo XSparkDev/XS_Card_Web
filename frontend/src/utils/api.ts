@@ -126,9 +126,11 @@ export const API_BASE_URL = getBaseUrl();
 
 // API endpoints
 export const ENDPOINTS = {
+    // Shared endpoints
+    SIGN_IN: '/SignIn',
+    INITIALIZE_PAYMENT: '/payment/initialize',
     ADD_USER: '/AddUser',
     GENERATE_QR_CODE: '/generateQR',
-    SIGN_IN: '/SignIn',
     GET_USER: '/Users',
     GET_CARD: '/Cards',
     ADD_CARD: '/AddCard',
@@ -146,7 +148,6 @@ export const ENDPOINTS = {
     MEETING_INVITE: '/meetings/invite',
     DELETE_CARD: '/Cards/:id',
     UPGRADE_USER: '/Users/:id/upgrade',    
-    INITIALIZE_PAYMENT: '/payment/initialize',
     SUBSCRIPTION_STATUS: '/subscription/status',
     CANCEL_SUBSCRIPTION: '/subscription/cancel',    
     
@@ -161,11 +162,6 @@ export const ENDPOINTS = {
     BILLING_PAYMENT_METHOD_BY_ID: '/billing/payment-methods/:id', // NEW: Individual payment method operations (GET, PUT, DELETE)
     BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
 
-    // Enterprise inquiry endpoints
-    ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
-    ENTERPRISE_DEMO_REQUEST: '/enterprise/demo',
-    ENTERPRISE_SALES_CONTACT: '/enterprise/contact-sales',
-
     // Enterprise-related endpoints
     ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,
     ENTERPRISE_DEPARTMENTS: `/enterprise/:enterpriseId/departments`,
@@ -178,6 +174,10 @@ export const ENDPOINTS = {
     ENTERPRISE_CONTACTS: `/enterprise/:enterpriseId/contacts/details`,
     ENTERPRISE_DEPARTMENT_CONTACTS: `/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
     ENTERPRISE_CONTACTS_SUMMARY: `/enterprise/:enterpriseId/contacts/summary`,
+    ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
+    ENTERPRISE_DEMO_REQUEST: '/enterprise/demo',
+    ENTERPRISE_SALES_CONTACT: '/enterprise/contact-sales',
+    
 };
 
 // Helper function to build enterprise endpoints with the enterpriseId
