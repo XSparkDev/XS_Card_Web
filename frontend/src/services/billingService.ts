@@ -83,6 +83,10 @@ export const fetchSubscriptionStatus = async (): Promise<SubscriptionStatus> => 
       return {
         subscriptionStatus: 'active',
         subscriptionPlan: 'MONTHLY_PLAN',
+        subscriptionCode: 'SUB_dev_fallback_12345', // Add missing subscription code
+        customerCode: 'CUS_dev_fallback_67890', // Add customer code for completeness
+        subscriptionStart: '2025-01-01T00:00:00Z',
+        subscriptionEnd: '2025-07-01T00:00:00Z', // Add subscription end date
         isActive: true,
         plan: 'premium',
         amount: 159.99,

@@ -60,13 +60,13 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ijg3NzQ4NTAwMmYwNWJlMDI2N2VmNDU5ZjViNTEzNTMzYjVjNThjMTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUwODAxOTU1LCJ1c2VyX2lkIjoiMDRpeUR0clRndGNkVGc5eWZtaG1OaGxLbVV6MiIsInN1YiI6IjA0aXlEdHJUZ3RjZFRnOXlmbWhtTmhsS21VejIiLCJpYXQiOjE3NTA4MDE5NTUsImV4cCI6MTc1MDgwNTU1NSwiZW1haWwiOiJ5aXBlZm9uNDIxQGtpbWR5bi5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieWlwZWZvbjQyMUBraW1keW4uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.RQULSgI3t4nY7P2E49XkJCeeme28FfSxysI59EOPxL1DOSFOtAbTHCeWK68C2r7x0_rauB91n57diNU962m_DF513SsKLa2VsOPdW0r6Pb_5e5JhQFbW6_vKAMRgnbpgC8G8edRHO_UUOgSeMeYq4SNkFuaKasLhQClKZu88C5JszXCcMw4j7X7b7ssxsySDoTMPwnLZKzC9CMr8R4lFlQ3kpaySHENdrdpxW1a_jMAafzg0krBrrQ_L0Ps9ZSxEeiiQaGxRAVpc0535SuIg7IS4darHCxa3eIX_FOx05C47P7RUAb1GLuu-SFGQWS6joRa6QlNMT8ej-7UEhRfqlg";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImE4ZGY2MmQzYTBhNDRlM2RmY2RjYWZjNmRhMTM4Mzc3NDU5ZjliMDEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUyMjQ0NTEwLCJ1c2VyX2lkIjoiamJ0dTBNZkdkZFBKTFduckhtSEtDdkZobTFqMiIsInN1YiI6ImpidHUwTWZHZGRQSkxXbnJIbUhLQ3ZGaG0xajIiLCJpYXQiOjE3NTIyNDQ1MTAsImV4cCI6MTc1MjI0ODExMCwiZW1haWwiOiJraXJ0dXphZ25hQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJraXJ0dXphZ25hQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.isz4dREYOALwKx8wzZWC-98WbITybVvJFAXxnaEztN2a85fVXLft62AsDbaasDBdxLsXzNPyhutsneJrdHgSPV32QShAs6JztLamcu9vJ4PlimG6uWX5QZWs5WJ2rhCCPHG48peEmPZkhCv-PjJlXBw26Zr7-5Qtug9VGNI254pbhTuLW9gZwZSSXRpMon0Cv39wwGpFUuk3drvtDPB_FsFBbkkNHyGplZyS1r01XTKr8JS4f076Ivt6tDCdhlbM3p1mUrkt0mxdJXC4bpwK2XG61O2COjbQ_pEVhEWYDe-EpLweNqasTFTviONmhBD0RVpOYsN-FG7FOE2B71Mg6A";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "PegXyjZYojbLudlmOmDf";
 
 // Default user ID specifically for meetings and user-specific features
-export const DEFAULT_USER_ID = "TrWucXgMvEhm13y1QDvMVUd277e2";
+export const DEFAULT_USER_ID = "04iyDtrTgtcdTg9yfmhmNhlKmUz2";
 
 // Example payment method ID for testing
 export const EXAMPLE_PAYMENT_METHOD_ID = "C1qy82bmgPwZdqjfqBQ8";
@@ -115,7 +115,7 @@ const getBaseUrl = () => {
       console.warn('🔧 For development only - do not use in production');
     }
     
-    return 'http://localhost:8383';
+  return 'http://localhost:8383';
   }
   
   // In production, use secure connection
@@ -233,77 +233,30 @@ export const getUserId = (): string | null => {
 // Enhanced helper function to make authenticated requests with better error handling and insecure connection support
 export const authenticatedFetch = async (endpoint: string, options: RequestInit = {}) => {
   try {
-    // Try to get token from localStorage first, fallback to FIREBASE_TOKEN
+    // Prefer logged-in user's token; otherwise fallback to FIREBASE_TOKEN for development
     const localToken = localStorage.getItem('userToken');
-    const token = localToken || FIREBASE_TOKEN;
-    
-    const headers = {
+    const tokenToUse = localToken || FIREBASE_TOKEN;
+
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`, // Fixed: Added "Bearer " prefix
-      ...options.headers,
+      ...options.headers as Record<string, string>,
     };
 
-    // Configure request options for insecure connections
-    const requestOptions: RequestInit = {
+    // Only attach Authorization header if we actually have a token
+    if (tokenToUse) {
+      // Avoid double 'Bearer' prefix if token already contains it
+      headers['Authorization'] = tokenToUse.startsWith('Bearer ') ? tokenToUse : `Bearer ${tokenToUse}`;
+    }
+
+    const response = await fetch(buildUrl(endpoint), {
       ...options,
       headers,
-    };    // In development, configure request options for cross-origin requests
-    const isDevelopment = 
-      window.location.hostname === 'localhost' || 
-      window.location.hostname === '127.0.0.1' ||
-      window.location.hostname.startsWith('192.168.');
-
-    if (isDevelopment && API_CONFIG.bypassCORS) {
-      // Set mode to 'cors' for cross-origin requests
-      // Note: DO NOT set CORS response headers in the request - that's the server's job!
-      requestOptions.mode = 'cors';
-      requestOptions.credentials = 'omit'; // Don't send credentials for development
-    }
-
-    // For mixed content (HTTPS to HTTP), we need to handle it carefully
-    const currentProtocol = window.location.protocol;
-    const targetUrl = buildUrl(endpoint);
-    
-    if (currentProtocol === 'https:' && targetUrl.startsWith('http:')) {
-      console.warn('🔒 Mixed content detected - attempting insecure request from secure page');
-      console.warn('🔧 Target URL:', targetUrl);
-      
-      if (!API_CONFIG.allowMixedContent) {
-        throw new Error('Mixed content blocked - set API_CONFIG.allowMixedContent to true for development');
-      }
-    }
-
-    const response = await fetch(targetUrl, requestOptions);
-
-    // Add response status checking
-    if (!response.ok) {
-      console.error(`API Error: ${response.status} ${response.statusText} for ${endpoint}`);
-      
-      // Handle specific HTTP errors that might be related to security
-      if (response.status === 0 || response.status === 404) {
-        console.warn('🌐 Network error - this might be due to CORS or mixed content restrictions');
-        console.warn('💡 Try: 1) Check if the server is running, 2) Verify CORS settings, 3) Check mixed content policies');
-      }
-      
-      return response; // Still return the response to let calling code handle it
-    }
+    });
 
     return response;
   } catch (error) {
-    console.error('Authenticated fetch error for endpoint:', endpoint, error);
-    
-    // Provide helpful error messages for common insecure connection issues
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.error('🚫 Network error - possible causes:');
-      console.error('   • CORS policy blocking the request');
-      console.error('   • Mixed content policy (HTTPS → HTTP)');
-      console.error('   • Server not accessible or not running');
-      console.error('   • SSL/TLS certificate issues');
-      console.error('💡 For development, ensure API_CONFIG settings allow insecure connections');
-    }
-    
-    throw error;
-  }
+    console.error('Authenticated fetch error:', error);
+    throw error;  }
 };
 
 // Function to enable credit card autofill on insecure connections
