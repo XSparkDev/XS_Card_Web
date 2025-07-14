@@ -22,6 +22,18 @@ export const MOCK_SUBSCRIPTION_STATUS: Record<string, SubscriptionStatus> = {
     plan: 'premium',
     amount: 159.99
   },
+  premium_annual: {
+    subscriptionStatus: 'active',
+    subscriptionPlan: 'ANNUAL_PLAN',
+    subscriptionReference: 'sub_9876543210',
+    subscriptionStart: '2025-01-01T00:00:00Z',
+    subscriptionEnd: '2026-01-01T00:00:00Z',
+    customerCode: 'CUS_abcd1234',
+    subscriptionCode: 'SUB_efgh5678',
+    isActive: true,
+    plan: 'premium',
+    amount: 1800.00
+  },
   premium_trial: {
     subscriptionStatus: 'trial',
     subscriptionPlan: 'MONTHLY_PLAN',
@@ -137,41 +149,14 @@ export const MOCK_BILLING_LOGS: BillingLog[] = [
 
 export const MOCK_PAYMENT_METHODS: PaymentMethod[] = [
   {
-    id: 'y5uYEnHbx2xAFU2IVY0x',
+    id: 'pm_001',
     type: 'card',
     brand: 'visa',
     last4: '4242',
     expiryMonth: 12,
     expiryYear: 2025,
     isDefault: true,
-    lastUsed: '2025-06-20T14:30:00Z',
-    createdAt: '2025-01-15T09:00:00Z',
-    cardholderName: 'John Doe',
-    billingAddress: {
-      street: '123 Main Street',
-      city: 'Cape Town',
-      state: 'Western Cape',
-      postalCode: '8001',
-      country: 'South Africa'
-    }
-  },  {
-    id: 'pm_002',
-    type: 'card',
-    brand: 'mastercard',
-    last4: '8888',
-    expiryMonth: 8,
-    expiryYear: 2026,
-    isDefault: false,
-    lastUsed: '2025-06-15T10:15:00Z',
-    createdAt: '2025-03-10T11:30:00Z',
-    cardholderName: 'Jane Smith',
-    billingAddress: {
-      street: '', // Empty to test no-prefilling
-      city: '', // Empty to test no-prefilling
-      state: '', // Empty to test no-prefilling
-      postalCode: '', // Empty to test no-prefilling
-      country: 'South Africa'
-    }
+    customerCode: 'CUS_abcd1234'
   }
 ];
 

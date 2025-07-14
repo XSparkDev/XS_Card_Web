@@ -40,13 +40,15 @@ import {
   fetchBillingLogs,
   fetchPaymentMethods,
   fetchEnterpriseInvoices,
-  downloadInvoice,
+  fetchPremiumInvoices,
+  exportInvoicePDF,
+  exportInvoiceCSV,
   formatCurrency,
-  initializeTrialPayment
+  formatDate,
+  // Commenting out unused imports
+  // setMockUserScenario,
+  getCurrentUserScenario
 } from "../../services/billingService";
-
-// Import safe date formatting
-import { safeFormatDate } from "../../utils/api";
 
 // Import useNavigate from react-router-dom if you're using React Router
 import { useNavigate } from "react-router-dom";
@@ -55,7 +57,7 @@ import { useNavigate } from "react-router-dom";
 import { PaymentMethodModal } from "../Billing/PaymentMethodModal";
 import { CancelSubscriptionModal } from "../Billing/CancelSubscriptionModal";
 import { EnterpriseInquiryModal } from "../Billing/EnterpriseInquiryModal";
-import { DemoRequestModal } from "../Billing/DemoRequestModal";
+import { InvoiceViewModal } from "../Billing/InvoiceViewModal";
 
 // Define interface for enterprise data
 interface EnterpriseData {
@@ -83,25 +85,6 @@ const Settings = () => {
   // Add a function to handle navigation to pricing page
   const goToPricing = () => {
     navigate("/pricing");
-  };
-
-  // Handle trial initialization
-  const handleStartTrial = async () => {
-    try {
-      console.log('🔄 Starting premium trial...');
-      const result = await initializeTrialPayment('MONTHLY_PLAN');
-      
-      if (result && result.authorization_url) {
-        // Redirect to Paystack payment page
-        window.location.href = result.authorization_url;
-      } else {
-        console.error('❌ No authorization URL received');
-        alert('Error: Could not initialize trial payment. Please try again.');
-      }
-    } catch (error) {
-      console.error('❌ Trial initialization failed:', error);
-      alert('Error starting trial. Please try again or contact support.');
-    }
   };
 
   const [enterpriseData, setEnterpriseData] = useState<EnterpriseData>({
@@ -143,12 +126,20 @@ const Settings = () => {
   const [billingLogs, setBillingLogs] = useState<BillingLog[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [enterpriseInvoices, setEnterpriseInvoices] = useState<Invoice[]>([]);
+  const [premiumInvoices, setPremiumInvoices] = useState<Invoice[]>([]);
   const [isBillingLoading, setIsBillingLoading] = useState(true);
-  const [billingError, setBillingError] = useState<string | null>(null);  // Modal state management
+  const [billingError, setBillingError] = useState<string | null>(null);
+  // Phase 2: Enhanced state for testing different user scenarios
+  // currentUserScenario is used by development/testing code that's commented out
+  const [, setCurrentUserScenario] = useState<string>('premium');
+
+  // Modal state management
   const [isPaymentMethodModalOpen, setIsPaymentMethodModalOpen] = useState(false);
   const [isCancelSubscriptionModalOpen, setIsCancelSubscriptionModalOpen] = useState(false);
   const [isEnterpriseInquiryModalOpen, setIsEnterpriseInquiryModalOpen] = useState(false);
   const [isDemoRequestModalOpen, setIsDemoRequestModalOpen] = useState(false);
+  const [isInvoiceViewModalOpen, setIsInvoiceViewModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentMethodToEdit, setPaymentMethodToEdit] = useState<PaymentMethod | null>(null);
 
   // Add this type to specify valid notification setting keys
@@ -210,45 +201,39 @@ const Settings = () => {
       setIsBillingLoading(true);
       setBillingError(null);
       
-      console.log('🔍 Fetching billing data...');
-      
-      // TEMPORARY: Uncomment the line below to test error handling
-      // throw new Error('Test error - API unavailable');
-      
       // Fetch subscription status (always needed)
       const subscriptionStatus = await fetchSubscriptionStatus();
-      console.log('📊 Subscription status received:', subscriptionStatus);
       setSubscriptionData(subscriptionStatus);
 
       // Fetch additional data based on plan type (use the fetched data, not the state)
       if (subscriptionStatus && subscriptionStatus.plan === 'premium') {
-        console.log('💎 Fetching premium plan data...');
-        // Premium users need payment methods and billing logs
-        const promises = [
-          fetchPaymentMethods().then(setPaymentMethods),
-          fetchBillingLogs().then(setBillingLogs)
-        ];
-        await Promise.allSettled(promises);
-        console.log('✅ Premium plan data fetched');
+        // Premium users need payment methods, billing logs, and invoices
+        const paymentMethodsData = await fetchPaymentMethods();
+        setPaymentMethods(paymentMethodsData);
+        
+        const billingLogsData = await fetchBillingLogs();
+        setBillingLogs(billingLogsData);
+        
+        const premiumInvoicesData = await fetchPremiumInvoices();
+        console.log('🔍 Premium invoices fetched:', premiumInvoicesData);
+        setPremiumInvoices(premiumInvoicesData);
       } else if (subscriptionStatus && subscriptionStatus.plan === 'enterprise') {
-        console.log('🏢 Fetching enterprise plan data...');
         // Enterprise users need invoices
         const enterpriseInvoicesData = await fetchEnterpriseInvoices();
         setEnterpriseInvoices(enterpriseInvoicesData);
-        console.log('✅ Enterprise plan data fetched');
-      } else {
-        console.log('🆓 Using free plan data');
       }
       
     } catch (error) {
-      console.error('❌ Error fetching billing data:', error);
+      console.error('Error fetching billing data:', error);
       setBillingError('Failed to load billing information');
     } finally {
       setIsBillingLoading(false);
-      console.log('🏁 Billing data fetch completed');
     }
-  };  useEffect(() => {
+  };
+  useEffect(() => {
     fetchBillingData();
+    // Initialize current scenario from the billing API
+    setCurrentUserScenario(getCurrentUserScenario());
   }, []);
 
   const handleEnterpriseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -386,8 +371,9 @@ const Settings = () => {
           <h4>Ready to upgrade?</h4>
           <div className="upgrade-options">
             <Button onClick={goToPricing}>
-              Upgrade to Premium - R159.99/month
-            </Button>            <Button variant="outline" onClick={handleStartTrial}>
+              Upgrade to Premium - Starting at R159.99/month
+            </Button>
+            <Button variant="outline" onClick={() => alert('Premium Trial: Start your 14-day free trial with full premium features!')}>
               Start Premium Trial (14 days free)
             </Button>
             <Button variant="outline" onClick={handleEnterpriseInquiry}>
@@ -414,18 +400,24 @@ const Settings = () => {
         <div className="plan-header">
           <div>
             <h3 className="plan-title">Premium Plan</h3>
-            <p className="plan-price">{formatCurrency(subscriptionData?.amount || 159.99)}/month</p>
+            <p className="plan-price">
+              {formatCurrency(subscriptionData?.amount || 159.99)}
+              {/* Use the subscriptionPlan to determine billing period */}
+              {(subscriptionData?.subscriptionPlan?.includes('annual') || 
+                subscriptionData?.subscriptionPlan?.includes('yearly')) 
+                ? '/year' : '/month'}
+            </p>
           </div>
           <Badge variant="default">
             {subscriptionData?.subscriptionStatus === 'trial' ? 'Trial' : 'Active'}
           </Badge>
         </div>
           <div className="subscription-details">
-          <p>Next billing: {subscriptionData?.subscriptionEnd ? safeFormatDate(subscriptionData.subscriptionEnd) : 'N/A'}</p>
+          <p>Next billing: {subscriptionData?.subscriptionEnd ? formatDate(subscriptionData.subscriptionEnd) : 'N/A'}</p>
           <p>Status: {subscriptionData?.subscriptionStatus}</p>
           {subscriptionData?.subscriptionStatus === 'trial' && subscriptionData?.trialEndDate && (
             <p className="trial-info">
-              Trial ends: {safeFormatDate(subscriptionData.trialEndDate)}
+              Trial ends: {formatDate(subscriptionData.trialEndDate)}
             </p>
           )}
         </div>
@@ -434,20 +426,47 @@ const Settings = () => {
         <div className="payment-section">
           <h3 className="section-title">Payment Method</h3>
           {paymentMethods.length > 0 ? (
-            <div className="payment-method">
-              <div className="payment-info">
-                <FaCreditCard className="payment-icon" />
-                <div className="card-details">
-                  <p className="card-number">•••• •••• •••• {paymentMethods[0].last4}</p>
-                  <p className="card-expiry">
-                    Expires {paymentMethods[0].expiryMonth}/{paymentMethods[0].expiryYear}
-                  </p>
-                  <p className="card-brand">{paymentMethods[0].brand?.toUpperCase() || 'CARD'}</p>
+            <div className="payment-methods-list">
+              {paymentMethods.map((method) => (
+                <div key={method.id} className="payment-method">
+                  <div className="payment-info">
+                    <FaCreditCard className="payment-icon" />
+                    <div className="card-details">
+                      <p className="card-number">•••• •••• •••• {method.last4}</p>
+                      <p className="card-expiry">
+                        Expires {method.expiryMonth}/{method.expiryYear}
+                      </p>
+                      <p className="card-brand">{method.brand?.toUpperCase() || 'CARD'}</p>
+                      {method.isDefault && (
+                        <Badge variant="default" className="default-badge">Default</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="payment-actions">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleUpdatePaymentMethod(method)}
+                    >
+                      Update
+                    </Button>
+                    {!method.isDefault && paymentMethods.length > 1 && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => handleSetDefaultPaymentMethod(method.id)}
+                      >
+                        Set Default
+                      </Button>
+                    )}
+                  </div>
                 </div>
+              ))}
+              <div className="add-payment-method">
+                <Button size="sm" variant="outline" onClick={() => handleAddPaymentMethod()}>
+                  Add New Payment Method
+                </Button>
               </div>
-              <Button size="sm" variant="outline" onClick={() => handleUpdatePaymentMethod()}>
-                Update
-              </Button>
             </div>
           ) : (
             <div className="no-payment-method">
@@ -458,21 +477,19 @@ const Settings = () => {
             </div>
           )}
         </div>
-          {/* Billing History Section */}
+        
+        {/* Billing History Section */}
         <div className="billing-history-section">
           <h3 className="section-title">Recent Billing Activity</h3>
           {billingLogs.length > 0 ? (
             <div className="billing-logs">
-              {billingLogs
-                .filter((log) => log && log.id && log.action) // Filter out invalid logs
-                .slice(0, 5)
-                .map((log) => (
+              {billingLogs.slice(0, 5).map((log) => (
                 <div key={log.id} className="billing-log-item">
                   <div className="log-info">
                     <p className="log-action">{log.action.replace('_', ' ').toUpperCase()}</p>
-                    <p className="log-date">{safeFormatDate(log.timestamp)}</p>
+                    <p className="log-date">{formatDate(log.timestamp)}</p>
                   </div>
-                  {log.details?.amount && (
+                  {log.details.amount && (
                     <p className="log-amount">{formatCurrency(log.details.amount)}</p>
                   )}
                 </div>
@@ -480,6 +497,112 @@ const Settings = () => {
             </div>
           ) : (
             <p className="no-billing-history">No billing activity yet</p>
+          )}
+        </div>
+        
+        {/* Invoices Section */}
+        <div className="invoices-section">
+          <div className="section-header-with-test">
+            <h3 className="section-title">Invoices</h3>
+            {/* Debug button for testing */}
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => {
+                console.log('🧪 Test button clicked!');
+                const testInvoice: Invoice = {
+                  id: 'demo-inv-001',
+                  waveAppsInvoiceId: 'WA_DEMO_001',
+                  number: 'XSC-2025-001',
+                  date: '2025-07-12',
+                  dueDate: '2025-08-11',
+                  amount: 159.99,
+                  currency: 'ZAR',
+                  status: 'paid',
+                  customerName: 'Acme Business Solutions (Pty) Ltd',
+                  customerEmail: 'billing@acmebusiness.co.za',
+                  lineItems: [
+                    {
+                      description: 'XSCard Premium Subscription - Monthly Plan',
+                      quantity: 1,
+                      rate: 139.12, // Subtotal without VAT (159.99 ÷ 1.15)
+                      amount: 139.12
+                    }
+                  ],
+                  subtotal: 139.12, // Total excluding VAT
+                  tax: 20.87, // VAT 15% (159.99 - 139.12)
+                  total: 159.99 // Final total including VAT
+                };
+                console.log('🧪 Test invoice created:', testInvoice);
+                handleViewInvoice(testInvoice);
+              }}
+              style={{ marginLeft: 'auto' }}
+            >
+              📄 Preview Invoice
+            </Button>
+          </div>
+          {premiumInvoices.length > 0 ? (
+            <div className="invoices-list">
+              {premiumInvoices.map((invoice) => (
+                <div key={invoice.id} className="invoice-item" data-invoice-id={invoice.id}>
+                  <div className="invoice-info">
+                    <div className="invoice-header">
+                      <p className="invoice-number">{invoice.number}</p>
+                      <p className="invoice-date">{formatDate(invoice.date)}</p>
+                    </div>
+                    <p className="invoice-description">
+                      {invoice.lineItems?.[0]?.description || 'Premium Subscription'}
+                    </p>
+                    <div className="invoice-meta">
+                      <span className="invoice-amount">{formatCurrency(invoice.amount)}</span>
+                      <span className={`invoice-status status-${invoice.status}`}>
+                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="invoice-actions">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        console.log('🖱️ View button clicked for invoice:', invoice.id);
+                        handleViewInvoice(invoice);
+                      }}
+                      className="view-invoice-button"
+                    >
+                      View
+                    </Button>
+                    <div className="export-dropdown">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => handleExportInvoice(invoice.id, 'pdf')}
+                        className="export-button"
+                        title="Export as PDF"
+                      >
+                        📄 PDF
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => handleExportInvoice(invoice.id, 'csv')}
+                        className="export-button"
+                        title="Export as CSV"
+                      >
+                        📊 CSV
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-invoices">
+              <p>No invoices available</p>
+              <p className="text-sm text-gray-500">
+                Invoices will appear here after your first payment
+              </p>
+            </div>
           )}
         </div>
         
@@ -536,7 +659,7 @@ const Settings = () => {
               {enterpriseInvoices.map((invoice) => (
                 <div key={invoice.id} className="invoice-item" data-invoice-id={invoice.id}>
                   <div className="invoice-info">
-                    <p className="invoice-date">{safeFormatDate(invoice.date)}</p>
+                    <p className="invoice-date">{formatDate(invoice.date)}</p>
                     <p className="invoice-number">{invoice.number}</p>                    <p className="invoice-description">
                       {invoice.lineItems?.[0]?.description || 'Enterprise Services'}
                     </p>
@@ -611,7 +734,6 @@ const Settings = () => {
   // Dynamic billing content renderer
   const renderBillingContent = () => {
     if (isBillingLoading) {
-      console.log('⏳ Billing loading...');
       return (
         <Card className="billing-loading">
           <CardContent className="p-8">
@@ -622,7 +744,6 @@ const Settings = () => {
     }
 
     if (billingError) {
-      console.log('❌ Billing error:', billingError);
       return (
         <Card className="billing-error">
           <CardContent className="p-8">
@@ -632,7 +753,6 @@ const Settings = () => {
               <Button onClick={() => {
                 setIsBillingLoading(true);
                 setBillingError(null);
-                // Retry billing data fetch by refetching
                 fetchBillingData();
               }} className="mt-4">
                 Try Again
@@ -645,32 +765,59 @@ const Settings = () => {
 
     // Determine which billing view to show based on user's plan
     const userPlan = subscriptionData?.plan || 'free';
-    console.log('🎯 Rendering billing content for plan:', userPlan, 'subscriptionData:', subscriptionData);
     
     switch (userPlan) {
       case 'free':
-        console.log('🆓 Rendering free plan billing');
         return renderFreePlanBilling();
       case 'premium':
-        console.log('💎 Rendering premium plan billing');
         return renderPremiumPlanBilling();
       case 'enterprise':
-        console.log('🏢 Rendering enterprise plan billing');
         return renderEnterprisePlanBilling();
       default:
-        console.log('❓ Unknown plan, defaulting to free plan billing');
         return renderFreePlanBilling();
     }
-  };  // Phase 2: Enhanced billing action handlers
-  const handleUpdatePaymentMethod = async () => {
-    const mostRecentMethod = getMostRecentPaymentMethod();
-    setPaymentMethodToEdit(mostRecentMethod);
+  };    // Phase 2: Enhanced billing action handlers
+  const handleUpdatePaymentMethod = async (method?: PaymentMethod) => {
+    if (method) {
+      setPaymentMethodToEdit(method);
+    } else if (paymentMethods.length > 0) {
+      // If no method specified, edit the first one (backward compatibility)
+      setPaymentMethodToEdit(paymentMethods[0]);
+    } else {
+      setPaymentMethodToEdit(null);
+    }
     setIsPaymentMethodModalOpen(true);
   };
   
   const handleAddPaymentMethod = () => {
     setPaymentMethodToEdit(null);
     setIsPaymentMethodModalOpen(true);
+  };
+
+  const handleSetDefaultPaymentMethod = async (paymentMethodId: string) => {
+    try {
+      setBillingError(null);
+      
+      // Call API to set default payment method
+      const response = await fetch(`/billing/payment-methods/${paymentMethodId}/set-default`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to set default payment method');
+      }
+      
+      // Refresh payment methods list
+      const updatedMethods = await fetchPaymentMethods();
+      setPaymentMethods(updatedMethods);
+      
+    } catch (error) {
+      console.error('Error setting default payment method:', error);
+      setBillingError('Failed to set default payment method');
+    }
   };
     const handleCancelSubscription = async () => {
     if (!subscriptionData?.subscriptionCode) {
@@ -680,17 +827,11 @@ const Settings = () => {
     setIsCancelSubscriptionModalOpen(true);
   };
   const handleContactAccountManager = () => {
-    console.log('📧 Opening contact form for account manager...');
-    
     const confirmed = window.confirm(
       '📧 Contact Account Manager\n\nThis will open your email client with a pre-filled message to your account manager.\n\nAccount Manager: John Smith\nEmail: john.smith@xscard.com\n\nClick OK to open email client.'
     );
     
     if (confirmed) {
-      // In a real implementation, this could:
-      // 1. Open an email client with pre-filled message
-      // 2. Open a contact modal
-      // 3. Navigate to a dedicated contact page
       const subject = encodeURIComponent('Enterprise Support Request');
       const body = encodeURIComponent('Hello John,\n\nI need assistance with my XSCard Enterprise account.\n\n[Please describe your request here]\n\nBest regards');
       window.open(`mailto:john.smith@xscard.com?subject=${subject}&body=${body}`, '_blank');
@@ -699,17 +840,16 @@ const Settings = () => {
   const handleDownloadInvoice = async (invoiceId: string) => {
     try {
       setBillingError(null);
-      console.log('📄 Initiating invoice download:', invoiceId);
-        // Show visual feedback
+      
+      // Show visual feedback
       const downloadBtn = document.querySelector(`[data-invoice-id="${invoiceId}"] .download-button`) as HTMLButtonElement;
       if (downloadBtn) {
         downloadBtn.innerHTML = '⏳';
         downloadBtn.disabled = true;
       }
       
-      const downloadUrl = await downloadInvoice(invoiceId);
-      
-      console.log('✅ Invoice download completed:', downloadUrl);
+      // Use the new export function for PDF download
+      await handleExportInvoice(invoiceId, 'pdf');
       
       // Reset button state
       if (downloadBtn) {
@@ -717,35 +857,102 @@ const Settings = () => {
         downloadBtn.disabled = false;
       }
       
-      // Show success message
-      alert('✅ Invoice Downloaded!\n\nYour invoice has been downloaded successfully.\nCheck your Downloads folder for the PDF file.');
-      
     } catch (error) {
       console.error('Error downloading invoice:', error);
       setBillingError('Failed to download invoice');
-      alert('❌ Download Failed\n\nWe encountered an error while downloading your invoice.\nPlease try again or contact your account manager.');
       
       // Reset button state on error
       const downloadBtn = document.querySelector(`[data-invoice-id="${invoiceId}"] .download-button`) as HTMLButtonElement;
-      if (downloadBtn) {        downloadBtn.innerHTML = '<svg class="download-icon">📄</svg>';
+      if (downloadBtn) {
+        downloadBtn.innerHTML = '<svg class="download-icon">📄</svg>';
         downloadBtn.disabled = false;
       }
     }
   };
-  // Phase 2: User scenario testing (for development) - Currently unused but kept for future testing
-  // const handleSwitchUserScenario = (scenario: string) => {
-  //   console.log('🔄 Switching user scenario to:', scenario);
-  //   setCurrentUserScenario(scenario);
-  //   setMockUserScenario(scenario as 'free' | 'premium' | 'enterprise');
-  //   
-  //   // Show loading state briefly
-  //   setIsBillingLoading(true);
-  //   
-  //   // Refresh billing data with new scenario
-  //   setTimeout(() => {
-  //     fetchBillingData();
-  //   }, 200); // Small delay to show loading state
-  // };
+
+  // Invoice handlers
+  const handleViewInvoice = (invoice: Invoice) => {
+    console.log('🔍 handleViewInvoice called with:', invoice);
+    console.log('📋 Current modal state - isInvoiceViewModalOpen:', isInvoiceViewModalOpen);
+    
+    setSelectedInvoice(invoice);
+    setIsInvoiceViewModalOpen(true);
+    
+    console.log('✅ Modal state updated - should open now');
+    console.log('📋 Selected invoice:', invoice);
+  };
+
+  const handleExportInvoice = async (invoiceId: string, format: 'pdf' | 'csv') => {
+    try {
+      setBillingError(null);
+      
+      let blob: Blob;
+      let filename: string;
+      
+      if (format === 'pdf') {
+        blob = await exportInvoicePDF(invoiceId);
+        
+        // Check if we're in development and the blob is HTML (not a real PDF)
+        const isDevelopment = 
+          window.location.hostname === 'localhost' || 
+          window.location.hostname === '127.0.0.1' ||
+          window.location.hostname.startsWith('192.168.');
+        
+        if (isDevelopment && blob.type === 'text/html') {
+          // In development, save as HTML since it's actually HTML content
+          filename = `invoice-${invoiceId}-preview.html`;
+          console.log('📄 Development mode: Saving invoice as HTML preview');
+        } else {
+          // Production: Real PDF blob
+          filename = `invoice-${invoiceId}.pdf`;
+        }
+      } else {
+        blob = await exportInvoiceCSV(invoiceId);
+        filename = `invoice-${invoiceId}.csv`;
+      }
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      // Show appropriate success message based on file type
+      const fileType = filename.endsWith('.html') ? 'HTML Preview' : format.toUpperCase();
+      const message = filename.endsWith('.html') 
+        ? `✅ Invoice Preview Exported!\n\nYour invoice preview has been saved as an HTML file.\nOpen it in your browser to view the styled invoice.\n\nFile: ${filename}`
+        : `✅ Invoice Exported!\n\nYour invoice has been exported as ${fileType}.\nCheck your Downloads folder for the file.`;
+      
+      alert(message);
+      
+    } catch (error) {
+      console.error('Error exporting invoice:', error);
+      setBillingError(`Failed to export invoice as ${format.toUpperCase()}`);
+      alert(`❌ Export Failed\n\nWe encountered an error while exporting your invoice as ${format.toUpperCase()}.\nPlease try again.`);
+    }
+  };
+
+  // Phase 2: User scenario testing (for development)
+  // This function is used in development/testing but not currently called in the UI
+  /* 
+  const handleSwitchUserScenario = (scenario: string) => {
+    console.log('🔄 Switching user scenario to:', scenario);
+    setCurrentUserScenario(scenario);
+    setMockUserScenario(scenario as 'free' | 'premium' | 'enterprise');
+    
+    // Show loading state briefly
+    setIsBillingLoading(true);
+    
+    // Refresh billing data with new scenario
+    setTimeout(() => {
+      fetchBillingData();
+    }, 200); // Small delay to show loading state
+  };
+  */
   // Modal success handlers
   const handlePaymentMethodSuccess = async () => {
     try {
@@ -756,8 +963,6 @@ const Settings = () => {
       // Refresh payment methods
       const updatedMethods = await fetchPaymentMethods();
       setPaymentMethods(updatedMethods);
-      
-      console.log('Payment method updated successfully');
     } catch (error) {
       console.error('Error refreshing payment methods:', error);
       setBillingError('Payment method was updated but failed to refresh the list');
@@ -771,8 +976,6 @@ const Settings = () => {
       
       // Refresh billing data to show updated status
       await fetchBillingData();
-      
-      console.log('Subscription cancelled successfully');
     } catch (error) {
       console.error('Error refreshing billing data:', error);
       setBillingError('Subscription was cancelled but failed to refresh billing information');
@@ -781,51 +984,11 @@ const Settings = () => {
 
   const handleEnterpriseInquirySuccess = () => {
     setIsEnterpriseInquiryModalOpen(false);
-    console.log('Enterprise inquiry submitted successfully');
   };
 
   const handleDemoRequestSuccess = () => {
     setIsDemoRequestModalOpen(false);
-    console.log('Demo request submitted successfully');
-    
-    // Show a success message to the user
     alert('🎉 Demo Request Submitted!\n\nThank you for your interest in XSCard Enterprise.\n\nOur team will contact you within 24 hours to schedule your personalized demo.');
-  };
-
-  // Helper function to get the most recently used payment method
-  const getMostRecentPaymentMethod = (): PaymentMethod | null => {
-    if (!paymentMethods || paymentMethods.length === 0) {
-      return null;
-    }
-
-    // First, try to find the default payment method
-    const defaultMethod = paymentMethods.find(method => method.isDefault);
-    if (defaultMethod) {
-      return defaultMethod;
-    }
-
-    // If no default, find the most recently used one
-    const methodsWithLastUsed = paymentMethods.filter(method => method.lastUsed);
-    if (methodsWithLastUsed.length > 0) {
-      return methodsWithLastUsed.reduce((mostRecent, current) => {
-        const currentDate = new Date(current.lastUsed!);
-        const mostRecentDate = new Date(mostRecent.lastUsed!);
-        return currentDate > mostRecentDate ? current : mostRecent;
-      });
-    }
-
-    // If no lastUsed dates, find the most recently created one
-    const methodsWithCreatedAt = paymentMethods.filter(method => method.createdAt);
-    if (methodsWithCreatedAt.length > 0) {
-      return methodsWithCreatedAt.reduce((mostRecent, current) => {
-        const currentDate = new Date(current.createdAt!);
-        const mostRecentDate = new Date(mostRecent.createdAt!);
-        return currentDate > mostRecentDate ? current : mostRecent;
-      });
-    }
-
-    // Fallback to the first method
-    return paymentMethods[0];
   };
 
   return (
@@ -1236,9 +1399,12 @@ const Settings = () => {
             </CardContent>
             <CardFooter>
               <Button>Save Preferences</Button>
-            </CardFooter>          </Card>
+            </CardFooter>
+          </Card>
         </TabsContent>
-      </Tabs>      {/* Modal Components */}
+      </Tabs>
+      
+      {/* Modal Components */}
       <PaymentMethodModal
         isOpen={isPaymentMethodModalOpen}
         onClose={() => {
@@ -1246,15 +1412,15 @@ const Settings = () => {
           setPaymentMethodToEdit(null);
         }}
         onSuccess={handlePaymentMethodSuccess}
-        mode={paymentMethodToEdit ? 'update' : 'add'}        existingPaymentMethod={paymentMethodToEdit ? {
+        mode={paymentMethodToEdit ? 'update' : 'add'}
+        existingPaymentMethod={paymentMethodToEdit ? {
           id: paymentMethodToEdit.id,
           last4: paymentMethodToEdit.last4,
           brand: paymentMethodToEdit.brand || 'card',
           expiryMonth: paymentMethodToEdit.expiryMonth || 12,
-          expiryYear: paymentMethodToEdit.expiryYear || 2025,
-          cardholderName: paymentMethodToEdit.cardholderName,
-          billingAddress: paymentMethodToEdit.billingAddress
-        } : undefined}/>      {subscriptionData && subscriptionData.subscriptionCode && (
+          expiryYear: paymentMethodToEdit.expiryYear || 2025
+        } : undefined}
+      />      {subscriptionData && subscriptionData.subscriptionCode && (
         <CancelSubscriptionModal
           isOpen={isCancelSubscriptionModalOpen}
           onClose={() => setIsCancelSubscriptionModalOpen(false)}
@@ -1275,10 +1441,21 @@ const Settings = () => {
         inquiryType="upgrade"
       />
 
-      <DemoRequestModal
+      <InvoiceViewModal
+        isOpen={isInvoiceViewModalOpen}
+        onClose={() => {
+          setIsInvoiceViewModalOpen(false);
+          setSelectedInvoice(null);
+        }}
+        invoice={selectedInvoice}
+        onExport={handleExportInvoice}
+      />
+
+      <EnterpriseInquiryModal
         isOpen={isDemoRequestModalOpen}
         onClose={() => setIsDemoRequestModalOpen(false)}
         onSuccess={handleDemoRequestSuccess}
+        inquiryType="demo"
       />
     </div>
   );

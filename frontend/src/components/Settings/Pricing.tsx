@@ -19,8 +19,7 @@ import "../../styles/Pricing.css";
 // Import billing system integration
 import { 
   fetchSubscriptionStatus,
-  initializePayment,
-  initializeTrialPayment
+  initializePayment
 } from "../../services/billingService";
 import { SubscriptionStatus } from "../../utils/api";
 import { EnterpriseInquiryModal } from "../Billing/EnterpriseInquiryModal";
@@ -49,29 +48,17 @@ const Pricing = () => {
 
     fetchBillingData();
   }, []);
+
   // Handle Premium upgrade
   const handleUpgradeToPremium = async () => {
     if (subscriptionData?.plan === 'premium') {
       return; // Already on premium
-    }
-    
-    try {
+    }    try {
       setIsUpgrading(true);
       const planId = billingCycle === 'monthly' ? 'MONTHLY_PLAN' : 'ANNUAL_PLAN';
       console.log('🎯 Attempting to upgrade to plan:', planId);
       
-      // Use trial initialization for new users or free plan users
-      const isTrialEligible = !subscriptionData || subscriptionData.plan === 'free' || subscriptionData.subscriptionStatus === 'none';
-      
-      let paymentData;
-      if (isTrialEligible) {
-        console.log('🔄 Initializing trial payment...');
-        paymentData = await initializeTrialPayment(planId);
-      } else {
-        console.log('🔄 Initializing regular payment...');
-        paymentData = await initializePayment(planId);
-      }
-      
+      const paymentData = await initializePayment(planId);
       console.log('💳 Payment data received:', paymentData);
       
       // Check different possible property names for the authorization URL

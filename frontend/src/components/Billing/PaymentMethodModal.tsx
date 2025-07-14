@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../UI/modal';
 import { Button } from '../UI/button';
 import { Input } from '../UI/input';
 import { Label } from '../UI/label';
-import { authenticatedFetch, configureFormForAutofill, ENDPOINTS } from '../../utils/api';
+import { addPaymentMethod, updatePaymentMethod } from '../../services/billingService';
 
 interface PaymentMethodModalProps {
   isOpen: boolean;
@@ -16,14 +16,6 @@ interface PaymentMethodModalProps {
     brand: string;
     expiryMonth: number;
     expiryYear: number;
-    cardholderName?: string;
-    billingAddress?: {
-      street?: string;
-      city?: string;
-      state?: string;
-      postalCode?: string;
-      country?: string;
-    };
   };
 }
 
@@ -33,13 +25,6 @@ interface PaymentFormData {
   expiryYear: string;
   cvv: string;
   cardholderName: string;
-  billingAddress: {
-    street: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-  };
 }
 
 export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
@@ -54,103 +39,36 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
     expiryMonth: '',
     expiryYear: '',
     cvv: '',
-    cardholderName: '',
-    billingAddress: {
-      street: '',
-      city: '',
-      state: '',
-      postalCode: '',
-      country: 'South Africa'
-    }
+    cardholderName: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Ref for the form to configure autofill
-  const formRef = useRef<HTMLFormElement>(null);
-
-  // Configure form for credit card autofill when modal opens
+  // Effect to prefill form with existing payment method data
   useEffect(() => {
-    if (isOpen && formRef.current) {
-      // Small delay to ensure form is rendered
-      setTimeout(() => {
-        if (formRef.current) {
-          configureFormForAutofill(formRef.current);
-        }
-      }, 100);
-    }
-  }, [isOpen]);
-
-  // Prefill form when in update mode with existing payment method
-  useEffect(() => {
-    if (mode === 'update' && existingPaymentMethod && isOpen) {
-      // Get user data for prefilling
-      const getUserData = () => {
-        try {
-          const userData = localStorage.getItem('userData');
-          if (userData) {
-            return JSON.parse(userData);
-          }
-        } catch (error) {
-          console.error('Error getting user data:', error);
-        }
-        return null;
-      };
-
-      const user = getUserData();      setFormData({
-        cardNumber: `**** **** **** ${existingPaymentMethod.last4}`, // Masked card number
-        expiryMonth: existingPaymentMethod.expiryMonth?.toString().padStart(2, '0') || '',
-        expiryYear: existingPaymentMethod.expiryYear?.toString() || '',
-        cvv: '', // Never prefill CVV for security
-        // Use stored cardholder name if available, otherwise fallback to user data
-        cardholderName: existingPaymentMethod.cardholderName || 
-          (user?.name || user?.firstName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : ''),
-        billingAddress: {
-          // Only use stored billing address from existing payment method, no user data fallback
-          street: existingPaymentMethod.billingAddress?.street || '',
-          city: existingPaymentMethod.billingAddress?.city || '',
-          state: existingPaymentMethod.billingAddress?.state || '',
-          postalCode: existingPaymentMethod.billingAddress?.postalCode || '',
-          country: existingPaymentMethod.billingAddress?.country || 'South Africa'
-        }
-      });
-
-      console.log('✅ Prefilled payment method form with existing payment method data (no user address fallback)');
-    } else if (mode === 'add' && isOpen) {
-      // Reset form for add mode but still prefill with user data for convenience
-      const getUserData = () => {
-        try {
-          const userData = localStorage.getItem('userData');
-          if (userData) {
-            return JSON.parse(userData);
-          }
-        } catch (error) {
-          console.error('Error getting user data:', error);
-        }
-        return null;
-      };
-
-      const user = getUserData();      setFormData({
+    if (mode === 'update' && existingPaymentMethod) {
+      setFormData(prev => ({
+        ...prev,
+        // For security reasons, we only prefill the expiry date
+        // Card number and CVV must be re-entered for updates
+        expiryMonth: existingPaymentMethod.expiryMonth.toString().padStart(2, '0'),
+        expiryYear: existingPaymentMethod.expiryYear.toString(),
+        // Don't prefill card number for security
+        cardNumber: '',
+      }));
+    } else {
+      // Reset form for add mode
+      setFormData({
         cardNumber: '',
         expiryMonth: '',
         expiryYear: '',
         cvv: '',
-        cardholderName: user?.name || user?.firstName ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '',
-        billingAddress: {
-          // No address prefilling - leave all fields empty
-          street: '',
-          city: '',
-          state: '',
-          postalCode: '',
-          country: 'South Africa' // Only set default country
-        }
+        cardholderName: ''
       });
-
-      console.log('✅ Initialized new payment method form (no address prefilling)');
     }
-  }, [mode, existingPaymentMethod, isOpen]);
+  }, [mode, existingPaymentMethod]);
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -175,18 +93,6 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       errors.cardholderName = 'Please enter the cardholder name';
     }
 
-    if (!formData.billingAddress.street.trim()) {
-      errors.street = 'Please enter a billing address';
-    }
-
-    if (!formData.billingAddress.city.trim()) {
-      errors.city = 'Please enter a city';
-    }
-
-    if (!formData.billingAddress.postalCode.trim()) {
-      errors.postalCode = 'Please enter a postal code';
-    }
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -194,21 +100,10 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name.startsWith('billingAddress.')) {
-      const addressField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        billingAddress: {
-          ...prev.billingAddress,
-          [addressField]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
 
     // Clear validation error when user starts typing
     if (validationErrors[name]) {
@@ -239,7 +134,6 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
     setFormData(prev => ({ ...prev, cardNumber: formatted }));
   };
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -256,20 +150,16 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         expiryMonth: parseInt(formData.expiryMonth),
         expiryYear: parseInt(formData.expiryYear),
         cvv: formData.cvv,
-        cardholderName: formData.cardholderName,
-        billingAddress: formData.billingAddress
-      };      const endpoint = mode === 'add' 
-        ? ENDPOINTS.BILLING_PAYMENT_METHODS
-        : ENDPOINTS.BILLING_PAYMENT_METHOD_BY_ID.replace(':id', existingPaymentMethod?.id || '');
+        cardholderName: formData.cardholderName
+      };
 
-      const response = await authenticatedFetch(endpoint, {
-        method: mode === 'add' ? 'POST' : 'PUT',
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${mode} payment method`);
+      if (mode === 'add') {
+        await addPaymentMethod(payload);
+      } else {
+        if (!existingPaymentMethod?.id) {
+          throw new Error('No payment method ID provided for update');
+        }
+        await updatePaymentMethod(existingPaymentMethod.id, payload);
       }
 
       // Success!
@@ -293,14 +183,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         expiryMonth: '',
         expiryYear: '',
         cvv: '',
-        cardholderName: '',
-        billingAddress: {
-          street: '',
-          city: '',
-          state: '',
-          postalCode: '',
-          country: 'South Africa'
-        }
+        cardholderName: ''
       });
       setError(null);
       setValidationErrors({});
@@ -314,7 +197,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
       title={mode === 'add' ? 'Add Payment Method' : 'Update Payment Method'}
       size="lg"
     >
-      <form onSubmit={handleSubmit} className="modal-form" ref={formRef}>
+      <form onSubmit={handleSubmit} className="modal-form">
         {error && (
           <div className="modal-form-error">
             ⚠️ {error}
@@ -325,8 +208,18 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
         <div className="payment-section">
           <h3 className="section-title">Card Information</h3>
           
+          {mode === 'update' && existingPaymentMethod && (
+            <div className="existing-card-info">
+              <p className="text-sm text-gray-600 mb-3">
+                Updating payment method: •••• •••• •••• {existingPaymentMethod.last4} ({existingPaymentMethod.brand?.toUpperCase()})
+              </p>
+            </div>
+          )}
+          
           <div className="modal-form-group">
-            <Label htmlFor="cardNumber">Card Number</Label>
+            <Label htmlFor="cardNumber">
+              {mode === 'update' ? 'New Card Number' : 'Card Number'}
+            </Label>
             <Input
               id="cardNumber"
               name="cardNumber"
@@ -417,89 +310,6 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
             {validationErrors.cardholderName && (
               <div className="modal-form-error">{validationErrors.cardholderName}</div>
             )}
-          </div>
-        </div>
-
-        {/* Billing Address */}
-        <div className="payment-section">
-          <h3 className="section-title">Billing Address</h3>
-          
-          <div className="modal-form-group">
-            <Label htmlFor="billingAddress.street">Street Address</Label>
-            <Input
-              id="billingAddress.street"
-              name="billingAddress.street"
-              value={formData.billingAddress.street}
-              onChange={handleInputChange}
-              placeholder="123 Main Street"
-              disabled={isLoading}
-            />
-            {validationErrors.street && (
-              <div className="modal-form-error">{validationErrors.street}</div>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div className="modal-form-group" style={{ flex: 1 }}>
-              <Label htmlFor="billingAddress.city">City</Label>
-              <Input
-                id="billingAddress.city"
-                name="billingAddress.city"
-                value={formData.billingAddress.city}
-                onChange={handleInputChange}
-                placeholder="Cape Town"
-                disabled={isLoading}
-              />
-              {validationErrors.city && (
-                <div className="modal-form-error">{validationErrors.city}</div>
-              )}
-            </div>
-
-            <div className="modal-form-group" style={{ flex: 1 }}>
-              <Label htmlFor="billingAddress.state">State/Province</Label>
-              <Input
-                id="billingAddress.state"
-                name="billingAddress.state"
-                value={formData.billingAddress.state}
-                onChange={handleInputChange}
-                placeholder="Western Cape"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div className="modal-form-group" style={{ flex: 1 }}>
-              <Label htmlFor="billingAddress.postalCode">Postal Code</Label>
-              <Input
-                id="billingAddress.postalCode"
-                name="billingAddress.postalCode"
-                value={formData.billingAddress.postalCode}
-                onChange={handleInputChange}
-                placeholder="8001"
-                disabled={isLoading}
-              />
-              {validationErrors.postalCode && (
-                <div className="modal-form-error">{validationErrors.postalCode}</div>
-              )}
-            </div>
-
-            <div className="modal-form-group" style={{ flex: 1 }}>
-              <Label htmlFor="billingAddress.country">Country</Label>
-              <select
-                id="billingAddress.country"
-                name="billingAddress.country"
-                value={formData.billingAddress.country}
-                onChange={handleInputChange}
-                disabled={isLoading}
-              >
-                <option value="South Africa">South Africa</option>
-                <option value="Botswana">Botswana</option>
-                <option value="Namibia">Namibia</option>
-                <option value="Zimbabwe">Zimbabwe</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
           </div>
         </div>
 

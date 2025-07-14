@@ -464,30 +464,337 @@ export const fetchEnterpriseInvoices = async (): Promise<Invoice[]> => {
   }
 };
 
-// Download invoice
-export const downloadInvoice = async (invoiceId: string): Promise<void> => {
+// Fetch premium user invoices
+export const fetchPremiumInvoices = async (): Promise<Invoice[]> => {
   try {
-    console.log('🔄 Downloading invoice:', invoiceId);
-    const response = await authenticatedFetch(`/billing/invoices/${invoiceId}/download`);
+    console.log('🔄 Fetching premium invoices...');
+    const response = await authenticatedFetch(ENDPOINTS.BILLING_INVOICES);
     
     if (!response.ok) {
-      handleBillingError(response, 'downloading invoice');
+      handleBillingError(response, 'fetching premium invoices');
     }
     
-    // Handle file download
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `invoice-${invoiceId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    const data: BillingAPIResponse<Invoice[]> = await response.json();
     
-    console.log('✅ Invoice downloaded successfully');
+    if (data.status === false) {
+      throw new Error(data.message || 'Failed to load premium invoices');
+    }
+    
+    console.log('✅ Premium invoices fetched successfully');
+    return data.data || [];
   } catch (error: any) {
-    console.error('❌ Invoice download failed:', error.message);
+    console.error('❌ Premium invoices fetch failed:', error.message);
+    
+    // Fallback in development
+    if (isDevelopment()) {
+      console.warn('🔄 Using fallback premium invoices in development');
+      return [
+        {
+          id: 'inv_premium_001',
+          waveAppsInvoiceId: 'WA_PREM_001',
+          number: 'XSC-2025-001',
+          date: new Date().toISOString(),
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 159.99, // Total including VAT from backend
+          currency: 'ZAR',
+          status: 'paid',
+          customerName: 'Acme Business Solutions (Pty) Ltd',
+          customerEmail: 'billing@acmebusiness.co.za',
+          lineItems: [
+            {
+              description: 'XSCard Premium Subscription - Monthly Plan',
+              quantity: 1,
+              rate: 139.12, // Rate excluding VAT (159.99 ÷ 1.15)
+              amount: 139.12
+            }
+          ],
+          subtotal: 139.12, // Subtotal excluding VAT
+          tax: 20.87, // VAT 15% (159.99 - 139.12)
+          total: 159.99, // Final total including VAT from backend
+          pdfUrl: '/invoices/premium/XSC-2025-001.pdf'
+        },
+        {
+          id: 'inv_premium_002',
+          waveAppsInvoiceId: 'WA_PREM_002',
+          number: 'XSC-2025-002',
+          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 159.99, // Total including VAT from backend
+          currency: 'ZAR',
+          status: 'paid',
+          customerName: 'TechCorp Innovations',
+          customerEmail: 'accounts@techcorp.com',
+          lineItems: [
+            {
+              description: 'XSCard Premium Subscription - Monthly Plan',
+              quantity: 1,
+              rate: 139.12, // Rate excluding VAT (159.99 ÷ 1.15)
+              amount: 139.12
+            }
+          ],
+          subtotal: 139.12, // Subtotal excluding VAT
+          tax: 20.87, // VAT 15% (159.99 - 139.12)
+          total: 159.99, // Final total including VAT from backend
+          pdfUrl: '/invoices/premium/XSC-2025-002.pdf'
+        },
+        {
+          id: 'inv_premium_003',
+          waveAppsInvoiceId: 'WA_PREM_003',
+          number: 'XSC-2025-003',
+          date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+          dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 899.99,
+          currency: 'ZAR',
+          status: 'pending',
+          customerName: 'Metro Marketing Agency',
+          customerEmail: 'finance@metromarketing.co.za',
+          lineItems: [
+            {
+              description: 'XSCard Enterprise Setup - Annual',
+              quantity: 1,
+              rate: 782.59,
+              amount: 782.59
+            },
+            {
+              description: 'Professional Onboarding Service',
+              quantity: 1,
+              rate: 117.40,
+              amount: 117.40
+            }
+          ],
+          subtotal: 899.99,
+          tax: 135.00,
+          total: 1034.99,
+          pdfUrl: '/invoices/premium/XSC-2025-003.pdf'
+        }
+      ];
+    }
+    
+    throw error;
+  }
+};
+
+// Export invoice as PDF
+export const exportInvoicePDF = async (invoiceId: string): Promise<Blob> => {
+  try {
+    console.log('🔄 Exporting invoice as PDF:', invoiceId);
+    const response = await authenticatedFetch(`${ENDPOINTS.BILLING_INVOICE_BY_ID.replace(':id', invoiceId)}/pdf`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to export invoice as PDF');
+    }
+    
+    const blob = await response.blob();
+    console.log('✅ Invoice PDF exported successfully');
+    return blob;
+  } catch (error: any) {
+    console.error('❌ Invoice PDF export failed:', error.message);
+    
+    // Fallback: Create a proper PDF in development using jsPDF
+    if (isDevelopment()) {
+      console.warn('🔄 Creating proper PDF using jsPDF in development');
+      
+      try {
+        // Import the PDF generator dynamically to avoid bundling issues
+        const { generateInvoicePDF } = await import('../utils/pdfGenerator');
+        
+        // First, fetch the invoice data to populate the PDF
+        const invoices = await fetchPremiumInvoices();
+        const invoice = invoices.find(inv => inv.id === invoiceId) || invoices[0];
+        
+        if (!invoice) {
+          throw new Error('Invoice not found for PDF generation');
+        }
+        
+        // Generate a proper PDF using jsPDF
+        const pdfBlob = await generateInvoicePDF(invoice, false); // Use direct jsPDF method for faster generation
+        
+        console.log('✅ Proper PDF generated successfully using jsPDF');
+        console.log('📄 Invoice data:', {
+          id: invoice.id,
+          number: invoice.number,
+          total: invoice.total || invoice.amount,
+          lineItems: invoice.lineItems.length
+        });
+        
+        return pdfBlob;
+        
+      } catch (pdfError: any) {
+        console.error('❌ jsPDF generation failed, falling back to HTML:', pdfError.message);
+        
+        // Final fallback: HTML blob for preview (simplified version)
+        const invoices = await fetchPremiumInvoices();
+        const invoice = invoices.find(inv => inv.id === invoiceId) || invoices[0];
+        
+        if (!invoice) {
+          throw new Error('Invoice not found for PDF generation');
+        }
+        
+        // Create a simple HTML invoice preview
+        const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice ${invoice.number}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .header { text-align: center; border-bottom: 2px solid #3b82f6; margin-bottom: 20px; }
+        .invoice-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .customer-info { margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f9f9f9; }
+        .total { text-align: right; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>XSCard Business Solutions</h1>
+        <h2>INVOICE ${invoice.number}</h2>
+    </div>
+    <div class="invoice-info">
+        <div>Date: ${new Date(invoice.date).toLocaleDateString()}</div>
+        <div>Due: ${new Date(invoice.dueDate).toLocaleDateString()}</div>
+        <div>Status: ${invoice.status}</div>
+    </div>
+    <div class="customer-info">
+        <h3>Bill To:</h3>
+        <p>${invoice.customerName}<br>${invoice.customerEmail}</p>
+    </div>
+    <table>
+        <tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
+        ${invoice.lineItems.map(item => 
+          `<tr><td>${item.description}</td><td>${item.quantity}</td><td>${invoice.currency} ${item.rate.toFixed(2)}</td><td>${invoice.currency} ${item.amount.toFixed(2)}</td></tr>`
+        ).join('')}
+    </table>
+    <div class="total">
+        <p>Subtotal: ${invoice.currency} ${(invoice.subtotal || 0).toFixed(2)}</p>
+        <p>VAT: ${invoice.currency} ${(invoice.tax || 0).toFixed(2)}</p>
+        <p><strong>Total: ${invoice.currency} ${(invoice.total || invoice.amount || 0).toFixed(2)}</strong></p>
+    </div>
+</body>
+</html>`;
+
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        
+        console.warn('🔧 Final fallback: Simple HTML preview generated');
+        console.warn('💡 To avoid "Failed to load PDF" errors, this will be saved as .html file');
+        
+        return blob;
+      }
+    }
+    
+    throw error;
+  }
+};
+// Export invoice as CSV
+export const exportInvoiceCSV = async (invoiceId: string): Promise<Blob> => {
+  try {
+    console.log('🔄 Exporting invoice as CSV:', invoiceId);
+    const response = await authenticatedFetch(`${ENDPOINTS.BILLING_INVOICE_BY_ID.replace(':id', invoiceId)}/csv`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to export invoice as CSV');
+    }
+    
+    const blob = await response.blob();
+    console.log('✅ Invoice CSV exported successfully');
+    return blob;
+  } catch (error: any) {
+    console.error('❌ Invoice CSV export failed:', error.message);
+    
+    // Fallback: Create a mock CSV blob in development
+    if (isDevelopment()) {
+      console.warn('🔄 Creating mock CSV in development');
+      const mockCsvContent = `Invoice Number,Date,Amount,Status\n${invoiceId},${new Date().toISOString()},R159.99,Paid`;
+      return new Blob([mockCsvContent], { type: 'text/csv' });
+    }
+    
+    throw error;
+  }
+};
+
+// Add payment method
+export const addPaymentMethod = async (paymentData: {
+  cardNumber: string;
+  expiryMonth: number;
+  expiryYear: number;
+  cvv: string;
+  cardholderName: string;
+}): Promise<PaymentMethod> => {
+  try {
+    console.log('🔄 Adding payment method...');
+    const response = await authenticatedFetch(ENDPOINTS.BILLING_PAYMENT_METHODS, {
+      method: 'POST',
+      body: JSON.stringify(paymentData)
+    });
+    
+    if (!response.ok) {
+      handleBillingError(response, 'adding payment method');
+    }
+    
+    const data: BillingAPIResponse<PaymentMethod> = await response.json();
+    
+    if (data.status === false) {
+      throw new Error(data.message || 'Failed to add payment method');
+    }
+    
+    if (!data.data) {
+      throw new Error('No payment method data received from server');
+    }
+    
+    console.log('✅ Payment method added successfully');
+    return data.data;
+  } catch (error: any) {
+    console.error('❌ Payment method addition failed:', error.message);
+    
+    // Provide specific error messages for known backend issues
+    if (error.message.includes('404') || error.message.includes('Cannot POST')) {
+      throw new Error('Payment method management is temporarily unavailable. Our team is working to resolve this issue. Please try again later or contact support.');
+    }
+    
+    throw error;
+  }
+};
+
+// Update payment method
+export const updatePaymentMethod = async (
+  paymentMethodId: string, 
+  paymentData: {
+    cardNumber: string;
+    expiryMonth: number;
+    expiryYear: number;
+    cvv: string;
+    cardholderName: string;
+  }
+): Promise<PaymentMethod> => {
+  try {
+    console.log('🔄 Updating payment method:', paymentMethodId);
+    
+    // Use the correct backend endpoint with proper URL formatting
+    const response = await authenticatedFetch(`/billing/payment-methods/${paymentMethodId}`, {
+      method: 'PUT',
+      body: JSON.stringify(paymentData)
+    });
+    
+    if (!response.ok) {
+      handleBillingError(response, 'updating payment method');
+    }
+    
+    const data: BillingAPIResponse<PaymentMethod> = await response.json();
+    
+    if (data.status === false) {
+      throw new Error(data.message || 'Failed to update payment method');
+    }
+    
+    if (!data.data) {
+      throw new Error('No payment method data received from server');
+    }
+    
+    console.log('✅ Payment method updated successfully');
+    return data.data;
+  } catch (error: any) {
+    console.error('❌ Payment method update failed:', error.message);
     throw error;
   }
 };
