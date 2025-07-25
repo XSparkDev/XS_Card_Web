@@ -310,20 +310,23 @@ const Department: FC = () => {
     try {
       console.log('Employee modal submitted with data:', employeeData);
       
-      // Use the mock URL from help.md
-      const url = "https://b1f5db5b-e846-4c7c-977d-3bd355311d61.mock.pstmn.io/employee2";
+      // Use the proper endpoint from Department_Management_UI_Testing_Guide.md
+      const departmentId = employeeData.department;
+      if (!departmentId) {
+        throw new Error('Department ID is required');
+      }
       
-      // Create the employee object to send to the server
+      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);
+      const headers = getEnterpriseHeaders();
+      
+      // Create the employee object to send to the server (matching the backend API format)
       const employeeToCreate = {
         firstName: employeeData.firstName,
         lastName: employeeData.lastName,
         email: employeeData.email,
         phone: employeeData.phone,
         position: employeeData.position || employeeData.title,
-        departmentId: employeeData.department,
-        team: employeeData.team,
-        title: employeeData.title,
-        role: employeeData.role
+        role: employeeData.role || "employee"
       };
       
       console.log('Sending employee data:', employeeToCreate);
@@ -331,9 +334,7 @@ const Department: FC = () => {
       // Make the POST request to create an employee
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify(employeeToCreate)
       });
       
