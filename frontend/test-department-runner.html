@@ -142,14 +142,19 @@
             <button onclick="testGetDepartments()">Test Get Departments</button>
             <button onclick="testGetCards()">Test Get Cards</button>
             <button onclick="testCreateDepartment()">Test Create Department</button>
+            <button onclick="testDeleteDepartment()">Test Delete Department</button>
+            <button onclick="listAllDepartments()">List Department IDs</button>
+            <button onclick="listEmployeesInDepartment()">List Employees in Department</button>
+            <button onclick="removeAllEmployeesFromDepartment()">Remove All Employees from Department</button>
             <button onclick="testEmployeeFix()">Test Employee Fix</button>
+            <button onclick="unassignAllEmployeesFromDepartment()">Unassign All Employees from Department</button>
             <div id="manualTestOutput" class="console-output" style="display: none;"></div>
         </div>
     </div>
 
     <script>
         // Configuration from api.ts
-        const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjZkZTQwZjA0ODgxYzZhMDE2MTFlYjI4NGE0Yzk1YTI1MWU5MTEyNTAiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUzMzkzMzI4LCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NTMzOTMzMjgsImV4cCI6MTc1MzM5NjkyOCwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.EB51NcT2bswsQmwJHHKYVJjVwZ5efyLpnr9UQykYyxrz78N2megbN0doM8qxQdpIlIPbT1XcWBoR5OIZQuwTT7WXHiRJ3cNv03akOhCn9FeyvDy5UZziHz-LjgT7VrkOFBGpZRV0DqtxVuxZQc-zn5X2c1XvAg3MOdktOyPq8uC0qxT9eqvT9Q1bIfgotIlF5q7cIa4A73-xavhlPbgaptYhWqbwASWk2nGwsG8QUySf6B8jZoofzTa5LSFLv9EkOGzWHz10_d3DwTFXZW5bPZ4Wb_Lq1efx6Sjw5-FsxbZVE6wtHpEgj_ig9F48EMrmbQzr61SjJqUg86y_CreTvg";
+        const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjZkZTQwZjA0ODgxYzZhMDE2MTFlYjI4NGE0Yzk1YTI1MWU5MTEyNTAiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzUzNDQ0NDk5LCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NTM0NDQ0OTksImV4cCI6MTc1MzQ0ODA5OSwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.ZmbRr2VofWRQufCr2XBg5A6kywtqklYm3cVpIJMOUtDD00YpubKlKrIz4N3mX62lzMc2MlCZGWlH_f-gaA1GZPRkEaRSwkL90xbnuk-pjzuac0E6yAtsnacxzUXUX-YfyfQxgWq7Qe6Fv59R-2foeK-ZwmLOVxycXC6xtvOX1CP-GGaaKweiL7wxgC_hGmVBxxta7oKpWgKfkh90EfUGkxSfPzgdquqWBeXg9rnaI2UWKPiOxEBAaACiNG3Qd66zSjKidJAEm73YpPpYOm0qhfPzaBqvpWVy8Cer_DpuIbdS9Khc_VYs3S5c6GivM14qePGN79HcJUZD3lLFUN1KaA";
         const ENTERPRISE_ID = "x-spark-test";
         const API_BASE_URL = "http://localhost:8383";
 
@@ -460,6 +465,276 @@
                 
                 // Execute the script
                 eval(scriptContent);
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                restoreConsole();
+            }
+        }
+
+        async function testDeleteDepartment() {
+            const outputEl = document.getElementById('manualTestOutput');
+            outputEl.style.display = 'block';
+            outputEl.textContent = '';
+
+            const restoreConsole = captureConsole(outputEl);
+
+            try {
+                const departmentId = prompt("Enter Department ID to delete:");
+                if (!departmentId) {
+                    console.log('❌ No department ID provided.');
+                    return;
+                }
+
+                // Always use FIREBASE_TOKEN from api.ts
+                let token = FIREBASE_TOKEN;
+                if (!token.startsWith('Bearer ')) {
+                    token = 'Bearer ' + token;
+                }
+
+                const headers = {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                };
+
+                const url = `${API_BASE_URL}/enterprise/${ENTERPRISE_ID}/departments/${departmentId}`;
+                console.log('🧪 Manual Test: Delete Department');
+                console.log(`URL: ${url}`);
+
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers
+                });
+
+                const data = await response.json().catch(() => ({}));
+                console.log(`Status: ${response.status}`);
+                console.log('Response:', data);
+
+                if (response.ok) {
+                    console.log('✅ Department deleted successfully.');
+                } else {
+                    console.log('❌ Failed to delete department.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                restoreConsole();
+            }
+        }
+
+        async function listAllDepartments() {
+            const outputEl = document.getElementById('manualTestOutput');
+            outputEl.style.display = 'block';
+            outputEl.textContent = '';
+
+            const restoreConsole = captureConsole(outputEl);
+
+            try {
+                // Always use FIREBASE_TOKEN from api.ts
+                let token = FIREBASE_TOKEN;
+                if (!token.startsWith('Bearer ')) {
+                    token = 'Bearer ' + token;
+                }
+
+                const headers = {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                };
+
+                const url = `${API_BASE_URL}/enterprise/${ENTERPRISE_ID}/departments`;
+                console.log('🧪 Listing All Department IDs');
+                console.log(`URL: ${url}`);
+
+                const response = await fetch(url, { headers });
+                const data = await response.json();
+                
+                console.log(`Status: ${response.status}`);
+                
+                if (response.ok && data.departments && data.departments.length > 0) {
+                    console.log('📋 Available Departments:');
+                    data.departments.forEach((dept, index) => {
+                        console.log(`${index + 1}. ID: ${dept.id} | Name: ${dept.name}`);
+                    });
+                } else {
+                    console.log('No departments found or error fetching departments.');
+                    console.log('Response:', data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                restoreConsole();
+            }
+        }
+
+        async function listEmployeesInDepartment() {
+            const outputEl = document.getElementById('manualTestOutput');
+            outputEl.style.display = 'block';
+            outputEl.textContent = '';
+
+            const restoreConsole = captureConsole(outputEl);
+
+            try {
+                const departmentId = prompt("Enter Department ID to list employees:");
+                if (!departmentId) {
+                    console.log('❌ No department ID provided.');
+                    return;
+                }
+                let token = FIREBASE_TOKEN;
+                if (!token.startsWith('Bearer ')) {
+                    token = 'Bearer ' + token;
+                }
+                const headers = {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                };
+                const url = `${API_BASE_URL}/enterprise/${ENTERPRISE_ID}/departments/${departmentId}/employees`;
+                console.log('🧪 Listing Employees in Department');
+                console.log(`URL: ${url}`);
+                const response = await fetch(url, { headers });
+                const data = await response.json();
+                console.log(`Status: ${response.status}`);
+                if (response.ok && data.employees && Object.keys(data.employees).length > 0) {
+                    console.log('📋 Employees:');
+                    Object.values(data.employees).forEach((emp, idx) => {
+                        console.log(`${idx + 1}. ID: ${emp.id || emp._id} | Name: ${emp.name || (emp.firstName + ' ' + emp.lastName)}`);
+                    });
+                } else {
+                    console.log('No employees found or error fetching employees.');
+                    console.log('Response:', data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                restoreConsole();
+            }
+        }
+
+        async function removeAllEmployeesFromDepartment() {
+            const outputEl = document.getElementById('manualTestOutput');
+            outputEl.style.display = 'block';
+            outputEl.textContent = '';
+
+            const restoreConsole = captureConsole(outputEl);
+
+            try {
+                const departmentId = prompt("Enter Department ID to remove all employees:");
+                if (!departmentId) {
+                    console.log('❌ No department ID provided.');
+                    return;
+                }
+                // WARNING
+                console.log('⚠️ WARNING: This will REMOVE ALL EMPLOYEES from the department!');
+                console.log('⚠️ This action is IRREVERSIBLE and for testing/demo only!');
+                const confirmRemove = confirm("Are you sure you want to remove ALL employees from this department? This cannot be undone.");
+                if (!confirmRemove) {
+                    console.log('❌ Operation cancelled by user.');
+                    return;
+                }
+                let token = FIREBASE_TOKEN;
+                if (!token.startsWith('Bearer ')) {
+                    token = 'Bearer ' + token;
+                }
+                const headers = {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                };
+                const url = `${API_BASE_URL}/enterprise/${ENTERPRISE_ID}/departments/${departmentId}/employees`;
+                // Get employees first
+                const response = await fetch(url, { headers });
+                const data = await response.json();
+                if (!response.ok || !data.employees || Object.keys(data.employees).length === 0) {
+                    console.log('No employees found or error fetching employees.');
+                    console.log('Response:', data);
+                    return;
+                }
+                const employees = Object.values(data.employees);
+                let successCount = 0;
+                let failCount = 0;
+                for (const emp of employees) {
+                    const empId = emp.id || emp._id;
+                    if (!empId) continue;
+                    // Try to delete employee
+                    const delUrl = `${API_BASE_URL}/enterprise/${ENTERPRISE_ID}/employees/${empId}`;
+                    const delResp = await fetch(delUrl, { method: 'DELETE', headers });
+                    if (delResp.ok) {
+                        console.log(`✅ Removed employee: ${empId}`);
+                        successCount++;
+                    } else {
+                        const delData = await delResp.json().catch(() => ({}));
+                        console.log(`❌ Failed to remove employee: ${empId}`, delData);
+                        failCount++;
+                    }
+                }
+                console.log(`
+⚠️ Remove All Employees Complete. Success: ${successCount}, Failed: ${failCount}`);
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                restoreConsole();
+            }
+        }
+
+        async function unassignAllEmployeesFromDepartment() {
+            const outputEl = document.getElementById('manualTestOutput');
+            outputEl.style.display = 'block';
+            outputEl.textContent = '';
+
+            const restoreConsole = captureConsole(outputEl);
+
+            try {
+                const departmentId = prompt("Enter Department ID to unassign all employees:");
+                if (!departmentId) {
+                    console.log('❌ No department ID provided.');
+                    return;
+                }
+                // WARNING
+                console.log('⚠️ WARNING: This will UNASSIGN (not delete) ALL EMPLOYEES from the department!');
+                console.log('⚠️ This action will set their departmentId to null.');
+                const confirmRemove = confirm("Are you sure you want to unassign ALL employees from this department? This cannot be undone.");
+                if (!confirmRemove) {
+                    console.log('❌ Operation cancelled by user.');
+                    return;
+                }
+                let token = FIREBASE_TOKEN;
+                if (!token.startsWith('Bearer ')) {
+                    token = 'Bearer ' + token;
+                }
+                const headers = {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                };
+                const url = `${API_BASE_URL}/enterprise/${ENTERPRISE_ID}/departments/${departmentId}/employees`;
+                // Get employees first
+                const response = await fetch(url, { headers });
+                const data = await response.json();
+                if (!response.ok || !data.employees || Object.keys(data.employees).length === 0) {
+                    console.log('No employees found or error fetching employees.');
+                    console.log('Response:', data);
+                    return;
+                }
+                const employees = Object.values(data.employees);
+                let successCount = 0;
+                let failCount = 0;
+                for (const emp of employees) {
+                    const empId = emp.id || emp._id;
+                    if (!empId) continue;
+                    // Try to unassign employee (set departmentId to null)
+                    const updateUrl = `${API_BASE_URL}/enterprise/${ENTERPRISE_ID}/departments/${departmentId}/employees/${empId}`;
+                    const updateResp = await fetch(updateUrl, {
+                        method: 'PUT',
+                        headers,
+                        body: JSON.stringify({ departmentId: null })
+                    });
+                    if (updateResp.ok) {
+                        console.log(`✅ Unassigned employee: ${empId}`);
+                        successCount++;
+                    } else {
+                        const updateData = await updateResp.json().catch(() => ({}));
+                        console.log(`❌ Failed to unassign employee: ${empId}`, updateData);
+                        failCount++;
+                    }
+                }
+                console.log(`\n⚠️ Unassign All Employees Complete. Success: ${successCount}, Failed: ${failCount}`);
             } catch (error) {
                 console.error('Error:', error);
             } finally {
