@@ -204,101 +204,75 @@ const Department: FC = () => {
     }
   }, []);
   
-  // Fetch both departments and cards
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch departments
-        const deptUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_DEPARTMENTS);
-        const headers = getEnterpriseHeaders();
-        
-        const deptResponse = await fetch(deptUrl, { headers });
-        
-        if (!deptResponse.ok) {
-          throw new Error(`HTTP error for departments! Status: ${deptResponse.status}`);
-        }
-        
-        const deptData = await deptResponse.json();
-        console.log('Departments response:', deptData);
-        
-        if (!deptData.departments || !Array.isArray(deptData.departments)) {
-          throw new Error('Invalid departments response format');
-        }
-        
-        // Fetch cards
-        const cardsUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
-        const cardsResponse = await fetch(cardsUrl, { headers });
-        
-        if (!cardsResponse.ok) {
-          throw new Error(`HTTP error for cards! Status: ${cardsResponse.status}`);
-        }
-        
-        const cardsData = await cardsResponse.json();
-        console.log('Cards response:', cardsData);
-        
-        // Store the cards data
-        if (cardsData.cards && Array.isArray(cardsData.cards)) {
-          setCards(cardsData.cards);
-        }
-        
-        // Calculate card counts for each department
-        const cardsByDepartment: Record<string, number> = {};
-        
-        // Initialize with 0 for all departments
-        deptData.departments.forEach(dept => {
-          cardsByDepartment[dept.id] = 0;
-        });
-        
-        // Count cards per department
-        if (cardsData.cards && Array.isArray(cardsData.cards)) {
-          cardsData.cards.forEach(card => {
-            if (card.departmentId && cardsByDepartment[card.departmentId] !== undefined) {
-              cardsByDepartment[card.departmentId]++;
-            }
-          });
-        }
-        
-        // Process department data with card counts
-        const processedData = deptData.departments.map(dept => {
-          // Calculate the progress percentage (card coverage)
-          // If there are no employees, set progress to 0 to avoid division by zero
-          const progress = dept.memberCount > 0 
-            ? Math.round((cardsByDepartment[dept.id] || 0) / dept.memberCount * 100)
-            : 0;
-            
-          return {
-            id: dept.id,
-            name: dept.name,
-            description: dept.description,
-            employeeCount: dept.memberCount,
-            parentDepartmentId: dept.parentDepartmentId,
-            createdAt: dept.createdAt,
-            updatedAt: dept.updatedAt,
-            // Use actual card count now
-            cardCount: cardsByDepartment[dept.id] || 0,
-            // Use calculated progress value
-            progress: progress,
-            // Still using default values for these
-            scanCount: 0,
-            growthRate: 0
-          };
-        });
-        
-        setDepartments(processedData);
-        setError(null);
-        
-        console.log('Processed departments with card counts:', processedData);
-      } catch (err) {
-        setError("Failed to fetch data. Please try again later.");
-        console.error("Error fetching data:", err);
-      } finally {
-        setLoading(false);
+  // Add fetchDepartments as a helper function
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true);
+      // Fetch departments
+      const deptUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_DEPARTMENTS);
+      const headers = getEnterpriseHeaders();
+      const deptResponse = await fetch(deptUrl, { headers });
+      if (!deptResponse.ok) {
+        throw new Error(`HTTP error for departments! Status: ${deptResponse.status}`);
       }
-    };
-    
-    fetchData();
+      const deptData = await deptResponse.json();
+      if (!deptData.departments || !Array.isArray(deptData.departments)) {
+        throw new Error('Invalid departments response format');
+      }
+      // Fetch cards
+      const cardsUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+      const cardsResponse = await fetch(cardsUrl, { headers });
+      if (!cardsResponse.ok) {
+        throw new Error(`HTTP error for cards! Status: ${cardsResponse.status}`);
+      }
+      const cardsData = await cardsResponse.json();
+      // Store the cards data
+      if (cardsData.cards && Array.isArray(cardsData.cards)) {
+        setCards(cardsData.cards);
+      }
+      // Calculate card counts for each department
+      const cardsByDepartment = {};
+      deptData.departments.forEach(dept => {
+        cardsByDepartment[dept.id] = 0;
+      });
+      if (cardsData.cards && Array.isArray(cardsData.cards)) {
+        cardsData.cards.forEach(card => {
+          if (card.departmentId && cardsByDepartment[card.departmentId] !== undefined) {
+            cardsByDepartment[card.departmentId]++;
+          }
+        });
+      }
+      const processedData = deptData.departments.map(dept => {
+        const progress = dept.memberCount > 0 
+          ? Math.round((cardsByDepartment[dept.id] || 0) / dept.memberCount * 100)
+          : 0;
+        return {
+          id: dept.id,
+          name: dept.name,
+          description: dept.description,
+          employeeCount: dept.memberCount,
+          parentDepartmentId: dept.parentDepartmentId,
+          createdAt: dept.createdAt,
+          updatedAt: dept.updatedAt,
+          cardCount: cardsByDepartment[dept.id] || 0,
+          progress: progress,
+          scanCount: 0,
+          growthRate: 0
+        };
+      });
+      setDepartments(processedData);
+      setError(null);
+      setLoading(false);
+    } catch (err) {
+      setError("Failed to fetch data. Please try again later.");
+      setLoading(false);
+      console.error("Error fetching data:", err);
+    }
+  };
+  
+  // In useEffect, replace fetchData with fetchDepartments
+  useEffect(() => {
+    fetchDepartments();
   }, []);
   
   const filteredDepartments = departments.filter(department => 
@@ -440,20 +414,8 @@ const Department: FC = () => {
         const newDepartment = await response.json();
         console.log('New department created:', newDepartment);
         
-        // Add the new department to the current list
-        setDepartments([...departments, {
-          id: newDepartment.id || `new-${Date.now()}`,
-          name: departmentData.name,
-          description: departmentData.description,
-          employeeCount: 0,
-          parentDepartmentId: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          cardCount: 0,
-          scanCount: 0,
-          progress: 0,
-          growthRate: 0
-        }]);
+        // Instead of adding a department with a fake ID, refetch departments from backend
+        await fetchDepartments();
       }
       
       // Close the modal and reset edit state
@@ -473,25 +435,43 @@ const Department: FC = () => {
 
   const handleDeleteConfirm = async () => {
     if (!departmentToDelete) return;
-    
+
+    // Find the department in state to get employeeCount
+    const department = departments.find(dept => dept.id === departmentToDelete.id);
+    const hasEmployees = department && department.employeeCount > 0;
+
     try {
+      if (hasEmployees) {
+        const confirmed = window.confirm(
+          "This department has employees. Deleting will unassign all employees. Continue?"
+        );
+        if (!confirmed) return;
+        // Unassign all employees from the department
+        const unassignUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentToDelete.id}/employees/unassign-all`);
+        const headers = getEnterpriseHeaders();
+        const unassignResponse = await fetch(unassignUrl, {
+          method: 'POST',
+          headers
+        });
+        if (!unassignResponse.ok) {
+          throw new Error(`Failed to unassign employees. Status: ${unassignResponse.status}`);
+        }
+      }
+
+      // Proceed to delete the department
       const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_DELETE_DEPARTMENT.replace(':departmentId', departmentToDelete.id));
       const headers = getEnterpriseHeaders();
-      
       const response = await fetch(url, {
         method: 'DELETE',
         headers
       });
-      
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-      
       // Remove the department from the state
       setDepartments(departments.filter(dept => dept.id !== departmentToDelete.id));
       setDeleteConfirmOpen(false);
       setDepartmentToDelete(null);
-      
     } catch (error) {
       console.error('Error deleting department:', error);
       alert('Failed to delete department. Please try again.');
@@ -577,9 +557,9 @@ const Department: FC = () => {
         department={editingDepartment}
         onChange={handleDepartmentFormChange}
         managers={[
-          { value: "K6gW9I1aypYN9uTIW6cMGVBEB4o1", label: "John Doe" },
+          { value: "u0euC7YU5cYFli4dotSIui33cY43", label: "John Doe" },
           { value: "tpNykUrXytMDFWrv8PxY3TBfr1k2", label: "Jane Smith" },
-          { value: "user3", label: "Robert Johnson" }
+          { value: "wKcv3H270HVLV2FADqM473AZ3L02", label: "Robert Johnson" }
         ]}
       />
       
