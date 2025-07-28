@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./button";
-import { FaUsers, FaPlus, FaTimes, FaCrown } from "react-icons/fa";
+import { FaUsers, FaPlus, FaTimes, FaCrown, FaSave } from "react-icons/fa";
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 import "../../styles/TeamMemberManagement.css";
 
@@ -15,20 +15,36 @@ interface TeamMemberManagementProps {
 
 interface EmployeeData {
   id: string;
-  firstName: string;
-  lastName: string;
+  userId: string;
+  name: string;
+  surname: string;
   email: string;
+  phone: string;
+  role: string;
   position: string;
-  teamId?: string;
+  profileImage: string;
+  employeeId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  teamRef?: any;
+  teamEmployeeRef?: any;
 }
 
 interface TeamMemberData {
-  id: string;
+  id: string; // Team employee ID (from teamEmployeeRef)
+  mainEmployeeId: string; // Main employee ID (from employees collection)
   firstName: string;
   lastName: string;
   email: string;
   position: string;
   isLeader: boolean;
+}
+
+interface PendingChange {
+  type: 'add' | 'remove' | 'assign-leader';
+  employeeId: string;
+  employeeName?: string;
 }
 
 const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
@@ -39,43 +55,69 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
   departmentId,
   departmentName
 }) => {
-  const [employees, setEmployees] = useState<EmployeeData[]>([]);
+  const [unassignedEmployees, setUnassignedEmployees] = useState<EmployeeData[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMemberData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [assigningEmployee, setAssigningEmployee] = useState<string | null>(null);
-  const [removingEmployee, setRemovingEmployee] = useState<string | null>(null);
-  const [assigningLeader, setAssigningLeader] = useState<string | null>(null);
+  const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Fetch employees and team members
+  // Fetch all employees and team members
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch all department employees
-      const employeesUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);
       const headers = getEnterpriseHeaders();
+
+      // Fetch all employees in the department (not just unassigned)
+      const allEmployeesUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);
+      const allEmployeesResponse = await fetch(allEmployeesUrl, { headers });
       
-      const employeesResponse = await fetch(employeesUrl, { headers });
-      if (!employeesResponse.ok) {
-        throw new Error(`Failed to fetch employees: ${employeesResponse.status}`);
+      if (!allEmployeesResponse.ok) {
+        throw new Error(`Failed to fetch employees: ${allEmployeesResponse.status}`);
       }
       
-      const employeesData = await employeesResponse.json();
-      console.log('Employees data:', employeesData);
-      const employeesArray = employeesData.employees ? Object.values(employeesData.employees) : [];
-      setEmployees(employeesArray as EmployeeData[]);
+      const allEmployeesData = await allEmployeesResponse.json();
+      console.log('All employees data:', allEmployeesData);
+      const allEmployees = allEmployeesData.employees || [];
+
+      // Fetch unassigned employees for the "available employees" section
+      const unassignedUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees/unassigned`);
+      const unassignedResponse = await fetch(unassignedUrl, { headers });
+      
+      if (!unassignedResponse.ok) {
+        throw new Error(`Failed to fetch unassigned employees: ${unassignedResponse.status}`);
+      }
+      
+      const unassignedData = await unassignedResponse.json();
+      console.log('Unassigned employees data:', unassignedData);
+      setUnassignedEmployees(unassignedData.employees || []);
 
       // Fetch team members
       const membersUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}/members`);
       const membersResponse = await fetch(membersUrl, { headers });
+      
       if (!membersResponse.ok) {
         throw new Error(`Failed to fetch team members: ${membersResponse.status}`);
       }
       
       const membersData = await membersResponse.json();
       console.log('Team members data:', membersData);
+      
+      // Fetch team information to get the leader ID
+      const teamUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}`);
+      const teamResponse = await fetch(teamUrl, { headers });
+      
+      if (!teamResponse.ok) {
+        throw new Error(`Failed to fetch team information: ${teamResponse.status}`);
+      }
+      
+      const teamData = await teamResponse.json();
+      console.log('Team data:', teamData);
+      const teamInfo = teamData.team || teamData;
+      const leaderId = teamInfo.leaderId;
       
       // Handle different possible response formats
       let membersArray: TeamMemberData[] = [];
@@ -90,16 +132,37 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
       // Ensure each member has the required fields
       membersArray = membersArray.map(member => {
         const memberAny = member as any;
-        return {
+        
+        // Find the corresponding employee to get the main employee ID and details
+        const correspondingEmployee = allEmployees.find((emp: any) => 
+          emp.teamEmployeeRef?._path?.segments?.includes(memberAny.id)
+        );
+        
+        const processedMember = {
           id: memberAny.id || memberAny.employeeId || memberAny._id || '',
-          firstName: memberAny.firstName || memberAny.first_name || (memberAny.name?.split(' ')[0] || ''),
-          lastName: memberAny.lastName || memberAny.last_name || (memberAny.name?.split(' ').slice(1).join(' ') || ''),
-          email: memberAny.email || '',
-          position: memberAny.position || memberAny.role || '',
-          isLeader: memberAny.isLeader || memberAny.is_leader || memberAny.leader || false
+          mainEmployeeId: correspondingEmployee?.id || memberAny.mainEmployeeId || memberAny.employeeId || '',
+          firstName: correspondingEmployee?.name || '',
+          lastName: correspondingEmployee?.surname || '',
+          email: correspondingEmployee?.email || '',
+          position: correspondingEmployee?.position || '',
+          isLeader: correspondingEmployee?.id === leaderId
         };
+        
+        // Debug: Log the original member data and processed ID
+        console.log('Processing team member:', {
+          original: memberAny,
+          processedId: processedMember.id,
+          mainEmployeeId: processedMember.mainEmployeeId,
+          correspondingEmployee: correspondingEmployee,
+          leaderId: leaderId,
+          isLeader: processedMember.isLeader,
+          processedName: `${processedMember.firstName} ${processedMember.lastName}`
+        });
+        
+        return processedMember;
       });
       
+      console.log('Final processed team members:', membersArray);
       setTeamMembers(membersArray);
 
     } catch (err: any) {
@@ -113,126 +176,245 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
   useEffect(() => {
     if (isOpen && teamId) {
       fetchData();
+      // Reset pending changes when opening
+      setPendingChanges([]);
+      setHasUnsavedChanges(false);
     }
   }, [isOpen, teamId, departmentId]);
 
-  const handleAssignEmployee = async (employeeId: string) => {
+  // Update hasUnsavedChanges when pendingChanges changes
+  useEffect(() => {
+    setHasUnsavedChanges(pendingChanges.length > 0);
+  }, [pendingChanges]);
+
+  const handleAssignEmployee = (employeeId: string) => {
+    const employee = unassignedEmployees.find(emp => emp.id === employeeId);
+    const employeeName = employee ? `${employee.name} ${employee.surname}` : '';
+    
+    setPendingChanges(prev => [
+      ...prev,
+      {
+        type: 'add',
+        employeeId,
+        employeeName
+      }
+    ]);
+  };
+
+  const handleRemoveEmployee = (employeeId: string) => {
+    const employee = teamMembers.find(member => member.id === employeeId);
+    const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : '';
+    
+    setPendingChanges(prev => [
+      ...prev,
+      {
+        type: 'remove',
+        employeeId,
+        employeeName
+      }
+    ]);
+  };
+
+  const handleAssignLeader = (employeeId: string) => {
+    const employee = teamMembers.find(member => member.id === employeeId);
+    const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : '';
+    
+    setPendingChanges(prev => [
+      ...prev,
+      {
+        type: 'assign-leader',
+        employeeId,
+        employeeName
+      }
+    ]);
+  };
+
+  const handleSaveChanges = async () => {
+    if (pendingChanges.length === 0) return;
+
     try {
-      setAssigningEmployee(employeeId);
+      setSaving(true);
       setError(null);
 
-      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}/employees`);
       const headers = getEnterpriseHeaders();
-      
-      console.log('Assigning employee to team:', { url, employeeId, teamId });
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ employeeId })
-      });
 
-      console.log('Assign employee response:', response.status, response.statusText);
+      // Group changes by type
+      const addChanges = pendingChanges.filter(change => change.type === 'add');
+      const removeChanges = pendingChanges.filter(change => change.type === 'remove');
+      const leaderChanges = pendingChanges.filter(change => change.type === 'assign-leader');
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Assign employee error response:', errorText);
-        throw new Error(`Failed to assign employee: ${response.status} - ${errorText}`);
+      // Process bulk add
+      if (addChanges.length > 0) {
+        const bulkAddUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}/members/bulk-add`);
+        const addPayload = {
+          employeeIds: addChanges.map(change => change.employeeId)
+        };
+
+        console.log('Sending bulk add payload:', addPayload);
+        
+        const addResponse = await fetch(bulkAddUrl, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(addPayload)
+        });
+
+        if (!addResponse.ok) {
+          const errorText = await addResponse.text();
+          throw new Error(`Failed to add employees: ${addResponse.status} - ${errorText}`);
+        }
+
+        const addResult = await addResponse.json();
+        console.log('Bulk add result:', addResult);
+        
+        // Show success/failure details
+        if (addResult.data?.summary?.failed > 0) {
+          console.warn('Some employees failed to add:', addResult.data.results.failed);
+        }
       }
 
-      // Refresh the data to get updated team members
+      // Process bulk remove
+      if (removeChanges.length > 0) {
+        const bulkRemoveUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}/members/bulk-remove`);
+        
+        // Use mainEmployeeId for removal
+        const removePayload = {
+          employeeIds: removeChanges.map(change => {
+            const teamMember = teamMembers.find(member => member.id === change.employeeId);
+            return teamMember?.mainEmployeeId || change.employeeId;
+          })
+        };
+
+        console.log('Sending bulk remove payload:', removePayload);
+        console.log('Remove changes details:', removeChanges);
+        console.log('Team members being removed:', teamMembers.filter(member => 
+          removeChanges.some(change => change.employeeId === member.id)
+        ));
+        
+        const removeResponse = await fetch(bulkRemoveUrl, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(removePayload)
+        });
+
+        if (!removeResponse.ok) {
+          const errorText = await removeResponse.text();
+          throw new Error(`Failed to remove employees: ${removeResponse.status} - ${errorText}`);
+        }
+
+        const removeResult = await removeResponse.json();
+        console.log('Bulk remove result:', removeResult);
+        
+        // Show success/failure details
+        if (removeResult.data?.summary?.failed > 0) {
+          console.warn('Some employees failed to remove:', removeResult.data.results.failed);
+        }
+      }
+
+      // Process leader assignments (individual requests for now)
+      for (const leaderChange of leaderChanges) {
+        const teamMember = teamMembers.find(member => member.id === leaderChange.employeeId);
+        const mainEmployeeId = teamMember?.mainEmployeeId || leaderChange.employeeId;
+        
+        const leaderUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}`);
+        const leaderResponse = await fetch(leaderUrl, {
+          method: 'PUT',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ leaderId: mainEmployeeId })
+        });
+
+        if (!leaderResponse.ok) {
+          const errorText = await leaderResponse.text();
+          throw new Error(`Failed to assign leader: ${leaderResponse.status} - ${errorText}`);
+        }
+
+        const leaderResult = await leaderResponse.json();
+        console.log('Leader assignment result:', leaderResult);
+      }
+
+      // Clear pending changes and refresh data
+      setPendingChanges([]);
+      setHasUnsavedChanges(false);
       await fetchData();
       
     } catch (err: any) {
-      setError(err.message || "Failed to assign employee");
-      console.error("Error assigning employee:", err);
+      setError(err.message || "Failed to save changes");
+      console.error("Error saving changes:", err);
     } finally {
-      setAssigningEmployee(null);
+      setSaving(false);
     }
   };
 
-  const handleRemoveEmployee = async (employeeId: string) => {
-    try {
-      setRemovingEmployee(employeeId);
-      setError(null);
-
-      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}/employees/${employeeId}`);
-      const headers = getEnterpriseHeaders();
-      
-      console.log('Removing employee from team:', { url, employeeId, teamId });
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers
-      });
-
-      console.log('Remove employee response:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Remove employee error response:', errorText);
-        throw new Error(`Failed to remove employee: ${response.status} - ${errorText}`);
-      }
-
-      // Refresh the data to get updated team members
-      await fetchData();
-      
-    } catch (err: any) {
-      setError(err.message || "Failed to remove employee");
-      console.error("Error removing employee:", err);
-    } finally {
-      setRemovingEmployee(null);
-    }
+  const handleDiscardChanges = () => {
+    setPendingChanges([]);
+    setHasUnsavedChanges(false);
   };
 
-  const handleAssignLeader = async (employeeId: string) => {
-    try {
-      setAssigningLeader(employeeId);
-      setError(null);
-
-      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamId}`);
-      const headers = getEnterpriseHeaders();
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ leaderId: employeeId })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to assign leader: ${response.status}`);
+  const handleClose = () => {
+    if (hasUnsavedChanges) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
+        onClose();
       }
-
-      // Refresh the data to get updated team members
-      await fetchData();
-      
-    } catch (err: any) {
-      setError(err.message || "Failed to assign leader");
-      console.error("Error assigning leader:", err);
-    } finally {
-      setAssigningLeader(null);
+    } else {
+      onClose();
     }
   };
 
   const getAvailableEmployees = () => {
-    const assignedEmployeeIds = teamMembers.map(member => member.id);
-    console.log('Available employees calculation:', {
-      totalEmployees: employees.length,
-      assignedEmployeeIds,
-      teamMembersCount: teamMembers.length
-    });
-    return employees.filter(employee => !assignedEmployeeIds.includes(employee.id));
+    const pendingRemovals = pendingChanges
+      .filter(change => change.type === 'remove')
+      .map(change => change.employeeId);
+    const pendingAdditions = pendingChanges
+      .filter(change => change.type === 'add')
+      .map(change => change.employeeId);
+    
+    // Filter out employees that are pending addition
+    return unassignedEmployees.filter(employee => !pendingAdditions.includes(employee.id));
+  };
+
+  const getEffectiveTeamMembers = () => {
+    const pendingRemovals = pendingChanges
+      .filter(change => change.type === 'remove')
+      .map(change => change.employeeId);
+    const pendingAdditions = pendingChanges
+      .filter(change => change.type === 'add')
+      .map(change => change.employeeId);
+    
+    // Remove pending removals
+    let effectiveMembers = teamMembers.filter(member => !pendingRemovals.includes(member.id));
+    
+    // Add pending additions
+    const pendingEmployees = unassignedEmployees.filter(emp => pendingAdditions.includes(emp.id));
+    const pendingMembers = pendingEmployees.map(emp => ({
+      id: emp.id,
+      mainEmployeeId: emp.id, // Use the main employee ID for pending additions
+      firstName: emp.name,
+      lastName: emp.surname,
+      email: emp.email,
+      position: emp.position,
+      isLeader: false
+    }));
+    
+    return [...effectiveMembers, ...pendingMembers];
+  };
+
+  const getPendingChangeForEmployee = (employeeId: string) => {
+    return pendingChanges.find(change => change.employeeId === employeeId);
   };
 
   console.log('TeamMemberManagement render - isOpen:', isOpen, 'teamId:', teamId, 'teamName:', teamName);
   
   if (!isOpen) return null;
+
+  const effectiveTeamMembers = getEffectiveTeamMembers();
 
   return (
     <div className="team-member-management-overlay">
@@ -241,8 +423,13 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
           <div>
             <h2 className="team-member-management-title">Team Members - {teamName}</h2>
             <p className="team-member-management-subtitle">Manage team members in {departmentName}</p>
+            {hasUnsavedChanges && (
+              <div className="backend-notice">
+                <span>⚠️ You have unsaved changes. Click "Save Changes" to apply them.</span>
+              </div>
+            )}
           </div>
-          <button className="close-button" onClick={onClose}>
+          <button className="close-button" onClick={handleClose}>
             ×
           </button>
         </div>
@@ -256,119 +443,180 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
         {loading ? (
           <div className="loading-state">Loading team members...</div>
         ) : (
-          <div className="team-member-content">
-            {/* Current Team Members */}
-            <div className="team-members-section">
-              <h3 className="section-title">
-                <FaUsers />
-                Current Team Members ({teamMembers.length})
-              </h3>
-              
-              {teamMembers.length === 0 ? (
-                <div className="empty-state">
-                  <p>No team members assigned yet</p>
-                </div>
-              ) : (
-                <div className="team-members-list">
-                  {teamMembers.map(member => (
-                    <div key={member.id} className="team-member-item">
-                      <div className="member-info">
-                        <div className="member-name">
-                          {member.firstName} {member.lastName}
-                          {member.isLeader && <FaCrown className="leader-icon" title="Team Leader" />}
-                        </div>
-                        <div className="member-details">
-                          <span className="member-position">{member.position}</span>
-                          <span className="member-email">{member.email}</span>
-                        </div>
-                      </div>
-                      <div className="member-actions">
-                        {!member.isLeader && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAssignLeader(member.id)}
-                            disabled={assigningLeader === member.id}
-                            className="assign-leader-button"
-                          >
-                            {assigningLeader === member.id ? (
-                              "Assigning..."
-                            ) : (
-                              <>
+          <>
+            <div className="team-member-content">
+              {/* Current Team Members */}
+              <div className="team-members-section">
+                <h3 className="section-title">
+                  <FaUsers />
+                  Current Team Members ({effectiveTeamMembers.length})
+                </h3>
+                
+                {effectiveTeamMembers.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No team members assigned yet</p>
+                  </div>
+                ) : (
+                  <div className="team-members-list">
+                    {effectiveTeamMembers.map(member => {
+                      const pendingChange = getPendingChangeForEmployee(member.id);
+                      return (
+                        <div key={member.id} className="team-member-item">
+                          <div className="member-info">
+                            <div className="member-name">
+                              {member.firstName} {member.lastName}
+                              {member.isLeader && <FaCrown className="leader-icon" title="Team Leader" />}
+                              {pendingChange && (
+                                <span className="pending-indicator">
+                                  {pendingChange.type === 'remove' && ' (Will be removed)'}
+                                  {pendingChange.type === 'assign-leader' && ' (Will be leader)'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="member-details">
+                              <span className="member-position">{member.position}</span>
+                              <span className="member-email">{member.email}</span>
+                            </div>
+                          </div>
+                          <div className="member-actions">
+                            {!member.isLeader && !pendingChange && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAssignLeader(member.id)}
+                                className="assign-leader-button"
+                              >
                                 <FaCrown />
                                 Make Leader
-                              </>
+                              </Button>
                             )}
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRemoveEmployee(member.id)}
-                          disabled={removingEmployee === member.id}
-                          className="remove-member-button"
-                        >
-                          {removingEmployee === member.id ? (
-                            "Removing..."
+                            {!pendingChange && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveEmployee(member.id)}
+                                className="remove-member-button"
+                              >
+                                <FaTimes />
+                                Remove
+                              </Button>
+                            )}
+                            {pendingChange && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setPendingChanges(prev => prev.filter(change => 
+                                    !(change.employeeId === member.id && change.type === pendingChange.type)
+                                  ));
+                                }}
+                                className="cancel-change-button"
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Available Unassigned Employees */}
+              <div className="available-employees-section">
+                <h3 className="section-title">
+                  <FaPlus />
+                  Unassigned Employees ({getAvailableEmployees().length})
+                </h3>
+                
+                {getAvailableEmployees().length === 0 ? (
+                  <div className="empty-state">
+                    <p>No unassigned employees available</p>
+                  </div>
+                ) : (
+                  <div className="available-employees-list">
+                    {getAvailableEmployees().map(employee => {
+                      const pendingChange = getPendingChangeForEmployee(employee.id);
+                      return (
+                        <div key={employee.id} className="available-employee-item">
+                          <div className="employee-info">
+                            <div className="employee-name">
+                              {employee.name} {employee.surname}
+                              {pendingChange && (
+                                <span className="pending-indicator">
+                                  {pendingChange.type === 'add' && ' (Will be added)'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="employee-details">
+                              <span className="employee-position">{employee.position}</span>
+                              <span className="employee-email">{employee.email}</span>
+                            </div>
+                          </div>
+                          {!pendingChange ? (
+                            <Button
+                              size="sm"
+                              onClick={() => handleAssignEmployee(employee.id)}
+                              className="assign-employee-button"
+                            >
+                              <FaPlus />
+                              Add to Team
+                            </Button>
                           ) : (
-                            <>
-                              <FaTimes />
-                              Remove
-                            </>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setPendingChanges(prev => prev.filter(change => 
+                                  !(change.employeeId === employee.id && change.type === 'add')
+                                ));
+                              }}
+                              className="cancel-change-button"
+                            >
+                              Cancel
+                            </Button>
                           )}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Available Employees */}
-            <div className="available-employees-section">
-              <h3 className="section-title">
-                <FaPlus />
-                Available Employees ({getAvailableEmployees().length})
-              </h3>
-              
-              {getAvailableEmployees().length === 0 ? (
-                <div className="empty-state">
-                  <p>All employees are already assigned to teams</p>
+            {/* Action Buttons */}
+            {hasUnsavedChanges && (
+              <div className="team-member-actions">
+                <div className="action-buttons">
+                  <Button
+                    variant="outline"
+                    onClick={handleDiscardChanges}
+                    disabled={saving}
+                  >
+                    Discard Changes
+                  </Button>
+                  <Button
+                    onClick={handleSaveChanges}
+                    disabled={saving}
+                    className="save-button"
+                  >
+                    {saving ? (
+                      "Saving..."
+                    ) : (
+                      <>
+                        <FaSave />
+                        Save Changes ({pendingChanges.length})
+                      </>
+                    )}
+                  </Button>
                 </div>
-              ) : (
-                <div className="available-employees-list">
-                  {getAvailableEmployees().map(employee => (
-                    <div key={employee.id} className="available-employee-item">
-                      <div className="employee-info">
-                        <div className="employee-name">
-                          {employee.firstName} {employee.lastName}
-                        </div>
-                        <div className="employee-details">
-                          <span className="employee-position">{employee.position}</span>
-                          <span className="employee-email">{employee.email}</span>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAssignEmployee(employee.id)}
-                        disabled={assigningEmployee === employee.id}
-                        className="assign-employee-button"
-                      >
-                        {assigningEmployee === employee.id ? (
-                          "Assigning..."
-                        ) : (
-                          <>
-                            <FaPlus />
-                            Add to Team
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  ))}
+                <div className="changes-indicator">
+                  <span>📝 {pendingChanges.length} change{pendingChanges.length !== 1 ? 's' : ''} pending</span>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
