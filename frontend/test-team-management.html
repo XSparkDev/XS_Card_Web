@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Management API Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .config-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background: #2563eb;
+        }
+        
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .log {
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .endpoint-list {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .endpoint-list h4 {
+            margin-top: 0;
+            color: #1e40af;
+        }
+        
+        .endpoint-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .endpoint-list li {
+            margin-bottom: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Team Management API Test</h1>
+        <p>Test the real backend endpoints for team management functionality</p>
+    </div>
+
+    <div class="config-section">
+        <h2>Configuration</h2>
+        <div class="grid">
+            <div class="form-group">
+                <label for="baseUrl">Backend URL:</label>
+                <input type="text" id="baseUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+            </div>
+            <div class="form-group">
+                <label for="enterpriseId">Enterprise ID:</label>
+                <input type="text" id="enterpriseId" placeholder="Enter your enterprise ID">
+            </div>
+            <div class="form-group">
+                <label for="departmentId">Department ID:</label>
+                <input type="text" id="departmentId" placeholder="Enter your department ID">
+            </div>
+            <div class="form-group">
+                <label for="authToken">Authorization Token:</label>
+                <input type="text" id="authToken" placeholder="Bearer your-token-here">
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Data</h2>
+        <div class="grid">
+            <div class="form-group">
+                <label for="teamName">Team Name:</label>
+                <input type="text" id="teamName" value="Test Team" placeholder="Test Team">
+            </div>
+            <div class="form-group">
+                <label for="teamDescription">Team Description:</label>
+                <input type="text" id="teamDescription" value="A test team for API testing" placeholder="Team description">
+            </div>
+            <div class="form-group">
+                <label for="employeeId">Employee ID (for testing):</label>
+                <input type="text" id="employeeId" placeholder="Enter employee ID for testing">
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Available Endpoints</h2>
+        <div class="endpoint-list">
+            <h4>Team Management Endpoints:</h4>
+            <ul>
+                <li>POST /enterprise/{enterpriseId}/departments/{departmentId}/teams</li>
+                <li>GET /enterprise/{enterpriseId}/departments/{departmentId}/teams</li>
+                <li>GET /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}</li>
+                <li>PUT /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}</li>
+                <li>PATCH /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}</li>
+                <li>DELETE /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}</li>
+                <li>GET /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}/members</li>
+                <li>POST /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}/employees</li>
+                <li>DELETE /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}/employees/{employeeId}</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Actions</h2>
+        <div>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h3>Individual Tests:</h3>
+            <button onclick="testCreateTeam()">1. Create Team</button>
+            <button onclick="testGetTeams()">2. Get All Teams</button>
+            <button onclick="testGetTeam()">3. Get Specific Team</button>
+            <button onclick="testUpdateTeam()">4. Update Team</button>
+            <button onclick="testPatchTeam()">5. Patch Team (Assign Leader)</button>
+            <button onclick="testGetTeamMembers()">6. Get Team Members</button>
+            <button onclick="testAddEmployeeToTeam()">7. Add Employee to Team</button>
+            <button onclick="testRemoveEmployeeFromTeam()">8. Remove Employee from Team</button>
+            <button onclick="testDeleteTeam()">9. Delete Team</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script src="test-team-endpoints.js"></script>
+    <script>
+        let currentTeamId = null;
+        let logs = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${message}`;
+            logs.push({ message: logEntry, type });
+            
+            const logElement = document.getElementById('log');
+            const color = type === 'error' ? '#dc2626' : type === 'success' ? '#166534' : '#1e40af';
+            logElement.innerHTML += `<div style="color: ${color}">${logEntry}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            logs = [];
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function getConfig() {
+            return {
+                baseUrl: document.getElementById('baseUrl').value,
+                enterpriseId: document.getElementById('enterpriseId').value,
+                departmentId: document.getElementById('departmentId').value,
+                authToken: document.getElementById('authToken').value,
+                teamName: document.getElementById('teamName').value,
+                teamDescription: document.getElementById('teamDescription').value,
+                employeeId: document.getElementById('employeeId').value
+            };
+        }
+
+        function validateConfig() {
+            const config = getConfig();
+            if (!config.baseUrl || !config.enterpriseId || !config.departmentId || !config.authToken) {
+                log('❌ Please fill in all configuration fields (Backend URL, Enterprise ID, Department ID, and Auth Token)', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // Override the makeRequest function to use our config
+        window.makeRequest = async function(url, options = {}) {
+            const config = getConfig();
+            
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': config.authToken,
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return { status: response.status, data };
+            } catch (error) {
+                console.error('Request failed:', error);
+                return { status: 'error', data: error.message };
+            }
+        };
+
+        // Override test functions to use our config
+        async function testCreateTeam() {
+            if (!validateConfig()) return;
+            
+            const config = getConfig();
+            log('Testing POST /enterprise/{enterpriseId}/departments/{departmentId}/teams');
+            
+            const testTeam = {
+                name: config.teamName,
+                description: config.teamDescription,
+                leaderId: ''
+            };
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams`;
+            const result = await makeRequest(url, {
+                method: 'POST',
+                body: JSON.stringify(testTeam)
+            });
+            
+            log(`Create Team Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            
+            if (result.data?.id) {
+                currentTeamId = result.data.id;
+                log(`✅ Team created with ID: ${currentTeamId}`, 'success');
+            }
+            
+            return result.data?.id;
+        }
+
+        async function testGetTeams() {
+            if (!validateConfig()) return;
+            
+            const config = getConfig();
+            log('Testing GET /enterprise/{enterpriseId}/departments/{departmentId}/teams');
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams`;
+            const result = await makeRequest(url, { method: 'GET' });
+            
+            log(`Get Teams Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            return result.data;
+        }
+
+        async function testGetTeam() {
+            if (!validateConfig()) return;
+            if (!currentTeamId) {
+                log('❌ No team ID available. Please create a team first.', 'error');
+                return;
+            }
+            
+            const config = getConfig();
+            log('Testing GET /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}');
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams/${currentTeamId}`;
+            const result = await makeRequest(url, { method: 'GET' });
+            
+            log(`Get Team Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            return result.data;
+        }
+
+        async function testUpdateTeam() {
+            if (!validateConfig()) return;
+            if (!currentTeamId) {
+                log('❌ No team ID available. Please create a team first.', 'error');
+                return;
+            }
+            
+            const config = getConfig();
+            log('Testing PUT /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}');
+            
+            const updatedTeam = {
+                name: `Updated ${config.teamName}`,
+                description: `Updated ${config.teamDescription}`
+            };
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams/${currentTeamId}`;
+            const result = await makeRequest(url, {
+                method: 'PUT',
+                body: JSON.stringify(updatedTeam)
+            });
+            
+            log(`Update Team Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            return result.data;
+        }
+
+        async function testPatchTeam() {
+            if (!validateConfig()) return;
+            if (!currentTeamId) {
+                log('❌ No team ID available. Please create a team first.', 'error');
+                return;
+            }
+            if (!getConfig().employeeId) {
+                log('❌ No employee ID provided. Please enter an employee ID for testing.', 'error');
+                return;
+            }
+            
+            const config = getConfig();
+            log('Testing PATCH /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}');
+            
+            const patchData = {
+                leaderId: config.employeeId
+            };
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams/${currentTeamId}`;
+            const result = await makeRequest(url, {
+                method: 'PATCH',
+                body: JSON.stringify(patchData)
+            });
+            
+            log(`Patch Team Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            return result.data;
+        }
+
+        async function testGetTeamMembers() {
+            if (!validateConfig()) return;
+            if (!currentTeamId) {
+                log('❌ No team ID available. Please create a team first.', 'error');
+                return;
+            }
+            
+            const config = getConfig();
+            log('Testing GET /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}/members');
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams/${currentTeamId}/members`;
+            const result = await makeRequest(url, { method: 'GET' });
+            
+            log(`Get Team Members Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            return result.data;
+        }
+
+        async function testAddEmployeeToTeam() {
+            if (!validateConfig()) return;
+            if (!currentTeamId) {
+                log('❌ No team ID available. Please create a team first.', 'error');
+                return;
+            }
+            if (!getConfig().employeeId) {
+                log('❌ No employee ID provided. Please enter an employee ID for testing.', 'error');
+                return;
+            }
+            
+            const config = getConfig();
+            log('Testing POST /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}/employees');
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams/${currentTeamId}/employees`;
+            const result = await makeRequest(url, {
+                method: 'POST',
+                body: JSON.stringify({ employeeId: config.employeeId })
+            });
+            
+            log(`Add Employee to Team Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            return result.data;
+        }
+
+        async function testRemoveEmployeeFromTeam() {
+            if (!validateConfig()) return;
+            if (!currentTeamId) {
+                log('❌ No team ID available. Please create a team first.', 'error');
+                return;
+            }
+            if (!getConfig().employeeId) {
+                log('❌ No employee ID provided. Please enter an employee ID for testing.', 'error');
+                return;
+            }
+            
+            const config = getConfig();
+            log('Testing DELETE /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}/employees/{employeeId}');
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams/${currentTeamId}/employees/${config.employeeId}`;
+            const result = await makeRequest(url, { method: 'DELETE' });
+            
+            log(`Remove Employee from Team Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            return result.data;
+        }
+
+        async function testDeleteTeam() {
+            if (!validateConfig()) return;
+            if (!currentTeamId) {
+                log('❌ No team ID available. Please create a team first.', 'error');
+                return;
+            }
+            
+            const config = getConfig();
+            log('Testing DELETE /enterprise/{enterpriseId}/departments/{departmentId}/teams/{teamId}');
+            
+            const url = `${config.baseUrl}/enterprise/${config.enterpriseId}/departments/${config.departmentId}/teams/${currentTeamId}`;
+            const result = await makeRequest(url, { method: 'DELETE' });
+            
+            log(`Delete Team Result: ${JSON.stringify(result, null, 2)}`, result.status === 200 ? 'success' : 'error');
+            
+            if (result.status === 200) {
+                currentTeamId = null;
+                log('✅ Team deleted successfully', 'success');
+            }
+            
+            return result.data;
+        }
+
+        async function runAllTests() {
+            log('🚀 Starting Team Management API Tests...', 'info');
+            
+            try {
+                // Test 1: Create team
+                const teamId = await testCreateTeam();
+                if (!teamId) {
+                    log('❌ Failed to create team, stopping tests', 'error');
+                    return;
+                }
+                
+                log(`✅ Team created with ID: ${teamId}`, 'success');
+                
+                // Test 2: Get all teams
+                await testGetTeams();
+                
+                // Test 3: Get specific team
+                await testGetTeam();
+                
+                // Test 4: Update team
+                await testUpdateTeam();
+                
+                // Test 5: Patch team (assign leader)
+                await testPatchTeam();
+                
+                // Test 6: Get team members
+                await testGetTeamMembers();
+                
+                // Test 7: Add employee to team
+                await testAddEmployeeToTeam();
+                
+                // Test 8: Remove employee from team
+                await testRemoveEmployeeFromTeam();
+                
+                // Test 9: Delete team
+                await testDeleteTeam();
+                
+                log('🎉 All tests completed successfully!', 'success');
+                
+            } catch (error) {
+                log(`❌ Test suite failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        log('Team Management API Test Page Loaded', 'info');
+        log('Please configure the settings above and click "Run All Tests" to begin', 'info');
+    </script>
+</body>
+</html> 

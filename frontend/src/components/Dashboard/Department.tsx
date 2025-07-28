@@ -4,6 +4,7 @@ import "../../styles/Department.css";
 import EmployeeModal from '../UI/EmployeeModal';
 import DepartmentModal from '../UI/DepartmentModal';
 import DeleteConfirmationModal from '../UI/DeleteConfirmationModal';
+import TeamManagement from '../UI/TeamManagement';
 import { FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
 import { Button } from "../UI/button";
@@ -47,7 +48,17 @@ interface CardData {
 }
 
 // Department Card component
-const DepartmentCard = ({ department, onEdit, onDelete }: { department: DepartmentData, onEdit: (department: DepartmentData) => void, onDelete: (department: DepartmentData) => void }) => {
+const DepartmentCard = ({ 
+  department, 
+  onEdit, 
+  onDelete, 
+  onTeamClick 
+}: { 
+  department: DepartmentData, 
+  onEdit: (department: DepartmentData) => void, 
+  onDelete: (department: DepartmentData) => void,
+  onTeamClick: (department: DepartmentData) => void 
+}) => {
   return (
     <div className="department-card">
       <div className="card-content">
@@ -107,7 +118,10 @@ const DepartmentCard = ({ department, onEdit, onDelete }: { department: Departme
         </div>
         
         <div className="card-footer">
-          <button className="footer-button">
+          <button 
+            className="footer-button"
+            onClick={() => onTeamClick(department)}
+          >
             <i className="fas fa-users"></i>
             Team
           </button>
@@ -187,6 +201,8 @@ const Department: FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
   const [animateAddEmployee, setAnimateAddEmployee] = useState(false);
+  const [isTeamManagementOpen, setIsTeamManagementOpen] = useState(false);
+  const [selectedDepartmentForTeams, setSelectedDepartmentForTeams] = useState(null);
   
   // Check for animation flag from UserManagement
   useEffect(() => {
@@ -483,6 +499,11 @@ const Department: FC = () => {
     setDepartmentToDelete(null);
   };
 
+  const handleTeamClick = (department: DepartmentData) => {
+    setSelectedDepartmentForTeams(department);
+    setIsTeamManagementOpen(true);
+  };
+
   return (
     <div className="department-container">
       <div className="department-header">
@@ -534,6 +555,7 @@ const Department: FC = () => {
                 department={department} 
                 onEdit={handleEditDepartment}
                 onDelete={handleDeleteDepartment}
+                onTeamClick={handleTeamClick}
               />
             ))}
           </div>
@@ -570,6 +592,16 @@ const Department: FC = () => {
         title="Delete Department"
         message="Are you sure you want to delete this department?"
         itemName={departmentToDelete?.name}
+      />
+      
+      <TeamManagement
+        isOpen={isTeamManagementOpen}
+        onClose={() => {
+          setIsTeamManagementOpen(false);
+          setSelectedDepartmentForTeams(null);
+        }}
+        departmentId={selectedDepartmentForTeams?.id || ""}
+        departmentName={selectedDepartmentForTeams?.name || ""}
       />
     </div>
   );

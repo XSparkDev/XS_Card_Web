@@ -1,0 +1,363 @@
+import React, { useState, useEffect } from "react";
+import { Button } from "./button";
+import { FaEllipsisV, FaTrash, FaEdit, FaPlus, FaUsers, FaCrown } from "react-icons/fa";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
+import TeamModal from "./TeamModal";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
+import TeamMemberManagement from "./TeamMemberManagement";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
+import "../../styles/TeamManagement.css";
+
+interface TeamManagementProps {
+  isOpen: boolean;
+  onClose: () => void;
+  departmentId: string;
+  departmentName: string;
+}
+
+interface TeamData {
+  id: string;
+  name: string;
+  description: string;
+  departmentId: string;
+  createdAt: any;
+  updatedAt: any;
+  leaderId: string | null;
+  leaderRef: any;
+  memberCount: number;
+}
+
+interface EmployeeData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  position: string;
+}
+
+const TeamManagement: React.FC<TeamManagementProps> = ({
+  isOpen,
+  onClose,
+  departmentId,
+  departmentName
+}) => {
+  const [teams, setTeams] = useState<TeamData[]>([]);
+  const [employees, setEmployees] = useState<EmployeeData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<TeamData | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<TeamData | null>(null);
+  const [isTeamMemberManagementOpen, setIsTeamMemberManagementOpen] = useState(false);
+  const [selectedTeamForMembers, setSelectedTeamForMembers] = useState<TeamData | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // Fetch teams and employees for this department
+  const fetchTeamsAndEmployees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch teams
+      const teamsUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams`);
+      const headers = getEnterpriseHeaders();
+      
+      const teamsResponse = await fetch(teamsUrl, { headers });
+      if (!teamsResponse.ok) {
+        throw new Error(`Failed to fetch teams: ${teamsResponse.status}`);
+      }
+      
+      const teamsData = await teamsResponse.json();
+      const teamsArray = teamsData.teams ? Object.values(teamsData.teams) : [];
+      setTeams(teamsArray as TeamData[]);
+
+      // Fetch employees
+      const employeesUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);
+      const employeesResponse = await fetch(employeesUrl, { headers });
+      if (!employeesResponse.ok) {
+        throw new Error(`Failed to fetch employees: ${employeesResponse.status}`);
+      }
+      
+      const employeesData = await employeesResponse.json();
+      const employeesArray = employeesData.employees ? Object.values(employeesData.employees) : [];
+      setEmployees(employeesArray as EmployeeData[]);
+
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch data");
+      console.error("Error fetching teams and employees:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && departmentId) {
+      fetchTeamsAndEmployees();
+    }
+  }, [isOpen, departmentId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.custom-dropdown')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleCreateTeam = () => {
+    setEditingTeam(null);
+    setIsTeamModalOpen(true);
+  };
+
+  const handleEditTeam = (team: TeamData) => {
+    setEditingTeam(team);
+    setIsTeamModalOpen(true);
+  };
+
+  const handleDeleteTeam = (team: TeamData) => {
+    setTeamToDelete(team);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleSubmitTeam = async (teamData: any) => {
+    try {
+      const headers = getEnterpriseHeaders();
+      
+      if (editingTeam) {
+        // Update existing team
+        const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${editingTeam.id}`);
+        const response = await fetch(url, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(teamData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update team: ${response.status}`);
+        }
+      } else {
+        // Create new team
+        const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams`);
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(teamData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create team: ${response.status}`);
+        }
+      }
+
+      // Refresh the teams list
+      await fetchTeamsAndEmployees();
+      setIsTeamModalOpen(false);
+      setEditingTeam(null);
+    } catch (err: any) {
+      throw new Error(err.message || "Failed to save team");
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!teamToDelete) return;
+
+    try {
+      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${teamToDelete.id}`);
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete team: ${response.status}`);
+      }
+
+      // Remove the team from state
+      setTeams(teams.filter(team => team.id !== teamToDelete.id));
+      setDeleteConfirmOpen(false);
+      setTeamToDelete(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to delete team");
+      console.error("Error deleting team:", err);
+    }
+  };
+
+  const closeDeleteConfirm = () => {
+    setDeleteConfirmOpen(false);
+    setTeamToDelete(null);
+  };
+
+  const handleManageMembers = (team: TeamData) => {
+    console.log('handleManageMembers called with team:', team);
+    alert(`Opening team member management for: ${team.name}`);
+    setSelectedTeamForMembers(team);
+    setIsTeamMemberManagementOpen(true);
+    console.log('State updated - selectedTeamForMembers:', team, 'isTeamMemberManagementOpen: true');
+  };
+
+  const getLeaderName = (leaderId: string | null) => {
+    if (!leaderId) return "No leader assigned";
+    const leader = employees.find(emp => emp.id === leaderId);
+    return leader ? `${leader.firstName} ${leader.lastName}` : "Unknown leader";
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="team-management-overlay">
+      <div className="team-management-container">
+        <div className="team-management-header">
+          <div>
+            <h2 className="team-management-title">Teams in {departmentName}</h2>
+            <p className="team-management-subtitle">Manage teams and assign employees</p>
+          </div>
+          <div className="team-management-actions">
+            <Button onClick={handleCreateTeam} className="create-team-button">
+              <FaPlus />
+              New Team
+            </Button>
+            <button className="close-button" onClick={onClose}>
+              ×
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="loading-state">Loading teams...</div>
+        ) : (
+          <div className="teams-content">
+            {teams.length === 0 ? (
+              <div className="empty-state">
+                <FaUsers className="empty-icon" />
+                <h3>No teams yet</h3>
+                <p>Create your first team to get started</p>
+                <Button onClick={handleCreateTeam}>
+                  <FaPlus />
+                  Create Team
+                </Button>
+              </div>
+            ) : (
+              <div className="teams-grid">
+                {teams.map(team => (
+                  <div key={team.id} className="team-card">
+                    <div className="team-card-header">
+                      <div>
+                        <h3 className="team-name">{team.name}</h3>
+                        <p className="team-description">{team.description}</p>
+                      </div>
+                      <div className="team-actions">
+                        <div className="custom-dropdown">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="more-button"
+                            onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)}
+                          >
+                            <FaEllipsisV />
+                          </Button>
+                          
+                          <div className={`dropdown-menu ${openDropdown === team.id ? 'show' : ''}`}>
+                            <button 
+                              className="dropdown-item"
+                              onClick={() => handleEditTeam(team)}
+                            >
+                              <FaEdit className="action-icon" />
+                              <span>Edit</span>
+                            </button>
+                            <button 
+                              className="dropdown-item"
+                              onClick={() => handleManageMembers(team)}
+                            >
+                              <FaUsers className="action-icon" />
+                              <span>Manage Members</span>
+                            </button>
+                            <button 
+                              className="dropdown-item"
+                              onClick={() => handleDeleteTeam(team)}
+                            >
+                              <FaTrash className="action-icon" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="team-stats">
+                      <div className="team-stat">
+                        <FaUsers className="stat-icon" />
+                        <span>{team.memberCount} members</span>
+                      </div>
+                      <div className="team-stat">
+                        <FaCrown className="stat-icon" />
+                        <span>{getLeaderName(team.leaderId)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="team-footer">
+                      <span className="team-created">
+                        Created {new Date(team.createdAt?.toDate?.() || team.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <TeamModal
+          isOpen={isTeamModalOpen}
+          onClose={() => {
+            setIsTeamModalOpen(false);
+            setEditingTeam(null);
+          }}
+          onSubmit={handleSubmitTeam}
+          departmentId={departmentId}
+          departmentName={departmentName}
+          team={editingTeam}
+          employees={employees}
+        />
+
+        <DeleteConfirmationModal
+          isOpen={deleteConfirmOpen}
+          onClose={closeDeleteConfirm}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Team"
+          message="Are you sure you want to delete this team? This action cannot be undone."
+          itemName={teamToDelete?.name}
+        />
+
+        <TeamMemberManagement
+          isOpen={isTeamMemberManagementOpen}
+          onClose={() => {
+            setIsTeamMemberManagementOpen(false);
+            setSelectedTeamForMembers(null);
+          }}
+          teamId={selectedTeamForMembers?.id || ""}
+          teamName={selectedTeamForMembers?.name || ""}
+          departmentId={departmentId}
+          departmentName={departmentName}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default TeamManagement; 
