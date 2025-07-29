@@ -26,7 +26,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, buildUrl, DEFAULT_USER_ID } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, buildUrl, DEFAULT_USER_ID, DEFAULT_ENTERPRISE_ID } from "../../utils/api";
 import { 
   calculatePaperSaved, 
   calculateWaterSaved, 
@@ -127,6 +127,8 @@ const Analytics = () => {
   // Contact growth states
   const [growthData, setGrowthData] = useState<GrowthDataPoint[]>([]);
   const [growthPercentage, setGrowthPercentage] = useState<number>(0);
+  const [totalContacts, setTotalContacts] = useState<number>(0);
+  const [newContactsThisMonth, setNewContactsThisMonth] = useState<number>(0);
   const [growthLoading, setGrowthLoading] = useState<boolean>(true);
   
   // Meetings states
@@ -146,8 +148,8 @@ const Analytics = () => {
       try {
         setLoading(true);
         
-        // Use the same API utility functions as in BusinessCards component
-        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        // Use the new scan analytics endpoint
+        const url = buildUrl(`/logs/analytics/cards/${DEFAULT_ENTERPRISE_ID}`);
         const headers = getEnterpriseHeaders();
         
         const response = await fetch(url, { headers });
@@ -159,25 +161,53 @@ const Analytics = () => {
         // Parse the response
         const responseData = await response.json();
         
-        // Extract cards data from the response
+        // Handle the new response structure
         let cardsData = [];
         
-        if (Array.isArray(responseData)) {
-          cardsData = responseData;
-        } else if (responseData && typeof responseData === 'object') {
-          if (Array.isArray(responseData.data)) {
-            cardsData = responseData.data;
-          } else if (Array.isArray(responseData.cards)) {
-            cardsData = responseData.cards;
-          } else {
-            cardsData = [responseData];
+        if (responseData.success && responseData.cardScans) {
+          // Use the new scan analytics data
+          cardsData = responseData.cardScans.map((cardScan: any) => ({
+            ...cardScan,
+            // Map the new field names to expected ones for compatibility
+            scans: cardScan.scanCount || 0,
+            numberOfScan: cardScan.scanCount || 0,
+            name: cardScan.cardName || '',
+            surname: cardScan.cardSurname || '',
+            email: cardScan.userEmail || '',
+            occupation: cardScan.occupation || ''
+          }));
+          
+          // Set the count of active cards from summary or array length
+          setActiveCardsCount(responseData.summary?.totalCards || cardsData.length);
+        } else {
+          // Fallback to old endpoint if new one fails
+          console.warn('New scan analytics endpoint failed, falling back to old endpoint');
+          const fallbackUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+          const fallbackResponse = await fetch(fallbackUrl, { headers });
+          
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            
+            // Extract cards data from the fallback response
+            if (Array.isArray(fallbackData)) {
+              cardsData = fallbackData;
+            } else if (fallbackData && typeof fallbackData === 'object') {
+              if (Array.isArray(fallbackData.data)) {
+                cardsData = fallbackData.data;
+              } else if (Array.isArray(fallbackData.cards)) {
+                cardsData = fallbackData.cards;
+              } else {
+                cardsData = [fallbackData];
+              }
+            }
+            
+            // Set the count of active cards
+            setActiveCardsCount(cardsData.length);
           }
         }
-        
-        // Set the count of active cards
-        setActiveCardsCount(cardsData.length);
       } catch (err) {
         console.error("Error fetching cards:", err);
+        setActiveCardsCount(0);
       } finally {
         setLoading(false);
       }
@@ -191,8 +221,8 @@ const Analytics = () => {
       try {
         setScansLoading(true);
         
-        // Use the same API utility functions as in BusinessCards component
-        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        // Use the new scan analytics endpoint
+        const url = buildUrl(`/logs/analytics/cards/${DEFAULT_ENTERPRISE_ID}`);
         const headers = getEnterpriseHeaders();
         
         const response = await fetch(url, { headers });
@@ -204,28 +234,59 @@ const Analytics = () => {
         // Parse the response
         const responseData = await response.json();
         
-        // Extract cards data from the response
+        // Handle the new response structure
+        let totalScans = 0;
         let cardsData = [];
         
-        if (Array.isArray(responseData)) {
-          cardsData = responseData;
-        } else if (responseData && typeof responseData === 'object') {
-          if (Array.isArray(responseData.data)) {
-            cardsData = responseData.data;
-          } else if (Array.isArray(responseData.cards)) {
-            cardsData = responseData.cards;
-          } else {
-            cardsData = [responseData];
+        if (responseData.success && responseData.cardScans) {
+          // Use the new scan analytics data
+          cardsData = responseData.cardScans.map((cardScan: any) => ({
+            ...cardScan,
+            // Map the new field names to expected ones for compatibility
+            scans: cardScan.scanCount || 0,
+            numberOfScan: cardScan.scanCount || 0,
+            name: cardScan.cardName || '',
+            surname: cardScan.cardSurname || '',
+            email: cardScan.userEmail || '',
+            occupation: cardScan.occupation || ''
+          }));
+          
+          // Calculate total scans from the summary or sum individual scans
+          totalScans = responseData.summary?.totalScans || 
+            cardsData.reduce((sum: number, card: any) => sum + (card.scans || 0), 0);
+        } else {
+          // Fallback to old endpoint if new one fails
+          console.warn('New scan analytics endpoint failed, falling back to old endpoint');
+          const fallbackUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+          const fallbackResponse = await fetch(fallbackUrl, { headers });
+          
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            
+            // Extract cards data from the fallback response
+            if (Array.isArray(fallbackData)) {
+              cardsData = fallbackData;
+            } else if (fallbackData && typeof fallbackData === 'object') {
+              if (Array.isArray(fallbackData.data)) {
+                cardsData = fallbackData.data;
+              } else if (Array.isArray(fallbackData.cards)) {
+                cardsData = fallbackData.cards;
+              } else {
+                cardsData = [fallbackData];
+              }
+            }
+            
+            // Calculate total scans across all cards
+            totalScans = cardsData.reduce((sum: number, card: any) => {
+              return sum + (card.scans || 0);
+            }, 0);
           }
         }
-          // Calculate total scans across all cards
-        const totalScans = cardsData.reduce((sum: number, card: any) => {
-          return sum + (card.scans || 0);
-        }, 0);
         
         setTotalScansCount(totalScans);
       } catch (err) {
         console.error("Error fetching scans data:", err);
+        setTotalScansCount(0);
       } finally {
         setScansLoading(false);
       }
@@ -240,40 +301,63 @@ const Analytics = () => {
         setConnectionsLoading(true);
         setGrowthLoading(true);
         
+        console.log('🔍 Fetching connections data...');
+        
         // Use enterprise contacts summary endpoint first to get total count
         const summaryUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS_SUMMARY);
+        console.log('📊 Summary URL:', summaryUrl);
+        
         const summaryResponse = await fetch(summaryUrl, {
           headers: getEnterpriseHeaders(),
         });
         
+        console.log('📊 Summary response status:', summaryResponse.status);
+        
         if (summaryResponse.ok) {
           const summaryData: ContactsSummaryResponse = await summaryResponse.json();
-          setConnectionsCount(summaryData.data.totalContacts);
+          console.log('📊 Summary data:', summaryData);
+          setConnectionsCount(summaryData.data?.totalContacts || 0);
+        } else {
+          console.error('❌ Summary endpoint failed:', summaryResponse.status);
+          setConnectionsCount(0);
         }
         
         // Fetch detailed contacts for growth data
         const detailsUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
+        console.log('📊 Details URL:', detailsUrl);
+        
         const detailsResponse = await fetch(detailsUrl, {
           headers: getEnterpriseHeaders(),
         });
         
+        console.log('📊 Details response status:', detailsResponse.status);
+        
         if (detailsResponse.ok) {
           const detailsData: EnterpriseContactsResponse = await detailsResponse.json();
+          console.log('📊 Details data:', detailsData);
           
           // Flatten contacts from all departments for growth processing
           const allContacts: Contact[] = [];
-          Object.values(detailsData.data.contactsByDepartment).forEach(dept => {
-            allContacts.push(...dept.contacts);
-          });
+          
+          if (detailsData.data?.contactsByDepartment) {
+            Object.values(detailsData.data.contactsByDepartment).forEach(dept => {
+              if (dept.contacts && Array.isArray(dept.contacts)) {
+                allContacts.push(...dept.contacts);
+              }
+            });
+          }
+          
+          console.log('📊 Total contacts found:', allContacts.length);
           
           // Process growth data
           processGrowthData(allContacts);
         } else {
+          console.error('❌ Details endpoint failed:', detailsResponse.status);
           throw new Error(`Failed to fetch contact details: ${detailsResponse.status}`);
         }
         
       } catch (err) {
-        console.error("Error fetching connections:", err);
+        console.error("❌ Error fetching connections:", err);
         // Set empty data on error
         setConnectionsCount(0);
         setGrowthData([]);
@@ -286,7 +370,8 @@ const Analytics = () => {
     
     fetchConnectionsData();
   }, []);
-    // Fetch meetings data
+  
+  // Fetch meetings data
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
@@ -323,7 +408,8 @@ const Analytics = () => {
     };
     
     fetchMeetings();
-  }, []);    // Helper to extract date from contact
+  }, []);
+    // Helper to extract date from contact
   const getDateFromContact = (contact: Contact): Date | null => {
     try {
       const createdAt = contact.createdAt;
@@ -421,24 +507,33 @@ const Analytics = () => {
       console.log("Recent data for growth calculation:", recentData);
       setGrowthData(recentData);
       
-      // Calculate month-over-month growth based on new contacts added
+      // Debug: Log what we're setting
+      console.log("Setting growth data:", recentData);
+      console.log("Setting growth percentage:", recentData.length === 1 ? 999 : 0);
+      
+      // Calculate month-over-month growth percentage based on new contacts added
       if (recentData.length >= 2) {
+        // Get the corresponding months for new contact calculation
         const lastMonth = recentData[recentData.length - 1].date;
         const previousMonth = recentData[recentData.length - 2].date;
         
         const newContactsLastMonth = monthlyNewContacts[lastMonth] || 0;
         const newContactsPreviousMonth = monthlyNewContacts[previousMonth] || 0;
         
-        // Log values for debugging
-        console.log(`Growth calculation: (${newContactsLastMonth} - ${newContactsPreviousMonth}) / ${newContactsPreviousMonth} * 100`);
-        
         // Use utility function for consistent growth calculation
         const growth = calculateMonthOverMonthGrowth(newContactsLastMonth, newContactsPreviousMonth);
-        
-        console.log("Growth percentage:", growth);
         setGrowthPercentage(growth);
+      } else if (recentData.length === 1) {
+        // Only one month of data - show new contacts this month
+        const currentMonth = recentData[0].date;
+        const newContactsThisMonth = monthlyNewContacts[currentMonth] || 0;
+        
+        // Set the new contacts count for display
+        setNewContactsThisMonth(newContactsThisMonth);
+        
+        // Set a special flag to indicate "new this month" instead of growth percentage
+        setGrowthPercentage(newContactsThisMonth > 0 ? 999 : 0); // 999 is our special flag for "new this month"
       } else {
-        console.log("Not enough months to calculate growth");
         setGrowthPercentage(0);
       }
     } catch (err) {
@@ -736,11 +831,11 @@ const Analytics = () => {
               </div>
             </div>
             <div className="metric-value">
-              {growthLoading ? "Loading..." : `${Math.abs(growthPercentage)}%`}
+              {growthLoading ? "Loading..." : growthPercentage === 999 ? newContactsThisMonth : `${Math.abs(growthPercentage)}%`}
             </div>
             <div className={`metric-change ${growthPercentage >= 0 ? 'positive' : 'negative'}`}>
               <span className="arrow">{growthPercentage >= 0 ? '↑' : '↓'}</span> 
-              {growthPercentage >= 0 ? 'increase' : 'decrease'} from previous period
+              {growthPercentage === 999 ? 'new this month' : growthPercentage >= 0 ? 'increase' : 'decrease'} from previous period
             </div>
           </CardContent>
         </Card>
@@ -944,42 +1039,46 @@ const Analytics = () => {
                   {growthLoading ? (
                     <div className="loading-indicator">Loading chart data...</div>
                   ) : growthData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={growthData}
-                        margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis 
-                          dataKey="date" 
-                          tick={{ fontSize: 12, fill: '#94a3b8' }}
-                        />
-                        <YAxis 
-                          tick={{ fontSize: 12, fill: '#94a3b8' }}
-                          width={30}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#1e293b', 
-                            border: 'none',
-                            borderRadius: '4px',
-                            color: 'white',
-                            fontSize: '12px'
-                          }}
-                          itemStyle={{ color: '#38bdf8' }}
-                          labelStyle={{ color: 'white', fontWeight: 'bold' }}
-                          formatter={(value) => [`${value} connections`, 'Total']}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="totalContacts" 
-                          stroke="#38bdf8" 
-                          strokeWidth={2}
-                          dot={{ fill: '#38bdf8', r: 4 }}
-                          activeDot={{ fill: '#0ea5e9', r: 6, stroke: '#0c4a6e', strokeWidth: 2 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    <>
+                      {/* Debug: Log the data being rendered */}
+                      {console.log("Rendering graph with data:", growthData)}
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={growthData}
+                          margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis 
+                            dataKey="date" 
+                            tick={{ fontSize: 12, fill: '#94a3b8' }}
+                          />
+                          <YAxis 
+                            tick={{ fontSize: 12, fill: '#94a3b8' }}
+                            width={30}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: '#1e293b', 
+                              border: 'none',
+                              borderRadius: '4px',
+                              color: 'white',
+                              fontSize: '12px'
+                            }}
+                            itemStyle={{ color: '#38bdf8' }}
+                            labelStyle={{ color: 'white', fontWeight: 'bold' }}
+                            formatter={(value) => [`${value} connections`, 'Total']}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="totalContacts" 
+                            stroke="#38bdf8" 
+                            strokeWidth={2}
+                            dot={{ fill: '#38bdf8', r: 4 }}
+                            activeDot={{ fill: '#0ea5e9', r: 6, stroke: '#0c4a6e', strokeWidth: 2 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </>
                   ) : (
                     <div className="no-data-message">No connection data available</div>
                   )}

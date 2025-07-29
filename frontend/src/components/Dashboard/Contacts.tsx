@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import "../../styles/Contacts.css";
 import "../../styles/Dashboard.css";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
-import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS } from "../../utils/api";
+import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS, authenticatedFetch, buildUrl } from "../../utils/api";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../UI/dialog";
 
 // Define contact interface based on API response
 interface Contact {
@@ -74,17 +75,119 @@ interface DepartmentContactsResponse {
   };
 }
 
-const ContactItem = ({ contact }: { contact: Contact }) => {
+const ContactItem = ({ contact, onDelete }: { contact: Contact; onDelete: (contactId: string) => void }) => {
   const fullName = `${contact.name} ${contact.surname}`;
   const initials = `${contact.name[0]}${contact.surname[0]}`;
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const handleEmailClick = (email: string) => {
     window.location.href = `mailto:${email}`;
   };
 
-  const handleDeleteContact = (email: string) => {
-    // Implement the delete logic
-    console.log(`Delete contact with email: ${email}`);
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setIsDeleting(true);
+      
+      // Try different endpoint patterns to see which one works
+      // Pattern 1: /Contacts/:id (most common)
+      const endpoint = `/Contacts/${contact.ownerInfo.userId}`;
+      console.log('🗑️ Attempting to delete contact:', {
+        contactName: `${contact.name} ${contact.surname}`,
+        userId: contact.ownerInfo.userId,
+        endpoint: endpoint
+      });
+      
+      const response = await authenticatedFetch(endpoint, {
+        method: 'DELETE',
+      });
+
+      console.log('🗑️ Delete response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🗑️ Delete failed with error:', errorText);
+        
+        // If 404, try alternative endpoint patterns
+        if (response.status === 404) {
+          console.log('🔄 Trying alternative endpoint patterns...');
+          
+          // Pattern 2: Try with contact ID instead of user ID
+          const contactId = contact.email; // Use email as contact ID
+          const altEndpoint = `/Contacts/${contactId}`;
+          console.log('🔄 Trying alternative endpoint:', altEndpoint);
+          
+          const altResponse = await authenticatedFetch(altEndpoint, {
+            method: 'DELETE',
+          });
+          
+          if (altResponse.ok) {
+            console.log('✅ Contact deleted with alternative endpoint');
+            onDelete(contact.ownerInfo.userId);
+            setShowDeleteDialog(false);
+            alert(`✅ Successfully deleted contact: ${fullName}`);
+            return;
+          }
+          
+          // Pattern 3: Try enterprise-specific endpoint
+          const enterpriseEndpoint = `/enterprise/x-spark-test/contacts/${contact.ownerInfo.userId}`;
+          console.log('🔄 Trying enterprise endpoint:', enterpriseEndpoint);
+          
+          const enterpriseResponse = await authenticatedFetch(enterpriseEndpoint, {
+            method: 'DELETE',
+          });
+          
+          if (enterpriseResponse.ok) {
+            console.log('✅ Contact deleted with enterprise endpoint');
+            onDelete(contact.ownerInfo.userId);
+            setShowDeleteDialog(false);
+            alert(`✅ Successfully deleted contact: ${fullName}`);
+            return;
+          }
+        }
+        
+        throw new Error(`Failed to delete contact: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      // Call the parent's onDelete function to update the UI
+      onDelete(contact.ownerInfo.userId);
+      setShowDeleteDialog(false);
+      
+      // Show success message
+      console.log('✅ Contact deleted successfully');
+      alert(`✅ Successfully deleted contact: ${fullName}`);
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      
+      // Show more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          alert('❌ Unauthorized: You do not have permission to delete this contact.');
+        } else if (error.message.includes('404')) {
+          alert('❌ Contact not found: The contact may have already been deleted or the endpoint is incorrect.');
+        } else if (error.message.includes('403')) {
+          alert('❌ Forbidden: You do not have permission to delete contacts.');
+        } else {
+          alert(`❌ Failed to delete contact: ${error.message}`);
+        }
+      } else {
+        alert('❌ Failed to delete contact. Please try again.');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteDialog(false);
   };
 
   // Convert Firebase timestamp to date
@@ -117,7 +220,7 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="dropdown-content">
-                <DropdownMenuItem onClick={() => handleDeleteContact(contact.email)}>
+                <DropdownMenuItem onClick={handleDeleteClick}>
                   <FaTrash className="action-icon" />
                   <span>Delete</span>
                 </DropdownMenuItem>
@@ -155,6 +258,28 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
           </div>
         </div>
       </CardContent>
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">⚠️ Delete Contact</DialogTitle>
+            <DialogDescription>
+              <p className="mb-2">Are you sure you want to delete <strong>{fullName}</strong>?</p>
+              <p className="text-sm text-muted-foreground">
+                <strong>Warning:</strong> This action cannot be undone. All contact information, 
+                including email, phone, and meeting history will be permanently removed.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelDelete} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? 'Deleting...' : 'Delete Contact'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
@@ -289,6 +414,18 @@ const Contacts = () => {
   // For favorites, we'll just show the most recent contacts since the API doesn't have a favorite field
   const favoriteContacts = recentContacts;
   
+  const handleContactDeleted = (contactId: string) => {
+    // Remove the deleted contact from the contacts list
+    setContacts(prevContacts => prevContacts.filter(contact => contact.ownerInfo.userId !== contactId));
+    
+    // Also update the filtered contacts if needed
+    setSearchTerm(prevSearchTerm => {
+      // If we're currently filtering, we might need to update the filtered results
+      // This will be handled by the useEffect that filters contacts
+      return prevSearchTerm;
+    });
+  };
+  
   return (
     <div className="page-container">
       <div className="page-header">
@@ -347,7 +484,7 @@ const Contacts = () => {
               <div className="contacts-list">
                 {filteredContacts.length > 0 ? (
                   filteredContacts.map((contact, index) => (
-                    <ContactItem key={`${contact.email}-${index}`} contact={contact} />
+                    <ContactItem key={`${contact.email}-${index}`} contact={contact} onDelete={handleContactDeleted} />
                   ))
                 ) : (
                   <div className="no-results">No contacts found. Try adjusting your search.</div>
@@ -359,7 +496,7 @@ const Contacts = () => {
               <div className="contacts-list">
                 {recentContacts.length > 0 ? (
                   recentContacts.map((contact, index) => (
-                    <ContactItem key={`recent-${contact.email}-${index}`} contact={contact} />
+                    <ContactItem key={`recent-${contact.email}-${index}`} contact={contact} onDelete={handleContactDeleted} />
                   ))
                 ) : (
                   <div className="no-results">No recent contacts found.</div>
@@ -371,7 +508,7 @@ const Contacts = () => {
               <div className="contacts-list">
                 {favoriteContacts.length > 0 ? (
                   favoriteContacts.map((contact, index) => (
-                    <ContactItem key={`favorite-${contact.email}-${index}`} contact={contact} />
+                    <ContactItem key={`favorite-${contact.email}-${index}`} contact={contact} onDelete={handleContactDeleted} />
                   ))
                 ) : (
                   <div className="no-results">No favorite contacts found.</div>
