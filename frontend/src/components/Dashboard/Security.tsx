@@ -7,7 +7,7 @@ import { Badge } from "../UI/badge";
 import "../../styles/Security.css";
 import { Switch } from "../UI/switch";
 import ManageRolesModal from "./ManageRolesModal";
-import { useSessionTimeoutContext } from "../../providers/SessionTimeoutProvider";
+// import { useSessionTimeoutContext } from "../../providers/SessionTimeoutProvider";
 import { sessionService } from "../../services/sessionService";
 import { rolesService, Role } from "../../services/rolesService";
 
@@ -33,7 +33,7 @@ const Security = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoadingRoles, setIsLoadingRoles] = useState(false);
   
-  const { updateSessionTimeout } = useSessionTimeoutContext();
+  // const { updateSessionTimeout } = useSessionTimeoutContext();
 
   // Load session data on component mount and tab change
   useEffect(() => {
@@ -108,7 +108,7 @@ const Security = () => {
     
     const minutes = timeoutMap[value];
     if (minutes) {
-      updateSessionTimeout(minutes);
+      // updateSessionTimeout(minutes);
       
       // Save to backend
       try {

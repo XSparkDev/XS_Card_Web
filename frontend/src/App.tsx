@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import Security from "./components/Dashboard/Security";
+import { SessionTimeoutProvider } from './providers/SessionTimeoutProvider';
 
 // Import your pages
 import Dashboard from './pages/Dashboard';

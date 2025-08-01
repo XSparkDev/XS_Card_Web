@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaSearch, FaQrcode, FaShare, FaEdit, FaTimes, FaLinkedin, FaTwitter, FaFacebook, FaInstagram, FaYoutube, FaTiktok, FaSnapchat, FaWhatsapp, FaTelegram, FaDiscord, FaSkype, FaGithub, FaPinterest, FaTwitch, FaSpotify, FaSoundcloud, FaBehance, FaDribbble, FaMedium, FaReddit, FaTumblr, FaVimeo, FaUpload, FaPalette } from "react-icons/fa";
+import { FaSearch, FaQrcode, FaShare, FaEdit, FaTimes, FaLinkedin, FaTwitter, FaFacebook, FaInstagram, FaYoutube, FaTiktok, FaSnapchat, FaWhatsapp, FaTelegram, FaDiscord, FaSkype, FaGithub, FaPinterest, FaTwitch, FaSpotify, FaSoundcloud, FaBehance, FaDribbble, FaMedium, FaReddit, FaTumblr, FaVimeo, FaUpload, FaPalette, FaEnvelope, FaPhone } from "react-icons/fa";
 import { Button } from "../UI/button";
 import "../../styles/BusinessCards.css";
 import "../../styles/Dashboard.css";
@@ -18,6 +18,7 @@ interface CardData {
   numberOfScan?: number;
   departmentName?: string;
   employeeTitle?: string;
+  company?: string;
   // Image fields that already exist in the backend
   profileImage?: string | null;
   companyLogo?: string | null;
@@ -48,6 +49,8 @@ interface CardData {
   vimeo?: string | { link: string; title: string };
   // QR code field
   qrCodeUrl?: string;
+  // Social media fields - new structure from backend
+  socials?: { [key: string]: { link: string; title: string } };
 }
 
 // Add this function to determine card colors based on department
@@ -224,23 +227,62 @@ const processCardsData = (responseData: any): CardData[] => {
   }));
 };
 
-const BusinessCardItem = ({ card, isPreview = false }: { card: CardData; isPreview?: boolean }) => {
+const BusinessCardItem = ({ 
+  card, 
+  isPreview = false, 
+  onQRClick, 
+  onShareClick, 
+  onEditClick 
+}: { 
+  card: CardData; 
+  isPreview?: boolean;
+  onQRClick?: () => void;
+  onShareClick?: () => void;
+  onEditClick?: () => void;
+}) => {
   return (
     <div key={card.id} className={`business-card ${isPreview ? 'preview-card' : ''}`}>
       <div className="business-card-content">
-        <div className="business-card-left" style={{ backgroundColor: getCardColor(card.colorScheme) }}>
-          {card.profileImage ? (
-            <div className="profile-image">
+        <div className={`business-card-left ${!card.companyLogo && !card.profileImage ? 'no-images' : ''}`} 
+             style={{ backgroundColor: !card.companyLogo && !card.profileImage ? getCardColor(card.colorScheme) : 'transparent' }}>
+          {card.companyLogo ? (
+            <div className="company-logo-full">
+              <img src={card.companyLogo} alt="Company Logo" />
+              {card.profileImage && (
+                <div className="profile-image-overlay">
+                  <img src={card.profileImage} alt="Profile" />
+                </div>
+              )}
+              {/* {!isPreview && (
+                <div className="send-link-overlay">
+                  <button 
+                    className="send-link-btn"
+                    onClick={() => onShareClick?.()}
+                    title="Send link"
+                  >
+                    Send link
+                  </button>
+                </div>
+              )} */}
+            </div>
+          ) : card.profileImage ? (
+            <div className="profile-image-full">
               <img src={card.profileImage} alt="Profile" />
+              {!isPreview && (
+                <div className="send-link-overlay">
+                  <button 
+                    className="send-link-btn"
+                    onClick={() => onShareClick?.()}
+                    title="Send link"
+                  >
+                    Send link
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="xscard-logo">
               <span>XS</span>
-            </div>
-          )}
-          {card.companyLogo && (
-            <div className="company-logo">
-              <img src={card.companyLogo} alt="Company Logo" />
             </div>
           )}
         </div>
@@ -249,48 +291,67 @@ const BusinessCardItem = ({ card, isPreview = false }: { card: CardData; isPrevi
           <div className="business-card-info">
             <h3 className="business-card-name">{card.name} {card.surname}</h3>
             <p className="business-card-title">{card.occupation || card.employeeTitle || 'N/A'}</p>
+            {card.company && (
+              <p className="business-card-company">{card.company}</p>
+            )}
             {card.departmentName && card.departmentName !== 'N/A' && (
               <p className="business-card-department">{card.departmentName}</p>
             )}
           </div>
           
           <div className="business-card-contact-info">
-            <p className="business-card-email">{card.email}</p>
-            <p className="business-card-phone">{card.phone}</p>
+            <div className="contact-item">
+              <div 
+                className="contact-icon" 
+                style={{ 
+                  borderColor: getCardColor(card.colorScheme),
+                  color: getCardColor(card.colorScheme)
+                }}
+                onClick={() => window.open(`mailto:${card.email}`, '_blank')}
+                title={`Email ${card.email}`}
+              >
+                <FaEnvelope />
+              </div>
+              <span className="contact-text">{card.email}</span>
+            </div>
+            <div className="contact-item">
+              <div 
+                className="contact-icon" 
+                style={{ 
+                  borderColor: getCardColor(card.colorScheme),
+                  color: getCardColor(card.colorScheme)
+                }}
+                onClick={() => window.open(`tel:${card.phone}`, '_blank')}
+                title={`Call ${card.phone}`}
+              >
+                <FaPhone />
+              </div>
+              <span className="contact-text">{card.phone}</span>
+            </div>
           </div>
           
           {/* Social Media Links */}
           <div className="business-card-socials">
             {socialPlatforms.map(platform => {
               const IconComponent = platform.icon;
-              const socialData = card[platform.key as keyof CardData] as { link: string; title: string } | string | undefined;
+              const socials = card.socials as { [key: string]: { link: string; title: string } } | undefined;
+              const socialData = socials?.[platform.key];
               
-              // Handle both old format (string) and new format (object)
-              let link = '';
-              let title = '';
-              
-              if (typeof socialData === 'string' && socialData.trim() !== '') {
-                // Old format - use the string as link and platform name as title
-                link = socialData;
-                title = platform.name;
-              } else if (socialData && typeof socialData === 'object' && 'link' in socialData) {
-                // New format
-                link = socialData.link || '';
-                title = socialData.title || platform.name;
-              }
-              
-              if (link && title) {
+              if (socialData && socialData.link && socialData.title) {
                 return (
                   <div key={platform.key} className="social-item">
                     <div 
                       className="social-icon" 
-                      style={{ backgroundColor: getCardColor(card.colorScheme) }}
-                      onClick={() => window.open(link, '_blank')}
-                      title={`Open ${platform.name}`}
+                      style={{ 
+                        borderColor: getCardColor(card.colorScheme),
+                        color: getCardColor(card.colorScheme)
+                      }}
+                      onClick={() => window.open(socialData.link, '_blank')}
+                      title={`Open ${socialData.title}`}
                     >
                       <IconComponent />
                     </div>
-                    <span className="social-title">{title}</span>
+                    <span className="social-title">{socialData.title}</span>
                   </div>
                 );
               }
@@ -301,13 +362,25 @@ const BusinessCardItem = ({ card, isPreview = false }: { card: CardData; isPrevi
           <div className="business-card-footer">
             <span className="business-card-scans">{card.numberOfScan || 0} scans</span>
             <div className="business-card-actions">
-              <button className="action-button" title="QR Code">
+              <button 
+                className="action-button" 
+                title="QR Code"
+                onClick={() => !isPreview && onQRClick?.()}
+              >
                 <FaQrcode />
               </button>
-              <button className="action-button" title="Share">
+              <button 
+                className="action-button" 
+                title="Share"
+                onClick={() => !isPreview && onShareClick?.()}
+              >
                 <FaShare />
               </button>
-              <button className="action-button" title="Edit">
+              <button 
+                className="action-button" 
+                title="Edit"
+                onClick={() => !isPreview && onEditClick?.()}
+              >
                 <FaEdit />
               </button>
             </div>
@@ -460,9 +533,505 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
   );
 };
 
+// Create Card Modal Component
+const CreateCardModal = ({ userContext, isOpen, onClose, onSave }: { 
+  userContext: any;
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSave: (newCard: CardData) => void;
+}) => {
+  const [newCard, setNewCard] = useState<Partial<CardData>>({
+    name: '',
+    surname: '',
+    occupation: '',
+    company: '',
+    email: '',
+    phone: '',
+    colorScheme: '#1B2B5B',
+    profileImage: null,
+    companyLogo: null
+  });
+  const [selectedTheme, setSelectedTheme] = useState('#1B2B5B');
+  const [customColor, setCustomColor] = useState('#1B2B5B');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [activeSocialModal, setActiveSocialModal] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const profileImageRef = useRef<HTMLInputElement>(null);
+  const companyLogoRef = useRef<HTMLInputElement>(null);
+
+  const themes = [
+    '#1B2B5B', // Navy Blue
+    '#E63946', // Red
+    '#2A9D8F', // Teal
+    '#E9C46A', // Yellow
+    '#F4A261', // Orange
+    '#6D597A', // Purple
+    '#355070', // Dark Blue
+    '#B56576', // Pink
+    '#4DAA57', // Green
+    '#264653', // Dark Teal
+    '#FF4B6E'  // Pinkish red
+  ];
+
+  useEffect(() => {
+    setNewCard(prev => ({ ...prev, colorScheme: selectedTheme }));
+  }, [selectedTheme]);
+
+  const handleInputChange = (field: keyof CardData, value: string) => {
+    setNewCard(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSocialChange = (platformKey: string, data: { link: string; title: string }) => {
+    setNewCard(prev => {
+      const currentSocials = prev.socials || {};
+      const newSocials = { ...currentSocials };
+      
+      if (data.link && data.title) {
+        newSocials[platformKey] = data;
+      } else {
+        delete newSocials[platformKey];
+      }
+      
+      return {
+        ...prev,
+        socials: newSocials
+      };
+    });
+  };
+
+  const handleImageUpload = (field: 'profileImage' | 'companyLogo', file: File) => {
+    // For preview, convert to Data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setNewCard(prev => ({ ...prev, [field]: result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (field: 'profileImage' | 'companyLogo') => {
+    setNewCard(prev => ({ ...prev, [field]: null }));
+  };
+
+  const handleCreate = async () => {
+    // Validate required fields
+    if (!newCard.company?.trim() || !newCard.email?.trim() || !newCard.phone?.trim() || !newCard.occupation?.trim()) {
+      alert('❌ Please fill in all required fields: Company, Email, Phone, and Job Title');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Get the actual file objects from the file inputs
+      const profileFile = profileImageRef.current?.files?.[0];
+      const companyFile = companyLogoRef.current?.files?.[0];
+
+      // Prepare social media data
+      const cardSocials = newCard.socials as { [key: string]: { link: string; title: string } } | undefined;
+      const socialsObject: { [key: string]: { link: string; title: string } } = {};
+      
+      socialPlatforms.forEach(platform => {
+        const socialData = cardSocials?.[platform.key];
+        if (socialData && socialData.link && socialData.title) {
+          socialsObject[platform.key] = {
+            link: socialData.link,
+            title: socialData.title
+          };
+        }
+      });
+
+      // Create FormData with all card data and images
+      const formData = new FormData();
+      formData.append('company', newCard.company?.trim() || '');
+      formData.append('email', newCard.email?.trim() || '');
+      formData.append('phone', newCard.phone?.trim() || '');
+      formData.append('title', newCard.occupation?.trim() || ''); // API expects 'title', we send 'occupation'
+      formData.append('name', newCard.name?.trim() || '');
+      formData.append('surname', newCard.surname?.trim() || '');
+      formData.append('colorScheme', newCard.colorScheme || '#1B2B5B');
+      formData.append('socials', JSON.stringify(socialsObject));
+
+      // Add images if they exist
+      if (profileFile) {
+        formData.append('profileImage', profileFile);
+      }
+      if (companyFile) {
+        formData.append('companyLogo', companyFile);
+      }
+
+      console.log('🆕 Creating card with FormData:', {
+        company: newCard.company?.trim(),
+        email: newCard.email?.trim(),
+        phone: newCard.phone?.trim(),
+        title: newCard.occupation?.trim(),
+        name: newCard.name?.trim() || '',
+        surname: newCard.surname?.trim() || '',
+        colorScheme: newCard.colorScheme || '#1B2B5B',
+        socials: socialsObject,
+        hasProfileImage: !!profileFile,
+        hasCompanyLogo: !!companyFile
+      });
+
+      const endpoint = buildUrl(ENDPOINTS.ADD_CARD);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🆕 Create card failed:', response.status, response.statusText, errorText);
+        throw new Error(`Failed to create card: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ Card created successfully:', responseData);
+
+      // Create the new card object for local state
+      const createdCard: CardData = {
+        id: responseData.cardData?.id || Date.now().toString(),
+        name: responseData.cardData?.name || '',
+        surname: responseData.cardData?.surname || '',
+        occupation: responseData.cardData?.occupation || '',
+        company: responseData.cardData?.company || '',
+        email: responseData.cardData?.email || '',
+        phone: responseData.cardData?.phone || '',
+        colorScheme: responseData.cardData?.colorScheme || '#1B2B5B',
+        profileImage: responseData.cardData?.profileImage || null,
+        companyLogo: responseData.cardData?.companyLogo || null,
+        numberOfScan: 0,
+        departmentName: 'N/A',
+        employeeTitle: responseData.cardData?.occupation || ''
+      };
+
+      // Add social media fields if they exist in the response
+      if (responseData.cardData?.socials) {
+        createdCard.socials = responseData.cardData.socials;
+      }
+
+      onSave(createdCard);
+      onClose();
+      
+      // Reset form
+      setNewCard({
+        name: '',
+        surname: '',
+        occupation: '',
+        company: '',
+        email: '',
+        phone: '',
+        colorScheme: '#1B2B5B',
+        profileImage: null,
+        companyLogo: null
+      });
+      setSelectedTheme('#1B2B5B');
+      
+      // Show success message
+      alert('✅ Card created successfully!');
+    } catch (error) {
+      console.error('Error creating card:', error);
+      
+      // Show specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          alert('❌ Unauthorized: You do not have permission to create cards.');
+        } else if (error.message.includes('400')) {
+          alert('❌ Invalid data: Please check your card information.');
+        } else {
+          alert(`❌ Failed to create card: ${error.message}`);
+        }
+      } else {
+        alert('❌ Failed to create card. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="edit-modal-content">
+          {/* Left side - Form */}
+          <div className="edit-form-section">
+            <div className="modal-header">
+              <h2>Create New Card</h2>
+              <button className="modal-close" onClick={onClose}>
+                <FaTimes />
+              </button>
+            </div>
+
+            {/* Image Uploads */}
+            <div className="form-section">
+              <h3>Add Images</h3>
+              <div className="image-uploads">
+                <div className="image-upload-item">
+                  <div 
+                    className="image-upload-preview clickable"
+                    onClick={() => profileImageRef.current?.click()}
+                  >
+                    {newCard.profileImage ? (
+                      <img src={newCard.profileImage} alt="Profile" />
+                    ) : (
+                      <div className="image-placeholder">
+                        <FaUpload />
+                        <span>Profile Picture</span>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={profileImageRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload('profileImage', file);
+                    }}
+                  />
+                  {newCard.profileImage && (
+                    <button 
+                      className="remove-image-btn"
+                      onClick={() => handleRemoveImage('profileImage')}
+                      title="Remove profile picture"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div className="image-upload-item">
+                  <div 
+                    className="image-upload-preview clickable"
+                    onClick={() => companyLogoRef.current?.click()}
+                  >
+                    {newCard.companyLogo ? (
+                      <img src={newCard.companyLogo} alt="Company Logo" />
+                    ) : (
+                      <div className="image-placeholder">
+                        <FaUpload />
+                        <span>Company Logo</span>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={companyLogoRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload('companyLogo', file);
+                    }}
+                  />
+                  {newCard.companyLogo && (
+                    <button 
+                      className="remove-image-btn"
+                      onClick={() => handleRemoveImage('companyLogo')}
+                      title="Remove company logo"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Theme Selection */}
+            <div className="form-section">
+              <h3>Choose a theme</h3>
+              <div className="theme-selection">
+                <div className="theme-colors">
+                  {themes.map(color => (
+                    <button
+                      key={color}
+                      className={`theme-color ${selectedTheme === color ? 'selected' : ''}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setSelectedTheme(color)}
+                    />
+                  ))}
+                </div>
+                <div className="color-picker-section">
+                  <button
+                    className="color-picker-btn"
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                  >
+                    <FaPalette />
+                    Custom Color
+                  </button>
+                  {showColorPicker && (
+                    <div className="color-picker-container">
+                      <input
+                        type="color"
+                        value={customColor}
+                        onChange={(e) => {
+                          setCustomColor(e.target.value);
+                          setSelectedTheme(e.target.value);
+                        }}
+                        className="color-picker-input"
+                      />
+                      <input
+                        type="text"
+                        value={customColor}
+                        onChange={(e) => {
+                          setCustomColor(e.target.value);
+                          setSelectedTheme(e.target.value);
+                        }}
+                        placeholder="#FFFFFF"
+                        className="hex-input"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Fields */}
+            <div className="form-section">
+              <h3>Personal</h3>
+              <div className="form-grid">
+                <div className="form-field">
+                  <label>Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={newCard.name || ''}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Enter name"
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Surname (Optional)</label>
+                  <input
+                    type="text"
+                    value={newCard.surname || ''}
+                    onChange={(e) => handleInputChange('surname', e.target.value)}
+                    placeholder="Enter surname"
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Job Title *</label>
+                  <input
+                    type="text"
+                    value={newCard.occupation || ''}
+                    onChange={(e) => handleInputChange('occupation', e.target.value)}
+                    placeholder="Enter job title"
+                    required
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Company *</label>
+                  <input
+                    type="text"
+                    value={newCard.company || ''}
+                    onChange={(e) => handleInputChange('company', e.target.value)}
+                    placeholder="Enter company name"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Fields */}
+            <div className="form-section">
+              <h3>Contact</h3>
+              <div className="form-grid">
+                <div className="form-field">
+                  <label>Email *</label>
+                  <input
+                    type="email"
+                    value={newCard.email || ''}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Enter email address"
+                    required
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Phone *</label>
+                  <input
+                    type="tel"
+                    value={newCard.phone || ''}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="Enter phone number"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Social Media */}
+            <div className="form-section">
+              <h3>Social (Optional)</h3>
+              <div className="social-grid">
+                {socialPlatforms.map(platform => {
+                  const IconComponent = platform.icon;
+                  const socials = newCard.socials as { [key: string]: { link: string; title: string } } | undefined;
+                  const socialData = socials?.[platform.key];
+                  const isActive = socialData && socialData.link && socialData.title;
+                  
+                  return (
+                    <div key={platform.key} className="social-grid-item">
+                      <div 
+                        className={`social-grid-button ${isActive ? 'active' : ''}`}
+                        onClick={() => setActiveSocialModal(platform.key)}
+                      >
+                        <div className="social-grid-icon">
+                          <IconComponent />
+                        </div>
+                        <div className="social-grid-label">{platform.name}</div>
+                        <div className="social-toggle-indicator">
+                          {isActive ? '−' : '+'}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <Button onClick={handleCreate} disabled={loading}>
+                {loading ? 'Creating...' : 'Create Card'}
+              </Button>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+            </div>
+          </div>
+
+          {/* Right side - Preview */}
+          <div className="edit-preview-section">
+            <h3>Preview</h3>
+            <BusinessCardItem card={newCard as CardData} isPreview={true} />
+          </div>
+        </div>
+      </div>
+
+      {/* Social Modal */}
+      {activeSocialModal && (
+        <SocialModal
+          platform={socialPlatforms.find(p => p.key === activeSocialModal)!}
+          isOpen={!!activeSocialModal}
+          onClose={() => setActiveSocialModal(null)}
+          onSave={(data) => {
+            handleSocialChange(activeSocialModal, data);
+            setActiveSocialModal(null);
+          }}
+          currentData={newCard.socials?.[activeSocialModal]}
+        />
+      )}
+    </div>
+  );
+};
+
 // Edit Card Modal Component
-const EditCardModal = ({ card, isOpen, onClose, onSave }: { 
+const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: { 
   card: CardData; 
+  cards: CardData[];
+  userContext: any;
   isOpen: boolean; 
   onClose: () => void; 
   onSave: (updatedCard: CardData) => void;
@@ -506,7 +1075,21 @@ const EditCardModal = ({ card, isOpen, onClose, onSave }: {
   };
 
   const handleSocialChange = (platformKey: string, data: { link: string; title: string }) => {
-    setEditedCard(prev => ({ ...prev, [platformKey]: data }));
+    setEditedCard(prev => {
+      const currentSocials = prev.socials || {};
+      const newSocials = { ...currentSocials };
+      
+      if (data.link && data.title) {
+        newSocials[platformKey] = data;
+      } else {
+        delete newSocials[platformKey];
+      }
+      
+      return {
+        ...prev,
+        socials: newSocials
+      };
+    });
   };
 
   const handleImageUpload = (field: 'profileImage' | 'companyLogo', file: File) => {
@@ -518,9 +1101,81 @@ const EditCardModal = ({ card, isOpen, onClose, onSave }: {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    onSave(editedCard);
-    onClose();
+  const handleSave = async () => {
+    try {
+      // Get the card index from the cards array
+      const cardIndex = cards.findIndex(c => c.id === card.id);
+      if (cardIndex === -1) {
+        throw new Error('Card not found');
+      }
+
+      // Prepare social media data
+      const cardSocials = editedCard.socials as { [key: string]: { link: string; title: string } } | undefined;
+      const socialsObject: { [key: string]: { link: string; title: string } } = {};
+      
+      socialPlatforms.forEach(platform => {
+        const socialData = cardSocials?.[platform.key];
+        if (socialData && socialData.link && socialData.title) {
+          socialsObject[platform.key] = {
+            link: socialData.link,
+            title: socialData.title
+          };
+        }
+      });
+
+      // Create request payload
+      const payload = {
+        ...editedCard,
+        socials: socialsObject
+      };
+
+      // Use PATCH endpoint for updating the card
+      const endpoint = `${API_BASE_URL}/Cards/${userContext.userId}?cardIndex=${cardIndex}`;
+      console.log('💾 Saving card with endpoint:', endpoint);
+      console.log('💾 Card data:', payload);
+
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('💾 Save failed:', response.status, response.statusText, errorText);
+        throw new Error(`Failed to save card: ${response.status} ${response.statusText}`);
+      }
+
+      const savedCard = await response.json();
+      console.log('✅ Card saved successfully:', savedCard);
+
+      // Update the local state with the saved card
+      onSave(editedCard);
+      onClose();
+      
+      // Show success message
+      alert('✅ Card updated successfully!');
+    } catch (error) {
+      console.error('Error saving card:', error);
+      
+      // Show specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          alert('❌ Unauthorized: You do not have permission to update this card.');
+        } else if (error.message.includes('404')) {
+          alert('❌ Card not found: The card may have been deleted or moved.');
+        } else if (error.message.includes('400')) {
+          alert('❌ Invalid data: Please check your card information.');
+        } else {
+          alert(`❌ Failed to save card: ${error.message}`);
+        }
+      } else {
+        alert('❌ Failed to save card. Please try again.');
+      }
+    }
   };
 
 
@@ -676,6 +1331,14 @@ const EditCardModal = ({ card, isOpen, onClose, onSave }: {
                   />
                 </div>
                 <div className="form-field">
+                  <label>Company</label>
+                  <input
+                    type="text"
+                    value={editedCard.company || ''}
+                    onChange={(e) => handleInputChange('company', e.target.value)}
+                  />
+                </div>
+                <div className="form-field">
                   <label>Department</label>
                   <input
                     type="text"
@@ -715,7 +1378,8 @@ const EditCardModal = ({ card, isOpen, onClose, onSave }: {
               <div className="social-grid">
                 {socialPlatforms.map(platform => {
                   const IconComponent = platform.icon;
-                  const socialData = editedCard[platform.key as keyof CardData] as { link: string; title: string } | undefined;
+                  const socials = editedCard.socials as { [key: string]: { link: string; title: string } } | undefined;
+                  const socialData = socials?.[platform.key];
                   const isActive = socialData && socialData.link && socialData.title;
                   
                   return (
@@ -762,7 +1426,7 @@ const EditCardModal = ({ card, isOpen, onClose, onSave }: {
             handleSocialChange(activeSocialModal, data);
             setActiveSocialModal(null);
           }}
-          currentData={editedCard[activeSocialModal as keyof CardData] as { link: string; title: string } | undefined}
+          currentData={editedCard.socials?.[activeSocialModal]}
         />
       )}
     </div>
@@ -777,6 +1441,8 @@ const BusinessCards = () => {
   const [error, setError] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   // Use the custom hook for user context
   const userContext = useUserContext();
@@ -842,6 +1508,50 @@ const BusinessCards = () => {
     });
   };
 
+  // Delete card functionality
+  const handleDeleteCard = async () => {
+    if (!selectedCard) return;
+
+    const cardIndex = cards.findIndex(c => c.id === selectedCard.id);
+    
+    // Prevent deletion of default card (index 0)
+    if (cardIndex === 0) {
+      alert('The default card cannot be deleted. This ensures you always have at least one card available.');
+      return;
+    }
+
+    try {
+      const endpoint = `${API_BASE_URL}/Cards/${userContext.userId}?cardIndex=${cardIndex}`;
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete card: ${response.status} ${response.statusText}`);
+      }
+
+      // Remove the card from local state
+      const updatedCards = cards.filter(c => c.id !== selectedCard.id);
+      setCards(updatedCards);
+      
+      // Select the first card if the deleted card was selected
+      if (updatedCards.length > 0) {
+        setSelectedCard(updatedCards[0]);
+      } else {
+        setSelectedCard(null);
+      }
+
+      setShowDeleteModal(false);
+      alert('✅ Card deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting card:', error);
+      alert('❌ Failed to delete card. Please try again.');
+    }
+  };
+
   // Filter cards based on search term
   const filteredCards = cards.filter(card => 
     `${card.name} ${card.surname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -881,10 +1591,24 @@ const BusinessCards = () => {
           </div>
         </div>
         <div className="page-actions">
-          <Button>
+          <Button onClick={() => setShowCreateModal(true)}>
             <FaQrcode className="mr-2" />
             Create Card
           </Button>
+          {selectedCard && (
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteModal(true)}
+              disabled={cards.findIndex(c => c.id === selectedCard.id) === 0}
+              style={{ 
+                opacity: cards.findIndex(c => c.id === selectedCard.id) === 0 ? 0.5 : 1,
+                backgroundColor: cards.findIndex(c => c.id === selectedCard.id) === 0 ? '#f5f5f5' : undefined
+              }}
+            >
+              <FaTimes className="mr-2" />
+              {cards.findIndex(c => c.id === selectedCard.id) === 0 ? 'Default Card' : 'Delete Card'}
+            </Button>
+          )}
         </div>
       </div>
       
@@ -940,7 +1664,12 @@ const BusinessCards = () => {
           <div className="card-display">
             {selectedCard ? (
               <div className="selected-card-container">
-                <BusinessCardItem card={selectedCard} />
+                <BusinessCardItem 
+                  card={selectedCard}
+                  onQRClick={() => setShowQRModal(true)}
+                  onShareClick={() => handleShare(selectedCard)}
+                  onEditClick={() => setShowEditModal(true)}
+                />
                 <div className="card-actions-panel">
                   <Button onClick={() => setShowQRModal(true)}>
                     <FaQrcode className="mr-2" />
@@ -977,6 +1706,8 @@ const BusinessCards = () => {
           />
           <EditCardModal 
             card={selectedCard} 
+            cards={cards}
+            userContext={userContext}
             isOpen={showEditModal} 
             onClose={() => setShowEditModal(false)}
             onSave={(updatedCard) => {
@@ -985,6 +1716,50 @@ const BusinessCards = () => {
             }}
           />
         </>
+      )}
+      
+      {/* Create Card Modal */}
+      <CreateCardModal 
+        userContext={userContext}
+        isOpen={showCreateModal} 
+        onClose={() => setShowCreateModal(false)}
+        onSave={(newCard) => {
+          setCards([...cards, newCard]);
+          setSelectedCard(newCard);
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && selectedCard && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Delete Card</h2>
+              <button className="modal-close" onClick={() => setShowDeleteModal(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to delete this card?</p>
+              <p><strong>{selectedCard.name} {selectedCard.surname}</strong></p>
+              <p>This action cannot be undone.</p>
+            </div>
+            <div className="modal-actions">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleDeleteCard}
+                style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
+              >
+                Delete Card
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
