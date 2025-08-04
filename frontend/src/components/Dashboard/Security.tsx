@@ -2,27 +2,61 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../UI/card";
 import { Button } from "../UI/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../UI/tabs";
-import { Input } from "../UI/input";
+
 import { Badge } from "../UI/badge";
 import "../../styles/Security.css";
-import { Switch } from "../UI/switch";
+
 import ManageRolesModal from "./ManageRolesModal";
 // import { useSessionTimeoutContext } from "../../providers/SessionTimeoutProvider";
 import { sessionService } from "../../services/sessionService";
-import { rolesService, Role } from "../../services/rolesService";
+// import { rolesService, Role } from "../../services/rolesService";
 import ActivityLogs from "./ActivityLogs";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 
 // Import icons
-import { FaShieldAlt, FaUserPlus, FaToggleOn, FaKey, FaLock, FaExclamationTriangle, FaBell, FaUserCog, FaSearch, FaFileExport } from "react-icons/fa";
+import { FaShieldAlt, FaUserPlus } from "react-icons/fa";
+
+// Define interface for employee data from API
+interface EmployeeData {
+  id: number;
+  firstName: string;
+  lastName: string;
+  name?: string;
+  surname?: string;
+  email: string;
+  role?: string;
+  departmentName?: string;
+  status?: string;
+  lastActive?: string;
+}
+
+// Define interface for API response
+interface EmployeesResponse {
+  employees: EmployeeData[];
+}
+
+// Define interface for role summary
+interface RoleSummary {
+  name: string;
+  description: string;
+  userCount: number;
+  permissions: {
+    viewCards: boolean;
+    createCards: boolean;
+    editCards: boolean;
+    deleteCards: boolean;
+    manageUsers: boolean;
+    viewReports: boolean;
+    systemSettings: boolean;
+    auditLogs: boolean;
+  };
+}
 
 const Security = () => {
   const [activeTab, setActiveTab] = useState("access-control");
   const [mfaRequired, setMfaRequired] = useState(false);
-  const [dataEncryption, setDataEncryption] = useState(false);
-  const [gdprCompliance, setGdprCompliance] = useState(false);
   const [showManageRolesModal, setShowManageRolesModal] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("30 minutes");
-  const [concurrentSessions, setConcurrentSessions] = useState("2 sessions");
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [sessionData, setSessionData] = useState({
     total: 8,
@@ -31,7 +65,7 @@ const Security = () => {
     employees: 3
   });
   const [isForceLogoutLoading, setIsForceLogoutLoading] = useState(false);
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [roles, setRoles] = useState<RoleSummary[]>([]);
   const [isLoadingRoles, setIsLoadingRoles] = useState(false);
   
   // const { updateSessionTimeout } = useSessionTimeoutContext();
@@ -76,8 +110,7 @@ const Security = () => {
         settings.timeoutMinutes === 20160 ? "14 days" : "30 minutes";
       setSessionTimeout(timeoutString);
       
-      const sessionString = `${settings.concurrentSessions} session${settings.concurrentSessions !== 1 ? 's' : ''}`;
-      setConcurrentSessions(sessionString);
+
     } catch (error) {
       console.error("Failed to load timeout settings:", error);
     }
@@ -86,12 +119,116 @@ const Security = () => {
   const loadRoles = async () => {
     setIsLoadingRoles(true);
     try {
-      const data = await rolesService.getRoles();
-      setRoles(data.roles);
+      // Use the same enterprise employees endpoint as UserManagement
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Process employees to extract role information
+      const employees = (data as EmployeesResponse).employees;
+      
+      // Count users by role
+      const roleCounts: { [key: string]: number } = {};
+      const roleDescriptions: { [key: string]: string } = {
+        'Administrator': 'Full system access and permissions',
+        'Admin': 'Full system access and permissions',
+        'Manager': 'Can manage cards and departments',
+        'Lead': 'Can manage cards and departments',
+        'Employee': 'View only their own cards',
+        'Staff': 'View only their own cards'
+      };
+      
+      // Count employees by role
+      employees.forEach((emp: EmployeeData) => {
+        const role = emp.role || 'Employee';
+        roleCounts[role] = (roleCounts[role] || 0) + 1;
+      });
+      
+      // Create role summaries
+      const roleSummaries: RoleSummary[] = Object.entries(roleCounts).map(([roleName, count]) => ({
+        name: roleName,
+        description: roleDescriptions[roleName] || 'Custom role with specific permissions',
+        userCount: count,
+        permissions: getDefaultPermissions(roleName)
+      }));
+      
+      // Sort roles by user count (descending)
+      roleSummaries.sort((a, b) => b.userCount - a.userCount);
+      
+      setRoles(roleSummaries);
+      
     } catch (error) {
       console.error("Failed to load roles:", error);
+      // Fallback to default roles if API fails
+      setRoles([
+        {
+          name: 'Administrator',
+          description: 'Full system access and permissions',
+          userCount: 0,
+          permissions: getDefaultPermissions('Administrator')
+        },
+        {
+          name: 'Manager',
+          description: 'Can manage cards and departments',
+          userCount: 0,
+          permissions: getDefaultPermissions('Manager')
+        },
+        {
+          name: 'Employee',
+          description: 'View only their own cards',
+          userCount: 0,
+          permissions: getDefaultPermissions('Employee')
+        }
+      ]);
     } finally {
       setIsLoadingRoles(false);
+    }
+  };
+
+  // Helper function to get default permissions based on role
+  const getDefaultPermissions = (roleName: string) => {
+    const role = roleName.toLowerCase();
+    
+    if (role.includes('admin') || role.includes('administrator')) {
+      return {
+        viewCards: true,
+        createCards: true,
+        editCards: true,
+        deleteCards: true,
+        manageUsers: true,
+        viewReports: true,
+        systemSettings: true,
+        auditLogs: true,
+      };
+    } else if (role.includes('manager') || role.includes('lead')) {
+      return {
+        viewCards: true,
+        createCards: true,
+        editCards: true,
+        deleteCards: false,
+        manageUsers: false,
+        viewReports: true,
+        systemSettings: false,
+        auditLogs: false,
+      };
+    } else {
+      return {
+        viewCards: true,
+        createCards: false,
+        editCards: false,
+        deleteCards: false,
+        manageUsers: false,
+        viewReports: false,
+        systemSettings: false,
+        auditLogs: false,
+      };
     }
   };
 
@@ -125,24 +262,7 @@ const Security = () => {
     }
   };
 
-  const handleConcurrentSessionsChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    setConcurrentSessions(value);
-    
-    // Extract number from string
-    const sessionCount = value === "Unlimited" ? -1 : parseInt(value.split(' ')[0]);
-    
-    try {
-      await sessionService.updateTimeoutSettings({ concurrentSessions: sessionCount });
-      await sessionService.logSecurityAction({
-        type: 'SETTINGS_CHANGE',
-        description: `Concurrent sessions changed to ${value}`,
-        metadata: { oldValue: concurrentSessions, newValue: value }
-      });
-    } catch (error) {
-      console.error("Failed to update concurrent sessions:", error);
-    }
-  };
+
 
   const handleForceLogout = async () => {
     if (window.confirm("Are you sure you want to force logout all users? This will immediately terminate all active sessions.")) {
@@ -192,7 +312,6 @@ const Security = () => {
           {/* DO NOT DELETE/REMOVE/EDIT - Compliance tab will be implemented in the future */}
           {/* <TabsTrigger value="compliance">Compliance</TabsTrigger> */}
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
-          <TabsTrigger value="activity-logs">Activity Logs</TabsTrigger>
         </TabsList>
         
         <TabsContent value="access-control" className="security-tab-content">
@@ -208,7 +327,7 @@ const Security = () => {
                   <div className="role-loading">Loading roles...</div>
                 ) : roles.length > 0 ? (
                   roles.map((role) => (
-                    <div key={role.id} className="role-card">
+                    <div key={role.name} className="role-card">
                       <div className="role-header">
                         <h3 className="role-title">{role.name}</h3>
                         <Badge variant="default" className="role-badge">Active</Badge>
@@ -258,20 +377,7 @@ const Security = () => {
                   </div>
                 </div>
                 
-                <div className="session-setting-item">
-                  <div>
-                    <h3 className="session-setting-title">Concurrent Sessions</h3>
-                    <p className="session-setting-description">Maximum active sessions per user</p>
-                  </div>
-                  <div className="session-setting-control">
-                    <select className="session-select" value={concurrentSessions} onChange={handleConcurrentSessionsChange}>
-                      <option>1 session</option>
-                      <option>2 sessions</option>
-                      <option>3 sessions</option>
-                      <option>Unlimited</option>
-                    </select>
-                  </div>
-                </div>
+
                 
                 <div className="session-setting-item">
                   <div>
@@ -520,112 +626,10 @@ const Security = () => {
         */}
         
         <TabsContent value="audit-logs" className="security-tab-content">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Activity Logs</CardTitle>
-              <CardDescription>Review all security-related activities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="audit-header">
-                <div className="audit-search">
-                  <div className="search-wrapper">
-                    <FaSearch className="search-icon" />
-                    <Input type="text" placeholder="Search logs..." className="search-input" />
-                  </div>
-                </div>
-                <Button variant="outline" className="export-button">
-                  <FaFileExport className="export-icon" />
-                  Export Logs
-                </Button>
-              </div>
-              
-              <div className="audit-logs">
-                {/* User Login */}
-                <div className="audit-log-item">
-                  <div className="audit-log-icon login-icon">
-                    <FaKey />
-                  </div>
-                  <div className="audit-log-content">
-                    <div className="audit-log-title">User Login</div>
-                    <div className="audit-log-user">john.doe@example.com</div>
-                  </div>
-                  <div className="audit-log-meta">
-                    <div className="audit-log-time">Today, 10:45 AM</div>
-                    <div className="audit-log-ip">192.168.1.1</div>
-                  </div>
-                </div>
-                
-                {/* Password Changed */}
-                <div className="audit-log-item">
-                  <div className="audit-log-icon password-icon">
-                    <FaLock />
-                  </div>
-                  <div className="audit-log-content">
-                    <div className="audit-log-title">Password Changed</div>
-                    <div className="audit-log-user">mark.wilson@example.com</div>
-                  </div>
-                  <div className="audit-log-meta">
-                    <div className="audit-log-time">Yesterday, 4:23 PM</div>
-                    <div className="audit-log-ip">192.168.1.5</div>
-                  </div>
-                </div>
-                
-                {/* Failed Login Attempt */}
-                <div className="audit-log-item">
-                  <div className="audit-log-icon error-icon">
-                    <FaExclamationTriangle />
-                  </div>
-                  <div className="audit-log-content">
-                    <div className="audit-log-title">Failed Login Attempt</div>
-                    <div className="audit-log-user">sarah.johnson@example.com</div>
-                  </div>
-                  <div className="audit-log-meta">
-                    <div className="audit-log-time">Jan 15, 2023, 9:30 AM</div>
-                    <div className="audit-log-ip">192.168.1.10</div>
-                  </div>
-                </div>
-                
-                {/* Security Alert */}
-                <div className="audit-log-item">
-                  <div className="audit-log-icon alert-icon">
-                    <FaBell />
-                  </div>
-                  <div className="audit-log-content">
-                    <div className="audit-log-title">Security Alert Triggered</div>
-                    <div className="audit-log-user">Unusual access pattern detected</div>
-                  </div>
-                  <div className="audit-log-meta">
-                    <div className="audit-log-time">Jan 12, 2023, 3:15 PM</div>
-                    <div className="audit-log-ip">System</div>
-                  </div>
-                </div>
-                
-                {/* Role Permissions Changed */}
-                <div className="audit-log-item">
-                  <div className="audit-log-icon role-icon">
-                    <FaUserCog />
-                  </div>
-                  <div className="audit-log-content">
-                    <div className="audit-log-title">Role Permissions Changed</div>
-                    <div className="audit-log-user">Admin updated Manager role</div>
-                  </div>
-                  <div className="audit-log-meta">
-                    <div className="audit-log-time">Jan 10, 2023, 11:05 AM</div>
-                    <div className="audit-log-ip">admin@example.com</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="load-more-container">
-                <Button variant="outline" className="load-more-button">Load More</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="activity-logs" className="security-tab-content">
           <ActivityLogs />
         </TabsContent>
+        
+
       </Tabs>
       
       {/* Manage Roles Modal */}

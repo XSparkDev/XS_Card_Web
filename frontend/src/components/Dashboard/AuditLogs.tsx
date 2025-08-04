@@ -334,7 +334,7 @@ const LogFilters = ({
 };
 
 // Main Activity Logs Component with better error handling
-const ActivityLogs = () => {
+const AuditLogs = () => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -347,6 +347,7 @@ const ActivityLogs = () => {
   });
   const [filters, setFilters] = useState<ActivityLogsFilters>({
     timeframe: '24h',
+    limit: 10,  // Set to 10 for pagination
     action: undefined,
     resource: undefined,
     search: undefined,
@@ -356,85 +357,87 @@ const ActivityLogs = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [displayItemsPerPage] = useState(10); // Always display 10 items per page
-  const [fetchLimit, setFetchLimit] = useState(10); // How many to fetch from backend
-  const [allFetchedLogs, setAllFetchedLogs] = useState<ActivityLog[]>([]); // Store all fetched logs
+  const [itemsPerPage] = useState(10); // Fixed at 10
   const [paginationLoading, setPaginationLoading] = useState(false);
 
-  // Fetch logs with current filters - fetches all requested logs from backend
-  const fetchLogs = useCallback(async (resetLogs: boolean = true) => {
+  // Fetch logs with current filters and pagination
+  const fetchLogs = useCallback(async (page: number = 1, resetLogs: boolean = true) => {
     try {
       if (resetLogs) {
         setLoading(true);
+      } else {
+        setPaginationLoading(true);
       }
       setError(null);
       
+      console.log('Fetching logs with filters:', filters, 'Page:', page);
+      
       const response = await activityLogsService.getActivityLogs({
         ...filters,
-        limit: fetchLimit === -1 ? undefined : fetchLimit, // Use undefined for "all" to get maximum records
+        limit: itemsPerPage,
+        startAfter: page > 1 && lastTimestamp ? lastTimestamp : undefined
       });
+      
+      console.log('API Response:', response);
       
       if (response.status && response.data) {
         const logsData = response.data.logs || [];
+        console.log('Logs data:', logsData);
         
-        // Store all fetched logs
-        setAllFetchedLogs(logsData);
+        if (resetLogs || page === 1) {
+          setLogs(logsData);
+        } else {
+          setLogs(prev => [...prev, ...logsData]);
+        }
         
-        // Calculate pagination based on display items per page (10)
-        const totalFetchedCount = logsData.length;
-        const calculatedTotalPages = Math.max(1, Math.ceil(totalFetchedCount / displayItemsPerPage));
+        setLastTimestamp(response.data.lastTimestamp || null);
+        
+        // Calculate pagination
+        const totalCount = response.data.totalCount || 0;
+        const calculatedTotalPages = Math.ceil(totalCount / itemsPerPage);
         setTotalPages(calculatedTotalPages);
         
-        // Set current page to 1 and display first 10 items
-        setCurrentPage(1);
-        const startIndex = 0;
-        const endIndex = Math.min(displayItemsPerPage, totalFetchedCount);
-        setLogs(logsData.slice(startIndex, endIndex));
-        
-        // Calculate stats from all fetched data
+        // Calculate stats from current page data
         const successCount = logsData.filter(log => log.status === 'success').length;
         const errorCount = logsData.filter(log => log.status === 'error').length;
         const uniqueUsers = new Set(logsData.map(log => log.userId)).size;
         
         setStats({
-          totalCount: totalFetchedCount,
+          totalCount,
           successCount,
           errorCount,
           userCount: uniqueUsers
         });
       } else {
+        console.error('Invalid response format:', response);
         setError('Invalid response format from server');
       }
     } catch (err) {
+      console.error('Error fetching activity logs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch logs');
     } finally {
       setLoading(false);
       setPaginationLoading(false);
     }
-  }, [filters.timeframe, filters.action, filters.resource, filters.search, filters.success, fetchLimit, displayItemsPerPage]);
+  }, [filters, itemsPerPage, lastTimestamp]);
 
-  // Handle page change - client-side pagination through fetched logs
+  // Handle page change
   const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages && !loading && !paginationLoading) {
       setCurrentPage(page);
-      
-      // Calculate which logs to display for this page
-      const startIndex = (page - 1) * displayItemsPerPage;
-      const endIndex = Math.min(startIndex + displayItemsPerPage, allFetchedLogs.length);
-      setLogs(allFetchedLogs.slice(startIndex, endIndex));
+      fetchLogs(page, true);
     }
-  }, [totalPages, loading, paginationLoading, displayItemsPerPage, allFetchedLogs]);
+  }, [totalPages, loading, paginationLoading, fetchLogs]);
 
-  // Handle fetch limit change (how many items to fetch from backend)
-  const handleFetchLimitChange = useCallback((newFetchLimit: number) => {
-    setFetchLimit(newFetchLimit);
-    // Fetch new data with new limit immediately
-    fetchLogs(true);
-  }, [fetchLogs]);
+  // Handle items per page change
+  const handleItemsPerPageChange = useCallback((newItemsPerPage: number) => {
+    // This function is no longer needed as itemsPerPage is fixed
+  }, []);
 
   // Refresh logs
   const refreshLogs = useCallback(() => {
-    fetchLogs(true);
+    setCurrentPage(1);
+    fetchLogs(1, true);
   }, [fetchLogs]);
 
   // Export logs
@@ -472,18 +475,32 @@ const ActivityLogs = () => {
 
   // Initial load
   useEffect(() => {
-    fetchLogs(true);
-  }, []); // Remove fetchLogs dependency to prevent infinite loop
+    fetchLogs(1, true);
+  }, [fetchLogs]);
 
   // Handle filter changes
   useEffect(() => {
-    fetchLogs(true);
-  }, [filters.timeframe, filters.action, filters.resource, filters.search, filters.success]); // Re-fetch when filters change
+    if (currentPage === 1) {
+      fetchLogs(1, true);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [filters, fetchLogs, currentPage]);
 
-
+  // Debug logging
+  useEffect(() => {
+    console.log('ActivityLogs component mounted');
+    console.log('Current logs:', logs);
+    console.log('Current loading:', loading);
+    console.log('Current error:', error);
+  }, [logs, loading, error]);
 
   return (
     <div className="activity-logs-container" style={{ backgroundColor: '#f8f8f8', padding: '1rem', borderRadius: '8px', minHeight: '400px' }}>
+      {/* Debug Info */}
+      <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#f0f0f0', borderRadius: '4px', fontSize: '0.75rem' }}>
+        <strong>Debug:</strong> Logs: {logs.length}, Loading: {loading.toString()}, Error: {error || 'none'}, Page: {currentPage}/{totalPages}
+      </div>
       
       {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
@@ -565,12 +582,12 @@ const ActivityLogs = () => {
           </Button>
         </div>
 
-        {/* Fetch Limit Selector */}
+        {/* Items Per Page Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label className="form-label" style={{ margin: 0, fontSize: '0.875rem' }}>Load records:</label>
+          <label className="form-label" style={{ margin: 0, fontSize: '0.875rem' }}>Items per page:</label>
           <select 
-            value={fetchLimit === -1 ? 'all' : fetchLimit} 
-            onChange={(e) => handleFetchLimitChange(e.target.value === 'all' ? -1 : Number(e.target.value))}
+            value={itemsPerPage} 
+            onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
             className="select-input"
             style={{ width: 'auto', minWidth: '80px' }}
             disabled={loading || paginationLoading}
@@ -579,7 +596,6 @@ const ActivityLogs = () => {
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
-            <option value="all">All</option>
           </select>
         </div>
       </div>
@@ -605,7 +621,7 @@ const ActivityLogs = () => {
       </div>
 
       {/* Pagination Controls */}
-      {!loading && !error && logs.length > 0 && (
+      {!loading && !error && totalPages > 1 && (
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -618,7 +634,7 @@ const ActivityLogs = () => {
         }}>
           {/* Pagination Info */}
           <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-            Showing {((currentPage - 1) * displayItemsPerPage) + 1} to {Math.min(currentPage * displayItemsPerPage, stats.totalCount)} of {stats.totalCount} logs {fetchLimit === -1 ? '(all records loaded)' : `(loaded ${allFetchedLogs.length} records)`}
+            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, stats.totalCount)} of {stats.totalCount} logs
           </div>
           
           {/* Pagination Controls */}
@@ -710,4 +726,4 @@ const ActivityLogs = () => {
   );
 };
 
-export default ActivityLogs; 
+export default AuditLogs; 

@@ -5,6 +5,8 @@ import DashboardLayout from './components/Dashboard/DashboardLayout';
 import Security from "./components/Dashboard/Security";
 import SecurityDashboard from "./pages/SecurityDashboard";
 import { SessionTimeoutProvider } from './providers/SessionTimeoutProvider';
+import { UserProvider } from './contexts/UserContext';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Import your pages
 import Dashboard from './pages/Dashboard';
@@ -29,26 +31,152 @@ import ChangePassword from "./components/Settings/ChangePassword";
 const App = () => {
   return (
     <Router>
+      <UserProvider>
+        <SessionTimeoutProvider>
       <Routes>
         <Route path="/" element={<Navigate to="/business-cards" />} />
         <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Navigate to="/analytics" />} />
-          <Route path="/business-cards" element={<BusinessCards />} />
-          <Route path="/business-cards/create" element={<CreateCard />} />
-          <Route path="/business-cards/archived" element={<div>Archived Cards</div>} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/department" element={<Department />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/user-management" element={<UserManagement />} />
-          <Route path="/security" element={<Security />} />
-          <Route path="/security-dashboard" element={<SecurityDashboard />} />
-          <Route path="/integrations" element={<Integrations />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="pricing" element={<Pricing />} />
-          <Route path="settings/change-password" element={<ChangePassword />} />
+              {/* Dashboard - Analytics (Managers and Admins only) */}
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute requiredPermission="viewAnalytics">
+                    <Navigate to="/analytics" />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/analytics" 
+                element={
+                  <ProtectedRoute requiredPermission="viewAnalytics">
+                    <Analytics />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Business Cards - All users can view */}
+              <Route 
+                path="/business-cards" 
+                element={
+                  <ProtectedRoute requiredPermission="viewBusinessCards">
+                    <BusinessCards />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/business-cards/create" 
+                element={
+                  <ProtectedRoute requiredPermission="createBusinessCards">
+                    <CreateCard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/business-cards/archived" 
+                element={
+                  <ProtectedRoute requiredPermission="viewBusinessCards">
+                    <div>Archived Cards</div>
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Contacts - All users can view */}
+              <Route 
+                path="/contacts" 
+                element={
+                  <ProtectedRoute requiredPermission="viewContacts">
+                    <Contacts />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Calendar - All users can view */}
+              <Route 
+                path="/calendar" 
+                element={
+                  <ProtectedRoute requiredPermission="viewCalendar">
+                    <Calendar />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Department - Managers and Admins only */}
+              <Route 
+                path="/department" 
+                element={
+                  <ProtectedRoute requiredPermission="viewDepartments">
+                    <Department />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* User Management - Managers and Admins only */}
+              <Route 
+                path="/user-management" 
+                element={
+                  <ProtectedRoute requiredPermission="viewUserManagement">
+                    <UserManagement />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Security - Admins only */}
+              <Route 
+                path="/security" 
+                element={
+                  <ProtectedRoute requiredPermission="viewSecurity">
+                    <Security />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/security-dashboard" 
+                element={
+                  <ProtectedRoute requiredPermission="viewSecurity">
+                    <SecurityDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Integrations - Managers and Admins only */}
+              <Route 
+                path="/integrations" 
+                element={
+                  <ProtectedRoute requiredPermission="viewIntegrations">
+                    <Integrations />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Settings - Managers and Admins only */}
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute requiredPermission="viewSettings">
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="pricing" 
+                element={
+                  <ProtectedRoute requiredPermission="viewSettings">
+                    <Pricing />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="settings/change-password" 
+                element={
+                  <ProtectedRoute requiredPermission="viewSettings">
+                    <ChangePassword />
+                  </ProtectedRoute>
+                } 
+              />
         </Route>
       </Routes>
+        </SessionTimeoutProvider>
+      </UserProvider>
     </Router>
   );
 };

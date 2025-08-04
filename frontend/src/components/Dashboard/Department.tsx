@@ -8,7 +8,7 @@ import TeamManagement from '../UI/TeamManagement';
 import { FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
 import { Button } from "../UI/button";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL, FIREBASE_TOKEN } from "../../utils/api";
 
 // Interface for the department data
 interface DepartmentData {
@@ -296,6 +296,64 @@ const Department: FC = () => {
     department.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
+  // Helper function to fetch effective template for a department
+  const fetchEffectiveTemplate = async (departmentId) => {
+    try {
+      const enterpriseId = localStorage.getItem('enterpriseId') || 'x-spark-test';
+      const templateUrl = `${API_BASE_URL}/api/templates/${enterpriseId}/${departmentId}/effective`;
+      
+      console.log('Fetching effective template:', templateUrl);
+      
+      const response = await fetch(templateUrl, {
+        headers: {
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('🌐 Template API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn('⚠️ Template fetch failed:', response.status, response.statusText);
+        console.warn('📄 Error response:', errorText);
+        return {
+          colorScheme: '#1B2B5B',
+          companyLogo: null
+        };
+      }
+      
+      const result = await response.json();
+      console.log('Template response:', result);
+      
+      if (result.success && result.data && result.data.template) {
+        return {
+          colorScheme: result.data.template.colorScheme,
+          companyLogo: result.data.template.companyLogo,
+          templateId: result.data.template.id,
+          templateName: result.data.template.name,
+          templateSource: result.data.source
+        };
+      } else if (result.fallback) {
+        return {
+          colorScheme: result.fallback.colorScheme,
+          companyLogo: result.fallback.companyLogo
+        };
+      } else {
+        return {
+          colorScheme: '#1B2B5B',
+          companyLogo: null
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching template:', error);
+      return {
+        colorScheme: '#1B2B5B',
+        companyLogo: null
+      };
+    }
+  };
+
   const handleAddEmployee = async (employeeData) => {
     try {
       console.log('Employee modal submitted with data:', employeeData);
@@ -304,6 +362,19 @@ const Department: FC = () => {
       const departmentId = employeeData.department;
       if (!departmentId) {
         throw new Error('Department ID is required');
+      }
+      
+      // Fetch the effective template for this department
+      console.log('🎨 Fetching template for department:', departmentId);
+      console.log('🏢 Enterprise ID:', localStorage.getItem('enterpriseId'));
+      const templateData = await fetchEffectiveTemplate(departmentId);
+      console.log('🎨 Template data for employee:', templateData);
+      
+      // Additional debugging
+      if (templateData.templateId) {
+        console.log('✅ Template found:', templateData.templateName, 'from', templateData.templateSource);
+      } else {
+        console.log('⚠️ No template found, using defaults');
       }
       
       const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);
@@ -316,10 +387,12 @@ const Department: FC = () => {
         email: employeeData.email,
         phone: employeeData.phone,
         position: employeeData.position || employeeData.title,
-        role: employeeData.role || "employee"
+        role: employeeData.role || "employee",
+        // Include template data for automatic card creation
+        template: templateData
       };
       
-      console.log('Sending employee data:', employeeToCreate);
+      console.log('Sending employee data with template:', employeeToCreate);
       
       // Make the POST request to create an employee
       const response = await fetch(url, {

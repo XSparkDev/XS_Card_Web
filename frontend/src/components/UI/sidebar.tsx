@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useUser } from '../../contexts/UserContext';
 import "../../styles/Sidebar.css";
 
 // Context for sidebar state
@@ -124,22 +125,61 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
 );
 
 // User Profile
-const UserProfile: React.FC = () => (
-  <div className="user-profile">
-    <div className="user-avatar">
-      <span className="user-initials">JD</span>
+const UserProfile: React.FC = () => {
+  const { user } = useUser();
+  
+  // Get user initials
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+  
+  return (
+    <div className="user-profile">
+      <div className="user-avatar">
+        <span className="user-initials">
+          {user ? getInitials(user.name) : 'U'}
+        </span>
+      </div>
+      <div className="user-info">
+        <p className="user-name">{user?.name || 'Loading...'}</p>
+        <p className="user-role">{user?.role || 'Loading...'}</p>
+      </div>
     </div>
-    <div className="user-info">
-      <p className="user-name">John Doe</p>
-      <p className="user-role">Admin</p>
-    </div>
-  </div>
-);
+  );
+};
 
 // Main Sidebar Component
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation(); //here
+  const { user, hasPermission } = useUser();
+  
+  // Don't render sidebar if user is not loaded yet
+  if (!user) {
+    return (
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <div className="logo-container">
+            <div className="logo-icon">
+              <span className="logo-text">X</span>
+            </div>
+            <div>
+              <h1 className="sidebar-title">XSCard</h1>
+              <p className="sidebar-subtitle">Enterprise</p>
+            </div>
+          </div>
+        </div>
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="sidebar">
@@ -158,68 +198,84 @@ const Sidebar: React.FC = () => {
       <div className="sidebar-content">
         <SectionHeader title="Main" />
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-tachometer-alt"></i>}
-          label="Dashboard"
-          to="/dashboard"
-        />
+        {/* Dashboard - Only show for Managers and Admins */}
+        {hasPermission('viewAnalytics') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-tachometer-alt"></i>}
+            label="Dashboard"
+            to="/dashboard"
+          />
+        )}
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-id-card"></i>}
-          label="Business Cards"
-          to="/business-cards"
-          subItems={[
-            { label: "All Cards", to: "/business-cards" },
-            { label: "Create New Card", to: "/business-cards/create" },
-            { label: "Archived Cards", to: "/business-cards/archived" },
-          ]}
-        />
+        {/* Business Cards - All users can view */}
+        {hasPermission('viewBusinessCards') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-id-card"></i>}
+            label="Business Cards"
+            to="/business-cards"
+          />
+        )}
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-users"></i>}
-          label="Contacts"
-          to="/contacts"
-        />
+        {/* Contacts - All users can view */}
+        {hasPermission('viewContacts') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-users"></i>}
+            label="Contacts"
+            to="/contacts"
+          />
+        )}
         
+        {/* Department - Only Managers and Admins */}
+        {hasPermission('viewDepartments') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-building"></i>}
+            label="Department"
+            to="/department"
+          />
+        )}
         
+        {/* Calendar - All users can view */}
+        {hasPermission('viewCalendar') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-calendar"></i>}
+            label="Calendar"
+            to="/calendar"
+          />
+        )}
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-building"></i>}
-          label="Department"
-          to="/department"
-        />
+        {/* User Management - Only Managers and Admins */}
+        {hasPermission('viewUserManagement') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-user-cog"></i>}
+            label="User Management"
+            to="/user-management"
+          />
+        )}
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-calendar"></i>}
-          label="Calendar"
-          to="/calendar"
-        />
+        {/* Admin Section - Only show if user has admin permissions */}
+        {(hasPermission('viewSecurity') || hasPermission('viewSettings')) && (
+          <SectionHeader title="Admin" />
+        )}
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-user-cog"></i>}
-          label="User Management"
-          to="/user-management"
-        />
+        {/* Security - Only Admins */}
+        {hasPermission('viewSecurity') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-shield-alt"></i>}
+            label="Security"
+            to="/security"
+          />
+        )}
         
-        <SectionHeader title="Admin" />
+
         
-        <SidebarMenuItem
-          icon={<i className="fas fa-shield-alt"></i>}
-          label="Security"
-          to="/security"
-        />
-        
-        <SidebarMenuItem
-          icon={<i className="fas fa-plug"></i>}
-          label="Integrations"
-          to="/integrations"
-        />
-        
-        <SidebarMenuItem
-          icon={<i className="fas fa-cog"></i>}
-          label="Settings"
-          to="/settings"
-        />
+        {/* Settings - Only Managers and Admins */}
+        {hasPermission('viewSettings') && (
+          <SidebarMenuItem
+            icon={<i className="fas fa-cog"></i>}
+            label="Settings"
+            to="/settings"
+          />
+        )}
       </div>
       
       <div className="sidebar-footer">

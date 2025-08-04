@@ -72,8 +72,8 @@ interface EnterpriseData {
   address?: {
     street?: string;
     city?: string;
-    state?: string;
-    postalCode?: string;
+    province?: string;
+    postal_code?: string;
     country?: string;
   };
 }
@@ -91,7 +91,7 @@ const Settings = () => {
     id: DEFAULT_ENTERPRISE_ID,
     name: "",
     description: "",
-    industry: "Technology",
+    industry: "Tech",
     website: "",
     logoUrl: "",
     colorScheme: "#1B2B5B",
@@ -99,8 +99,8 @@ const Settings = () => {
     address: {
       street: "",
       city: "",
-      state: "",
-      postalCode: "",
+      province: "",
+      postal_code: "",
       country: ""
     }
   });
@@ -166,25 +166,32 @@ const Settings = () => {
         }
         
         const data = await response.json();
+        console.log('Enterprise API Response:', data);
         
-        if (data.enterprise) {
+        // Handle the API response format: { status: true, data: { enterprise: {...} } }
+        if (data.status && data.data && data.data.enterprise) {
+          const enterprise = data.data.enterprise;
           setEnterpriseData({
-            id: data.enterprise.id,
-            name: data.enterprise.name || "",
-            description: data.enterprise.description || "",
-            industry: data.enterprise.industry || "Technology",
-            website: data.enterprise.website || "",
-            logoUrl: data.enterprise.logoUrl || "",
-            colorScheme: data.enterprise.colorScheme || "#1B2B5B",
-            companySize: data.enterprise.companySize || "unknown",
-            address: data.enterprise.address || {
-              street: "",
-              city: "",
-              state: "",
-              postalCode: "",
-              country: ""
+            id: enterprise.id,
+            name: enterprise.name || "",
+            description: enterprise.description || "",
+            industry: enterprise.industry || "Tech",
+            website: enterprise.website || "",
+            logoUrl: enterprise.logoUrl || "",
+            colorScheme: enterprise.colorScheme || "#1B2B5B",
+            companySize: enterprise.companySize || "unknown",
+            address: {
+              street: enterprise.address?.street || "",
+              city: enterprise.address?.city || "",
+              province: enterprise.address?.province || "",
+              postal_code: enterprise.address?.postal_code || "",
+              country: enterprise.address?.country || ""
             }
           });
+        } else {
+          // Fallback for different response format or missing data
+          console.warn('Unexpected API response format:', data);
+          throw new Error('Invalid response format from enterprise API');
         }
       } catch (err) {
         console.error('Error fetching enterprise data:', err);
@@ -286,19 +293,32 @@ const Settings = () => {
       }
       
       const data = await response.json();
+      console.log('Enterprise Save Response:', data);
       
-      if (data.enterprise) {
+      // Handle the API response format: { status: true, data: { enterprise: {...} } }
+      if (data.status && data.data && data.data.enterprise) {
+        const enterprise = data.data.enterprise;
         setEnterpriseData({
-          id: data.enterprise.id,
-          name: data.enterprise.name || "",
-          description: data.enterprise.description || "",
-          industry: data.enterprise.industry || "Technology",
-          website: data.enterprise.website || "",
-          logoUrl: data.enterprise.logoUrl || "",
-          colorScheme: data.enterprise.colorScheme || "#1B2B5B",
-          companySize: data.enterprise.companySize || "unknown",
-          address: data.enterprise.address || enterpriseData.address
+          id: enterprise.id,
+          name: enterprise.name || "",
+          description: enterprise.description || "",
+          industry: enterprise.industry || "Tech",
+          website: enterprise.website || "",
+          logoUrl: enterprise.logoUrl || "",
+          colorScheme: enterprise.colorScheme || "#1B2B5B",
+          companySize: enterprise.companySize || "unknown",
+          address: {
+            street: enterprise.address?.street || "",
+            city: enterprise.address?.city || "",
+            province: enterprise.address?.province || "",
+            postal_code: enterprise.address?.postal_code || "",
+            country: enterprise.address?.country || ""
+          }
         });
+      } else {
+        console.warn('Unexpected save response format:', data);
+        // Still show success message even if response format is unexpected
+        // as long as the request was successful (200 status)
       }
       
       setSuccessMessage('Enterprise settings updated successfully');
@@ -1064,11 +1084,14 @@ const Settings = () => {
                     <Label htmlFor="industry">Industry</Label>
                     <Select 
                       options={[
-                        { value: "Technology", label: "Technology" },
+                        { value: "Tech", label: "Technology" },
                         { value: "Finance", label: "Finance" },
                         { value: "Healthcare", label: "Healthcare" },
                         { value: "Education", label: "Education" },
-                        { value: "Retail", label: "Retail" }
+                        { value: "Retail", label: "Retail" },
+                        { value: "Manufacturing", label: "Manufacturing" },
+                        { value: "Consulting", label: "Consulting" },
+                        { value: "Other", label: "Other" }
                       ]}
                       value={enterpriseData.industry}
                       onChange={(e) => setEnterpriseData({...enterpriseData, industry: e.target.value})}
@@ -1136,20 +1159,20 @@ const Settings = () => {
                       />
                     </div>
                     <div className="form-group">
-                      <Label htmlFor="state">State/Province</Label>
+                      <Label htmlFor="province">Province</Label>
                       <Input 
-                        id="state" 
-                        name="address.state" 
-                        value={enterpriseData.address?.state || ''} 
+                        id="province" 
+                        name="address.province" 
+                        value={enterpriseData.address?.province || ''} 
                         onChange={handleEnterpriseChange} 
                       />
                     </div>
                     <div className="form-group">
-                      <Label htmlFor="postalCode">Postal Code</Label>
+                      <Label htmlFor="postal_code">Postal Code</Label>
                       <Input 
-                        id="postalCode" 
-                        name="address.postalCode" 
-                        value={enterpriseData.address?.postalCode || ''} 
+                        id="postal_code" 
+                        name="address.postal_code" 
+                        value={enterpriseData.address?.postal_code || ''} 
                         onChange={handleEnterpriseChange} 
                       />
                     </div>

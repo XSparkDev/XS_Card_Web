@@ -5,6 +5,7 @@ import "../../styles/BusinessCards.css";
 import "../../styles/Dashboard.css";
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, buildUrl, FIREBASE_TOKEN, API_BASE_URL } from "../../utils/api";
 import { useUserContext } from "../../hooks/useUserContext";
+import { useUser } from "../../contexts/UserContext";
 
 // Update the CardData interface to include only the fields we need
 interface CardData {
@@ -1433,6 +1434,451 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
   );
 };
 
+// Template Creation Modal Component
+const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: { 
+  userContext: any;
+  user: any;
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSave: (newTemplate: any) => void;
+}) => {
+  const [templateData, setTemplateData] = useState({
+    name: '',
+    description: '',
+    colorScheme: '#1B2B5B',
+    companyLogo: null as string | null,
+    departmentId: null as string | null,
+    isEnterprise: user?.role === 'Administrator' || user?.role === 'Admin'
+  });
+  const [selectedTheme, setSelectedTheme] = useState('#1B2B5B');
+  const [customColor, setCustomColor] = useState('#1B2B5B');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const companyLogoRef = useRef<HTMLInputElement>(null);
+
+  const themes = [
+    '#1B2B5B', // Navy Blue
+    '#E63946', // Red
+    '#2A9D8F', // Teal
+    '#E9C46A', // Yellow
+    '#F4A261', // Orange
+    '#6D597A', // Purple
+    '#355070', // Dark Blue
+    '#B56576', // Pink
+    '#4DAA57', // Green
+    '#264653', // Dark Teal
+    '#FF4B6E'  // Pinkish red
+  ];
+
+  // Fetch departments when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchDepartments();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    setTemplateData(prev => ({ ...prev, colorScheme: selectedTheme }));
+  }, [selectedTheme]);
+
+  const fetchDepartments = async () => {
+    try {
+      console.log('Fetching departments...');
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_DEPARTMENTS);
+      const headers = getEnterpriseHeaders();
+      
+      console.log('Departments URL:', url);
+      console.log('Departments headers:', headers);
+      
+      const response = await fetch(url, { headers });
+      
+      console.log('Departments response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error for departments! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Departments response data:', data);
+      
+      if (!data.departments || !Array.isArray(data.departments)) {
+        throw new Error('Invalid departments response format');
+      }
+      
+      console.log('Setting departments:', data.departments);
+      setDepartments(data.departments);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      setDepartments([]); // Set empty array on error
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setTemplateData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setTemplateData(prev => ({ ...prev, companyLogo: result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setTemplateData(prev => ({ ...prev, companyLogo: null }));
+  };
+
+  const handleCreate = async () => {
+    // Check if user context is loaded
+    if (!userContext || userContext.isLoading) {
+      alert('❌ Please wait for user context to load');
+      return;
+    }
+
+    // Validate required fields
+    if (!templateData.name.trim()) {
+      alert('❌ Please enter a template name');
+      return;
+    }
+
+    if (!templateData.colorScheme) {
+      alert('❌ Please select a color scheme');
+      return;
+    }
+
+    // Validate hex color format
+    const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    if (!hexColorRegex.test(templateData.colorScheme)) {
+      alert('❌ Please enter a valid hex color (e.g., #FF5733)');
+      return;
+    }
+
+    // Validate enterprise ID
+    const enterpriseId = userContext.enterpriseId || localStorage.getItem('enterpriseId') || 'x-spark-test';
+    console.log('Using enterprise ID:', enterpriseId);
+    console.log('User context enterprise ID:', userContext.enterpriseId);
+    console.log('LocalStorage enterprise ID:', localStorage.getItem('enterpriseId'));
+    
+    if (!enterpriseId) {
+      alert('❌ Enterprise ID is required');
+      return;
+    }
+
+    // Validate department selection for department templates
+    if (!templateData.isEnterprise && !templateData.departmentId) {
+      alert('❌ Please select a department for department-specific templates');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Prepare template payload
+      const payload = {
+        enterpriseId: enterpriseId,
+        departmentId: templateData.isEnterprise ? null : templateData.departmentId,
+        name: templateData.name.trim(),
+        description: templateData.description.trim(),
+        colorScheme: templateData.colorScheme,
+        companyLogo: templateData.companyLogo
+      };
+
+      console.log('Template creation payload:', payload);
+
+      // Create template via API  
+      const templateUrl = buildUrl('/api/templates');
+      
+      console.log('Template creation URL:', templateUrl);
+      console.log('Full API Base URL:', API_BASE_URL);
+      
+      const response = await fetch(templateUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log('Template creation response status:', response.status);
+      console.log('Template creation response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Template creation failed:', response.status, response.statusText, errorText);
+        console.error('Full error response:', errorText);
+        
+        // Try to parse as JSON for better error message
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(`Failed to create template: ${errorJson.message || errorText}`);
+        } catch (parseError) {
+          throw new Error(`Failed to create template: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+      }
+      
+      const result = await response.json();
+      console.log('Template creation response:', result);
+
+      if (result.success) {
+        onSave(result.data);
+        onClose();
+        
+        // Reset form
+        setTemplateData({
+          name: '',
+          description: '',
+          colorScheme: '#1B2B5B',
+          companyLogo: null,
+          departmentId: null,
+          isEnterprise: user?.role === 'Administrator' || user?.role === 'Admin'
+        });
+        setSelectedTheme('#1B2B5B');
+        
+        alert('✅ Template created successfully!');
+      } else {
+        console.error('Template creation failed:', result);
+        alert(`❌ Failed to create template: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error creating template:', error);
+      alert('❌ Failed to create template. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content edit-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="edit-modal-content">
+          {/* Left side - Form */}
+          <div className="edit-form-section">
+            <div className="modal-header">
+              <h2>Create Card Template</h2>
+              <button className="modal-close" onClick={onClose}>
+                <FaTimes />
+              </button>
+            </div>
+
+            {/* Template Info */}
+            <div className="form-section">
+              <h3>Template Information</h3>
+              <div className="form-grid">
+                <div className="form-field">
+                  <label>Template Name *</label>
+                  <input
+                    type="text"
+                    value={templateData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="e.g., Sales Team Template"
+                    required
+                  />
+                </div>
+                
+                <div className="form-field">
+                  <label>Description</label>
+                  <input
+                    type="text"
+                    value={templateData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="Brief description of the template"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Template Scope */}
+            <div className="form-section">
+              <h3>Template Scope</h3>
+              <div className="form-grid">
+                {(user?.role === 'Administrator' || user?.role === 'Admin') && (
+                  <div className="form-field">
+                    <label>Template Type</label>
+                    <select
+                      value={templateData.isEnterprise ? 'enterprise' : 'department'}
+                      onChange={(e) => {
+                        const isEnterprise = e.target.value === 'enterprise';
+                        setTemplateData(prev => ({ 
+                          ...prev, 
+                          isEnterprise,
+                          departmentId: isEnterprise ? null : prev.departmentId
+                        }));
+                      }}
+                    >
+                      <option value="enterprise">Enterprise Template (All Departments)</option>
+                      <option value="department">Department Template</option>
+                    </select>
+                  </div>
+                )}
+                
+                {!templateData.isEnterprise && (
+                  <div className="form-field">
+                    <label>Department</label>
+                    <select
+                      value={templateData.departmentId || ''}
+                      onChange={(e) => handleInputChange('departmentId', e.target.value)}
+                      required={!templateData.isEnterprise}
+                    >
+                      <option value="">Select Department</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                      Available departments: {departments.length} found
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Company Logo Upload */}
+            <div className="form-section">
+              <h3>Company Logo (Optional)</h3>
+              <div className="image-uploads">
+                <div className="image-upload-item">
+                  <div 
+                    className="image-upload-preview clickable"
+                    onClick={() => companyLogoRef.current?.click()}
+                  >
+                    {templateData.companyLogo ? (
+                      <img src={templateData.companyLogo} alt="Company Logo" />
+                    ) : (
+                      <div className="image-placeholder">
+                        <FaUpload />
+                        <span>Company Logo</span>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={companyLogoRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                  />
+                  {templateData.companyLogo && (
+                    <button 
+                      className="remove-image-btn"
+                      onClick={handleRemoveImage}
+                      title="Remove company logo"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Theme Selection */}
+            <div className="form-section">
+              <h3>Choose Color Scheme *</h3>
+              <div className="theme-selection">
+                <div className="theme-colors">
+                  {themes.map(color => (
+                    <div
+                      key={color}
+                      className={`theme-color ${selectedTheme === color ? 'selected' : ''}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setSelectedTheme(color)}
+                    />
+                  ))}
+                </div>
+                
+                <div className="color-picker-section">
+                  <button
+                    type="button"
+                    className="color-picker-btn"
+                    onClick={() => setShowColorPicker(!showColorPicker)}
+                  >
+                    <i className="fas fa-palette"></i>
+                    Custom Color
+                  </button>
+                  
+                  {showColorPicker && (
+                    <div className="color-picker-container">
+                      <input
+                        type="color"
+                        value={customColor}
+                        onChange={(e) => {
+                          setCustomColor(e.target.value);
+                          setSelectedTheme(e.target.value);
+                        }}
+                        className="color-picker-input"
+                      />
+                      <input
+                        type="text"
+                        value={customColor}
+                        onChange={(e) => {
+                          setCustomColor(e.target.value);
+                          if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                            setSelectedTheme(e.target.value);
+                          }
+                        }}
+                        placeholder="#FF5733"
+                        className="hex-input"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="modal-actions">
+              <Button variant="outline" onClick={onClose} disabled={loading}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreate} disabled={loading}>
+                {loading ? 'Creating...' : 'Create Template'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Right side - Preview */}
+          <div className="edit-preview-section">
+            <h3>Template Preview</h3>
+            <div className="preview-card">
+              <BusinessCardItem
+                card={{
+                  id: 'preview',
+                  name: 'John',
+                  surname: 'Doe',
+                  occupation: 'Sample Position',
+                  email: 'john.doe@company.com',
+                  phone: '+1 (555) 123-4567',
+                  company: 'Company Name',
+                  colorScheme: templateData.colorScheme,
+                  companyLogo: templateData.companyLogo,
+                  profileImage: null,
+                  departmentName: 'Sample Department'
+                }}
+                isPreview={true}
+              />
+            </div>
+            <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+              <p><strong>Template:</strong> {templateData.name || 'Untitled Template'}</p>
+              <p><strong>Scope:</strong> {templateData.isEnterprise ? 'Enterprise-wide' : 'Department-specific'}</p>
+              <p><strong>Color:</strong> {templateData.colorScheme}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BusinessCards = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [cards, setCards] = useState<CardData[]>([]);
@@ -1443,9 +1889,11 @@ const BusinessCards = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   
   // Use the custom hook for user context
   const userContext = useUserContext();
+  const { user, hasPermission } = useUser();
   
   useEffect(() => {
     const fetchCards = async () => {
@@ -1583,6 +2031,15 @@ const BusinessCards = () => {
             <span className={`badge ${userContext.isEnterprise ? 'enterprise' : 'individual'}`}>
               {userContext.isEnterprise ? 'Enterprise' : 'Individual'} User
             </span>
+            {user && (
+              <span className="badge" style={{ 
+                marginLeft: '0.5rem', 
+                backgroundColor: user.role === 'Administrator' || user.role === 'Admin' ? '#1e40af' : 
+                               user.role === 'Manager' || user.role === 'Lead' ? '#d97706' : '#059669'
+              }}>
+                {user.role}
+              </span>
+            )}
             {userContext.error && (
               <span className="badge error" style={{ marginLeft: '0.5rem', backgroundColor: '#dc2626' }}>
                 {userContext.error}
@@ -1591,10 +2048,33 @@ const BusinessCards = () => {
           </div>
         </div>
         <div className="page-actions">
-          <Button onClick={() => setShowCreateModal(true)}>
+          <Button 
+            onClick={() => hasPermission('createBusinessCards') && setShowCreateModal(true)}
+            disabled={!hasPermission('createBusinessCards')}
+            style={{ 
+              opacity: hasPermission('createBusinessCards') ? 1 : 0.5,
+              backgroundColor: hasPermission('createBusinessCards') ? undefined : '#f5f5f5',
+              cursor: hasPermission('createBusinessCards') ? 'pointer' : 'not-allowed'
+            }}
+            title={!hasPermission('createBusinessCards') ? 'Employees cannot create new cards' : 'Create a new business card'}
+          >
             <FaQrcode className="mr-2" />
             Create Card
           </Button>
+          
+          {/* Template Creation Button - Only for Managers and Admins */}
+          {(hasPermission('createBusinessCards') && (user?.role === 'Manager' || user?.role === 'Lead' || user?.role === 'Administrator' || user?.role === 'Admin')) && (
+            <Button 
+              variant="outline"
+              onClick={() => setShowTemplateModal(true)}
+              title="Create a card template for your department or enterprise"
+              style={{ backgroundColor: '#f0f9ff', borderColor: '#3b82f6', color: '#1e40af' }}
+            >
+              <i className="fas fa-palette mr-2"></i>
+              Create Template
+            </Button>
+          )}
+          
           {selectedCard && (
             <Button 
               variant="outline" 
@@ -1726,6 +2206,18 @@ const BusinessCards = () => {
         onSave={(newCard) => {
           setCards([...cards, newCard]);
           setSelectedCard(newCard);
+        }}
+      />
+
+      {/* Create Template Modal */}
+      <CreateTemplateModal 
+        userContext={userContext}
+        user={user}
+        isOpen={showTemplateModal} 
+        onClose={() => setShowTemplateModal(false)}
+        onSave={(newTemplate) => {
+          console.log('Template created:', newTemplate);
+          // You can add template list refresh logic here if needed
         }}
       />
 
