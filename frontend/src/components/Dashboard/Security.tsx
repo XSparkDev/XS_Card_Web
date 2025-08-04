@@ -10,6 +10,7 @@ import ManageRolesModal from "./ManageRolesModal";
 // import { useSessionTimeoutContext } from "../../providers/SessionTimeoutProvider";
 import { sessionService } from "../../services/sessionService";
 import { rolesService, Role } from "../../services/rolesService";
+import ActivityLogs from "./ActivityLogs";
 
 // Import icons
 import { FaShieldAlt, FaUserPlus, FaToggleOn, FaKey, FaLock, FaExclamationTriangle, FaBell, FaUserCog, FaSearch, FaFileExport } from "react-icons/fa";
@@ -191,6 +192,7 @@ const Security = () => {
           {/* DO NOT DELETE/REMOVE/EDIT - Compliance tab will be implemented in the future */}
           {/* <TabsTrigger value="compliance">Compliance</TabsTrigger> */}
           <TabsTrigger value="audit-logs">Audit Logs</TabsTrigger>
+          <TabsTrigger value="activity-logs">Activity Logs</TabsTrigger>
         </TabsList>
         
         <TabsContent value="access-control" className="security-tab-content">
@@ -619,6 +621,10 @@ const Security = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="activity-logs" className="security-tab-content">
+          <ActivityLogs />
         </TabsContent>
       </Tabs>
       
