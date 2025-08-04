@@ -1,0 +1,666 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '../UI/button';
+import { Badge } from '../UI/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
+import { buildEnterpriseUrl, getEnterpriseHeaders } from '../../utils/api';
+
+// Types
+interface SecurityAlert {
+  id: string;
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'active' | 'acknowledged' | 'resolved';
+  title: string;
+  description: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    department: string;
+  };
+  timestamp: string;
+  acknowledgedAt?: string;
+  resolvedAt?: string;
+  resolvedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  acknowledgedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  metadata: {
+    ipAddress?: string;
+    userAgent?: string;
+    location?: string;
+    failedAttempts?: number;
+    affectedUsers?: number;
+    errorCode?: string;
+    logEntryId?: string;
+  };
+}
+
+interface SecurityAlertsResponse {
+  status: boolean;
+  data: {
+    alerts: SecurityAlert[];
+    totalCount: number;
+    unacknowledgedCount: number;
+    criticalCount: number;
+    highCount?: number;
+    mediumCount?: number;
+    lowCount?: number;
+  };
+}
+
+// Icon Component matching UserManagement style
+type IconName = "AlertTriangle" | "Shield" | "Clock" | "Eye" | "CheckCircle" | "Filter" | "Users" | "LogIn" | "MapPin" | "Lock";
+
+const IconComponent = ({ 
+  name, 
+  className = "", 
+  ...props 
+}: { 
+  name: IconName; 
+  className?: string; 
+} & React.SVGProps<SVGSVGElement>) => {
+  const icons = {
+    AlertTriangle: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
+    Shield: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    Clock: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+    Eye: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+    CheckCircle: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="m12 15 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>,
+    Filter: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+    Users: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 21-2-2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    LogIn: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>,
+    MapPin: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+    Lock: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><circle cx="12" cy="16" r="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  };
+
+  return icons[name] || null;
+};
+
+// Alert Card Component matching the image design
+const AlertCard = ({ 
+  alert, 
+  onAcknowledge, 
+  onResolve,
+  acknowledgeLoading,
+  resolveLoading
+}: { 
+  alert: SecurityAlert; 
+  onAcknowledge: (id: string) => void;
+  onResolve: (id: string) => void;
+  acknowledgeLoading: string | null;
+  resolveLoading: string | null;
+}) => {
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else {
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
+  // Get appropriate icon based on alert type
+  const getAlertIcon = (type: string) => {
+    switch(type.toLowerCase()) {
+      case 'bulk_operations':
+      case 'user_operations':
+        return 'Users';
+      case 'login':
+      case 'authentication':
+        return 'LogIn';
+      case 'location':
+      case 'geolocation':
+        return 'MapPin';
+      case 'password':
+      case 'credentials':
+        return 'Lock';
+      case 'permissions':
+      case 'access':
+        return 'Shield';
+      default:
+        return 'AlertTriangle';
+    }
+  };
+
+  // Get severity colors matching the image
+  const getSeverityColors = (severity: string) => {
+    switch(severity) {
+      case 'critical':
+        return { bg: '#FEEAEA', text: '#DC2626', border: '#FECACA' };
+      case 'high':
+        return { bg: '#FEF3C7', text: '#D97706', border: '#FDE68A' };
+      case 'medium':
+        return { bg: '#FEEFCD', text: '#CA8A04', border: '#FED7AA' };
+      case 'low':
+        return { bg: '#EBF5FF', text: '#2563EB', border: '#BFDBFE' };
+      default:
+        return { bg: '#F3F4F6', text: '#6B7280', border: '#E5E7EB' };
+    }
+  };
+
+  const severityColors = getSeverityColors(alert.severity);
+  const activeColors = { bg: '#FEEAEA', text: '#DC2626', border: '#FECACA' };
+
+  return (
+    <div style={{ 
+      backgroundColor: '#FFFDF5', 
+      border: '1px solid #E5E7EB', 
+      borderRadius: '8px', 
+      padding: '1rem', 
+      marginBottom: '0.75rem',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
+          {/* Alert Icon */}
+          <div style={{ 
+            width: '2rem', 
+            height: '2rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            marginRight: '1rem',
+            color: '#F59E0B' // Light orange/yellow as shown in image
+          }}>
+            <IconComponent name={getAlertIcon(alert.type)} className="icon-small" />
+          </div>
+          
+          {/* Alert Content */}
+          <div style={{ flex: 1 }}>
+            {/* Title and Badges */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <h3 style={{ 
+                fontSize: '1rem', 
+                fontWeight: '600', 
+                color: '#1F2937', 
+                margin: 0 
+              }}>
+                {alert.title}
+              </h3>
+              
+              {/* Severity Badge */}
+              <span style={{
+                backgroundColor: severityColors.bg,
+                color: severityColors.text,
+                border: `1px solid ${severityColors.border}`,
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: '500',
+                textTransform: 'uppercase'
+              }}>
+                {alert.severity.toUpperCase()}
+              </span>
+              
+              {/* Active Badge */}
+              {alert.status === 'active' && (
+                <span style={{
+                  backgroundColor: activeColors.bg,
+                  color: activeColors.text,
+                  border: `1px solid ${activeColors.border}`,
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  textTransform: 'uppercase'
+                }}>
+                  ACTIVE
+                </span>
+              )}
+            </div>
+            
+            {/* Description */}
+            <p style={{ 
+              fontSize: '0.875rem', 
+              color: '#374151', 
+              margin: '0 0 0.5rem 0',
+              lineHeight: '1.4'
+            }}>
+              {alert.description}
+            </p>
+            
+            {/* Details */}
+            <div style={{ 
+              fontSize: '0.75rem', 
+              color: '#6B7280',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}>
+              {alert.user && (
+                <span>User: {alert.user.email}</span>
+              )}
+              <span>Time: {formatTimestamp(alert.timestamp)}</span>
+              {alert.metadata.location && (
+                <span>Location: {alert.metadata.location}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        
+                 {/* Action Buttons */}
+         {alert.status === 'active' && (
+           <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+             <Button 
+               size="sm" 
+               variant="outline"
+               onClick={() => onAcknowledge(alert.id)}
+               disabled={acknowledgeLoading === alert.id}
+               style={{
+                 borderColor: '#F59E0B',
+                 color: '#F59E0B',
+                 backgroundColor: 'white',
+                 fontSize: '0.75rem',
+                 padding: '0.375rem 0.75rem'
+               }}
+             >
+               {acknowledgeLoading === alert.id ? (
+                 <div style={{ display: 'flex', alignItems: 'center' }}>
+                   <div style={{ 
+                     width: '0.75rem', 
+                     height: '0.75rem', 
+                     border: '1px solid #F59E0B', 
+                     borderTop: '1px solid transparent',
+                     borderRadius: '50%',
+                     animation: 'spin 1s linear infinite',
+                     marginRight: '0.25rem'
+                   }} />
+                   Loading...
+                 </div>
+               ) : (
+                 <>
+                   <IconComponent name="Eye" className="icon-tiny mr-1" />
+                   Acknowledge
+                 </>
+               )}
+             </Button>
+             <Button 
+               size="sm" 
+               variant="outline"
+               onClick={() => onResolve(alert.id)}
+               disabled={resolveLoading === alert.id}
+               style={{
+                 borderColor: '#22C55E',
+                 color: '#22C55E',
+                 backgroundColor: 'white',
+                 fontSize: '0.75rem',
+                 padding: '0.375rem 0.75rem'
+               }}
+             >
+               {resolveLoading === alert.id ? (
+                 <div style={{ display: 'flex', alignItems: 'center' }}>
+                   <div style={{ 
+                     width: '0.75rem', 
+                     height: '0.75rem', 
+                     border: '1px solid #22C55E', 
+                     borderTop: '1px solid transparent',
+                     borderRadius: '50%',
+                     animation: 'spin 1s linear infinite',
+                     marginRight: '0.25rem'
+                   }} />
+                   Loading...
+                 </div>
+               ) : (
+                 <>
+                   <IconComponent name="CheckCircle" className="icon-tiny mr-1" />
+                   Resolve
+                 </>
+               )}
+             </Button>
+           </div>
+         )}
+      </div>
+    </div>
+  );
+};
+
+// Main Security Alerts Component
+const SecurityAlerts = () => {
+  const [alerts, setAlerts] = useState<SecurityAlert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [acknowledgeLoading, setAcknowledgeLoading] = useState<string | null>(null);
+  const [resolveLoading, setResolveLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalCount: 0,
+    unacknowledgedCount: 0,
+    criticalCount: 0,
+    highCount: 0,
+    mediumCount: 0,
+    lowCount: 0
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const alertsPerPage = 5;
+  const [filters, setFilters] = useState({
+    severity: 'all',
+    status: 'all' // Changed from 'active' to 'all' to show all alerts by default
+  });
+
+    // Fetch alerts from backend
+  const fetchAlerts = async () => {
+    try {
+      const url = buildEnterpriseUrl('/enterprise/:enterpriseId/security/alerts');
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data: SecurityAlertsResponse = await response.json();
+      setAlerts(data.data.alerts);
+      
+      // Calculate severity counts from the alerts data
+      const highCount = data.data.alerts.filter(alert => alert.severity === 'high').length;
+      const mediumCount = data.data.alerts.filter(alert => alert.severity === 'medium').length;
+      const lowCount = data.data.alerts.filter(alert => alert.severity === 'low').length;
+      
+      setStats({
+        totalCount: data.data.totalCount,
+        unacknowledgedCount: data.data.unacknowledgedCount,
+        criticalCount: data.data.criticalCount,
+        highCount: highCount,
+        mediumCount: mediumCount,
+        lowCount: lowCount
+      });
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching security alerts:', err);
+      setError('Failed to load security alerts');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Acknowledge alert
+  const handleAcknowledge = async (alertId: string) => {
+    if (acknowledgeLoading) return; // Prevent multiple clicks
+    
+          try {
+        setAcknowledgeLoading(alertId);
+        const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/acknowledge`);
+        const headers = getEnterpriseHeaders();
+        
+        const requestBody = {
+          acknowledgedBy: 'current-user-id', // TODO: Get from auth context
+          notes: 'Acknowledged via dashboard'
+        };
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody)
+        });
+        
+        if (response.ok) {
+          await fetchAlerts();
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error('Failed to acknowledge alert:', response.status, response.statusText, errorText);
+          alert(`Failed to acknowledge alert: ${response.status} ${response.statusText}`);
+        }
+      } catch (err) {
+        console.error('Error acknowledging alert:', err);
+        alert('Failed to acknowledge alert');
+      } finally {
+        setAcknowledgeLoading(null);
+      }
+  };
+
+  // Resolve alert
+  const handleResolve = async (alertId: string) => {
+    if (resolveLoading) return; // Prevent multiple clicks
+    
+          try {
+        setResolveLoading(alertId);
+        const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/resolve`);
+        const headers = getEnterpriseHeaders();
+        
+        const requestBody = {
+          resolvedBy: 'current-user-id', // TODO: Get from auth context
+          resolution: 'Issue resolved via dashboard',
+          notes: 'Resolved through security dashboard'
+        };
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody)
+        });
+        
+        if (response.ok) {
+          await fetchAlerts();
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error('Failed to resolve alert:', response.status, response.statusText, errorText);
+          alert(`Failed to resolve alert: ${response.status} ${response.statusText}`);
+        }
+      } catch (err) {
+        console.error('Error resolving alert:', err);
+        alert('Failed to resolve alert');
+      } finally {
+        setResolveLoading(null);
+      }
+  };
+
+  // Filter alerts based on current filters
+  const getFilteredAlerts = () => {
+    return alerts.filter(alert => {
+      const severityMatch = filters.severity === 'all' || alert.severity === filters.severity;
+      const statusMatch = filters.status === 'all' || alert.status === filters.status;
+      return severityMatch && statusMatch;
+    });
+  };
+
+  // Set up polling for real-time updates
+  useEffect(() => {
+    fetchAlerts();
+    
+    // Poll every 30 seconds for new alerts
+    const interval = setInterval(fetchAlerts, 30000);
+    
+    return () => clearInterval(interval);
+  }, []); // fetchAlerts is stable, no need to add to deps
+
+  const filteredAlerts = getFilteredAlerts();
+  
+  // Pagination logic
+  const indexOfLastAlert = currentPage * alertsPerPage;
+  const indexOfFirstAlert = indexOfLastAlert - alertsPerPage;
+  const currentAlerts = filteredAlerts.slice(indexOfFirstAlert, indexOfLastAlert);
+  const totalPages = Math.ceil(filteredAlerts.length / alertsPerPage);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  return (
+    <div className="alerts-container" style={{ backgroundColor: '#F8F8F8', padding: '1rem', borderRadius: '8px' }}>
+      {/* Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+        <Card className="sidebar-card">
+          <CardContent className="card-content-compact">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>Critical</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.criticalCount}</div>
+              </div>
+              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="sidebar-card">
+          <CardContent className="card-content-compact">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>High</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.highCount || 0}</div>
+              </div>
+              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="sidebar-card">
+          <CardContent className="card-content-compact">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>Medium</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.mediumCount || 0}</div>
+              </div>
+              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="sidebar-card">
+          <CardContent className="card-content-compact">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>Low</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.lowCount || 0}</div>
+              </div>
+              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="sidebar-card">
+        <CardHeader className="card-header-compact">
+          <CardTitle className="card-title-small">
+            <IconComponent name="Filter" className="icon-small mr-2" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="card-content-compact">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label className="form-label">Severity</label>
+              <select 
+                value={filters.severity}
+                onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value }))}
+                className="select-input"
+              >
+                <option value="all">All Severities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="form-label">Status</label>
+              <select 
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                className="select-input"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+                           
+
+              {/* Alerts List */}
+        <div className="users-table">
+          {loading ? (
+            <div className="loading-state">Loading security alerts...</div>
+          ) : error ? (
+            <div className="error-state">{error}</div>
+          ) : (
+            <>
+              <div className="table-body">
+                {filteredAlerts.length === 0 ? (
+                  <div className="no-results">
+                    <IconComponent name="Shield" className="icon-small" style={{ marginBottom: '0.5rem' }} />
+                    <p>No security alerts found. Try adjusting your filters.</p>
+                  </div>
+                ) : (
+                                     currentAlerts.map(alert => (
+                     <AlertCard 
+                       key={alert.id}
+                       alert={alert}
+                       onAcknowledge={handleAcknowledge}
+                       onResolve={handleResolve}
+                       acknowledgeLoading={acknowledgeLoading}
+                       resolveLoading={resolveLoading}
+                     />
+                   ))
+                )}
+              </div>
+             
+             {/* Pagination */}
+             {filteredAlerts.length > 0 && (
+               <div style={{ 
+                 display: 'flex', 
+                 justifyContent: 'space-between', 
+                 alignItems: 'center', 
+                 marginTop: '1rem',
+                 padding: '1rem',
+                 borderTop: '1px solid #E5E7EB'
+               }}>
+                 <div style={{ fontSize: '0.875rem', color: '#6B7280' }}>
+                   Showing {indexOfFirstAlert + 1} to {Math.min(indexOfLastAlert, filteredAlerts.length)} of {filteredAlerts.length} alerts
+                 </div>
+                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => handlePageChange(currentPage - 1)}
+                     disabled={currentPage === 1}
+                     className="pagination-button"
+                   >
+                     Previous
+                   </Button>
+                   <span style={{ 
+                     display: 'flex', 
+                     alignItems: 'center', 
+                     padding: '0.5rem 1rem',
+                     fontSize: '0.875rem',
+                     color: '#374151'
+                   }}>
+                     Page {currentPage} of {totalPages}
+                   </span>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => handlePageChange(currentPage + 1)}
+                     disabled={currentPage === totalPages}
+                     className="pagination-button"
+                   >
+                     Next
+                   </Button>
+                 </div>
+               </div>
+             )}
+           </>
+         )}
+       </div>
+    </div>
+  );
+};
+
+export default SecurityAlerts; 

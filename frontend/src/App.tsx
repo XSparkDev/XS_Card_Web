@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import Security from "./components/Dashboard/Security";
+import SecurityDashboard from "./pages/SecurityDashboard";
 import { SessionTimeoutProvider } from './providers/SessionTimeoutProvider';
 
 // Import your pages
@@ -41,6 +42,7 @@ const App = () => {
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/user-management" element={<UserManagement />} />
           <Route path="/security" element={<Security />} />
+          <Route path="/security-dashboard" element={<SecurityDashboard />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="pricing" element={<Pricing />} />

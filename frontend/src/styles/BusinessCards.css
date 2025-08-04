@@ -124,9 +124,10 @@
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, 450px);
   gap: 1.5rem;
   margin-top: 1rem;
+  justify-content: center;
 }
 
 .departments-container {
@@ -148,14 +149,13 @@
 }
 
 .business-card {
-  border-radius: 12px;
-  overflow: visible;
+  border-radius: 20px;
+  overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   transition: transform 0.2s, box-shadow 0.2s;
   min-height: 400px;
-  width: 100%;
-  max-width: 500px;
+  width: 450px;
   background-color: white;
 }
 
@@ -168,6 +168,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  background-color: white;
+  height: 100%;
 }
 
 .business-card-left {
@@ -176,7 +178,6 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: visible;
 }
 
 .business-card-left.no-images {
@@ -460,7 +461,11 @@
 
 @media (max-width: 992px) {
   .cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fit, 400px);
+  }
+  
+  .business-card {
+    width: 400px;
   }
 }
 
@@ -477,6 +482,15 @@
   
   .cards-grid {
     grid-template-columns: 1fr;
+    justify-content: center;
+  }
+  
+  .business-card {
+    width: 350px;
+  }
+  
+  .business-card-large {
+    width: 350px;
   }
   
   .card-left {
@@ -714,13 +728,12 @@
 
 /* Large Business Card Styles */
 .business-card-large {
-  border-radius: 16px;
+  border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s, box-shadow 0.2s;
   height: 400px;
-  width: 100%;
-  max-width: 600px;
+  width: 550px;
   background-color: white;
 }
 
@@ -733,6 +746,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  background-color: white;
 }
 
 .business-card-left-large {
@@ -896,6 +910,7 @@
   
   .business-card-large {
     height: 350px;
+    width: 350px;
   }
   
   .business-card-name-large {

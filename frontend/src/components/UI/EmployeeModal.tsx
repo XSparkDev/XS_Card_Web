@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "./input";
 import { Button } from "./button";
 import { Select } from "./select";
@@ -10,6 +10,7 @@ interface EmployeeModalProps {
   onClose: () => void;
   onSubmit: (employeeData: EmployeeData) => void;
   departments: { value: string; label: string }[];
+  prefillTeam?: { id: string; name: string } | null;
 }
 
 export interface EmployeeData {
@@ -28,7 +29,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  departments
+  departments,
+  prefillTeam = null
 }) => {
   const teams = [
     { value: "engineering", label: "Engineering Team" },
@@ -57,6 +59,24 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     { value: "admin", label: "Admin" }
   ];
 
+  // Reset form when modal opens/closes or prefillTeam changes
+  useEffect(() => {
+    if (isOpen) {
+      const initialData: EmployeeData = {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        position: "",
+        department: departments.length > 0 ? departments[0].value : "",
+        team: prefillTeam ? prefillTeam.id : "",
+        title: "",
+        role: "employee"
+      };
+      setEmployeeData(initialData);
+    }
+  }, [isOpen, departments, prefillTeam]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setEmployeeData(prev => ({
@@ -76,8 +96,12 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     <div className="employee-modal-overlay">
       <div className="employee-modal-container">
         <div className="employee-modal-header">
-          <h2 className="employee-modal-title">Add New Employee</h2>
-          <p className="employee-modal-description">Enter employee information</p>
+          <h2 className="employee-modal-title">
+            {prefillTeam ? `Add Employee to ${prefillTeam.name}` : "Add New Employee"}
+          </h2>
+          <p className="employee-modal-description">
+            {prefillTeam ? `Add a new employee to the ${prefillTeam.name} team` : "Enter employee information"}
+          </p>
           <button 
             className="employee-modal-close" 
             onClick={onClose}
@@ -151,6 +175,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 options={departments}
                 placeholder="Select department"
                 required
+                disabled={departments.length === 1} // Disable if only one department
               />
             </div>
             
@@ -163,6 +188,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 onChange={handleChange}
                 options={teams}
                 placeholder="Select a team"
+                disabled={!!prefillTeam} // Disable if team is pre-filled
               />
             </div>
           </div>
@@ -197,7 +223,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               Cancel
             </Button>
             <Button type="submit">
-              Add Employee
+              {prefillTeam ? `Add to ${prefillTeam.name}` : "Add Employee"}
             </Button>
           </div>
         </form>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Alerts Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background-color: #f9fafb;
+        }
+        .test-button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background-color: #2563eb;
+        }
+        .test-button.danger {
+            background-color: #ef4444;
+        }
+        .test-button.danger:hover {
+            background-color: #dc2626;
+        }
+        .log-container {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-entry.info { color: #60a5fa; }
+        .log-entry.success { color: #34d399; }
+        .log-entry.error { color: #f87171; }
+        .log-entry.warning { color: #fbbf24; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🔒 Security Alerts Component Test</h1>
+            <p>Testing the Security Alerts functionality and debugging filter issues</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test Controls</h3>
+            <button class="test-button" onclick="testFetchAlerts()">Test Fetch Alerts</button>
+            <button class="test-button" onclick="testAcknowledgeAlert()">Test Acknowledge Alert</button>
+            <button class="test-button" onclick="testResolveAlert()">Test Resolve Alert</button>
+            <button class="test-button danger" onclick="clearLogs()">Clear Logs</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Current State</h3>
+            <div id="current-state">
+                <p><strong>Alerts Count:</strong> <span id="alerts-count">-</span></p>
+                <p><strong>Active Alerts:</strong> <span id="active-count">-</span></p>
+                <p><strong>Acknowledged Alerts:</strong> <span id="acknowledged-count">-</span></p>
+                <p><strong>Resolved Alerts:</strong> <span id="resolved-count">-</span></p>
+                <p><strong>Current Filters:</strong> <span id="current-filters">-</span></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 Debug Logs</h3>
+            <div id="log-container" class="log-container">
+                <div class="log-entry info">Ready to test Security Alerts component...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state for testing
+        let currentAlerts = [];
+        let currentFilters = { severity: 'all', status: 'all' };
+
+        // Logging function
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '<div class="log-entry info">Logs cleared...</div>';
+        }
+
+        function updateState() {
+            const activeCount = currentAlerts.filter(a => a.status === 'active').length;
+            const acknowledgedCount = currentAlerts.filter(a => a.status === 'acknowledged').length;
+            const resolvedCount = currentAlerts.filter(a => a.status === 'resolved').length;
+
+            document.getElementById('alerts-count').textContent = currentAlerts.length;
+            document.getElementById('active-count').textContent = activeCount;
+            document.getElementById('acknowledged-count').textContent = acknowledgedCount;
+            document.getElementById('resolved-count').textContent = resolvedCount;
+            document.getElementById('current-filters').textContent = JSON.stringify(currentFilters);
+        }
+
+        async function testFetchAlerts() {
+            log('Testing fetch alerts...', 'info');
+            try {
+                const response = await fetch('/api/enterprise/security/alerts', {
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0MjcxOTQwLCJ1c2VyX2lkIjoiRFcxUWJnTFRpQ2dGeE9CYnZQS2RqbEx2SWdvMSIsInN1YiI6IkRXMVFiZ0xUaUNnRnhPQmJ2UEtkamxMdklnbzEiLCJpYXQiOjE3NTQyNzE5NDAsImV4cCI6MTc1NDI3NTU0MCwiZW1haWwiOiJ0c2hlaGxhcEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJ0c2hlaGxhcEBnbWFpbC5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.M-kYMVIP55TYGVHzN_lW49mMoM1kNHk0i3SAlkbVoCPW0gi8rW2Pc90qijkHwCeyOxNPQShUpqKxzi0bW5Gunab4JvXLnZLiemyVIKlv70is4juUhGqmkZPI-7BiVwFarLhurOn3HqqFMBOYTFyj7BdRaCD6I_pOGvfPBhA9o8mIymPhxSCh75A1LkZXRtypUqyd6Tvm_oiI7UZ1Oduc_Ev3tIHJBuU5py7AtseonA_-qXQWnn5jjKM_TmnNX2geF1SOdOyT6pWqXx52eEAiZ-JAhIdw8yA0ymqpQ9sl-D8PDchI7YcBZQaVI2Cjg95FP_XHnU-BtH82zDvtkVWiIA',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log(`Response status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentAlerts = data.data.alerts || [];
+                    log(`Fetched ${currentAlerts.length} alerts`, 'success');
+                    log(`Alert statuses: ${currentAlerts.map(a => a.status).join(', ')}`, 'info');
+                    updateState();
+                } else {
+                    const errorText = await response.text();
+                    log(`Error: ${response.status} ${response.statusText}`, 'error');
+                    log(`Error details: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAcknowledgeAlert() {
+            if (currentAlerts.length === 0) {
+                log('No alerts available to acknowledge', 'warning');
+                return;
+            }
+
+            const activeAlert = currentAlerts.find(a => a.status === 'active');
+            if (!activeAlert) {
+                log('No active alerts to acknowledge', 'warning');
+                return;
+            }
+
+            log(`Acknowledging alert: ${activeAlert.id}`, 'info');
+            try {
+                const response = await fetch(`/api/enterprise/security/alerts/${activeAlert.id}/acknowledge`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0MjcxOTQwLCJ1c2VyX2lkIjoiRFcxUWJnTFRpQ2dGeE9CYnZQS2RqbEx2SWdvMSIsInN1YiI6IkRXMVFiZ0xUaUNnRnhPQmJ2UEtkamxMdklnbzEiLCJpYXQiOjE3NTQyNzE5NDAsImV4cCI6MTc1NDI3NTU0MCwiZW1haWwiOiJ0c2hlaGxhcEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJ0c2hlaGxhcEBnbWFpbC5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.M-kYMVIP55TYGVHzN_lW49mMoM1kNHk0i3SAlkbVoCPW0gi8rW2Pc90qijkHwCeyOxNPQShUpqKxzi0bW5Gunab4JvXLnZLiemyVIKlv70is4juUhGqmkZPI-7BiVwFarLhurOn3HqqFMBOYTFyj7BdRaCD6I_pOGvfPBhA9o8mIymPhxSCh75A1LkZXRtypUqyd6Tvm_oiI7UZ1Oduc_Ev3tIHJBuU5py7AtseonA_-qXQWnn5jjKM_TmnNX2geF1SOdOyT6pWqXx52eEAiZ-JAhIdw8yA0ymqpQ9sl-D8PDchI7YcBZQaVI2Cjg95FP_XHnU-BtH82zDvtkVWiIA',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        acknowledgedBy: 'test-user-id',
+                        notes: 'Test acknowledgment'
+                    })
+                });
+
+                log(`Acknowledge response status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    log('Alert acknowledged successfully', 'success');
+                    // Refresh alerts
+                    await testFetchAlerts();
+                } else {
+                    const errorText = await response.text();
+                    log(`Acknowledge failed: ${response.status} ${response.statusText}`, 'error');
+                    log(`Error details: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testResolveAlert() {
+            if (currentAlerts.length === 0) {
+                log('No alerts available to resolve', 'warning');
+                return;
+            }
+
+            const activeAlert = currentAlerts.find(a => a.status === 'active');
+            if (!activeAlert) {
+                log('No active alerts to resolve', 'warning');
+                return;
+            }
+
+            log(`Resolving alert: ${activeAlert.id}`, 'info');
+            try {
+                const response = await fetch(`/api/enterprise/security/alerts/${activeAlert.id}/resolve`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0MjcxOTQwLCJ1c2VyX2lkIjoiRFcxUWJnTFRpQ2dGeE9CYnZQS2RqbEx2SWdvMSIsInN1YiI6IkRXMVFiZ0xUaUNnRnhPQmJ2UEtkamxMdklnbzEiLCJpYXQiOjE3NTQyNzE5NDAsImV4cCI6MTc1NDI3NTU0MCwiZW1haWwiOiJ0c2hlaGxhcEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJ0c2hlaGxhcEBnbWFpbC5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.M-kYMVIP55TYGVHzN_lW49mMoM1kNHk0i3SAlkbVoCPW0gi8rW2Pc90qijkHwCeyOxNPQShUpqKxzi0bW5Gunab4JvXLnZLiemyVIKlv70is4juUhGqmkZPI-7BiVwFarLhurOn3HqqFMBOYTFyj7BdRaCD6I_pOGvfPBhA9o8mIymPhxSCh75A1LkZXRtypUqyd6Tvm_oiI7UZ1Oduc_Ev3tIHJBuU5py7AtseonA_-qXQWnn5jjKM_TmnNX2geF1SOdOyT6pWqXx52eEAiZ-JAhIdw8yA0ymqpQ9sl-D8PDchI7YcBZQaVI2Cjg95FP_XHnU-BtH82zDvtkVWiIA',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        resolvedBy: 'test-user-id',
+                        resolution: 'Test resolution',
+                        notes: 'Test resolve through dashboard'
+                    })
+                });
+
+                log(`Resolve response status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    log('Alert resolved successfully', 'success');
+                    // Refresh alerts
+                    await testFetchAlerts();
+                } else {
+                    const errorText = await response.text();
+                    log(`Resolve failed: ${response.status} ${response.statusText}`, 'error');
+                    log(`Error details: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                log(`Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        log('Security Alerts test page loaded', 'success');
+        updateState();
+    </script>
+</body>
+</html> 

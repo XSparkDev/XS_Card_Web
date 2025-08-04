@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./button";
-import { FaEllipsisV, FaTrash, FaEdit, FaPlus, FaUsers, FaCrown } from "react-icons/fa";
+import { FaEllipsisV, FaTrash, FaEdit, FaPlus, FaUsers, FaCrown, FaUserPlus } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
 import TeamModal from "./TeamModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import TeamMemberManagement from "./TeamMemberManagement";
+import EmployeeModal from "./EmployeeModal";
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 import "../../styles/TeamManagement.css";
 
@@ -52,6 +53,10 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
   const [isTeamMemberManagementOpen, setIsTeamMemberManagementOpen] = useState(false);
   const [selectedTeamForMembers, setSelectedTeamForMembers] = useState<TeamData | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
+  // Add employee modal state
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [selectedTeamForEmployee, setSelectedTeamForEmployee] = useState<TeamData | null>(null);
 
   // Fetch teams and employees for this department
   const fetchTeamsAndEmployees = async () => {
@@ -205,6 +210,59 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
     console.log('State updated - selectedTeamForMembers:', team, 'isTeamMemberManagementOpen: true');
   };
 
+  // Add employee to team functionality
+  const handleAddEmployeeToTeam = (team: TeamData) => {
+    setSelectedTeamForEmployee(team);
+    setIsEmployeeModalOpen(true);
+  };
+
+  const handleAddEmployee = async (employeeData: any) => {
+    try {
+      console.log('Employee modal submitted with data:', employeeData);
+      
+      // Use the same endpoint as the main department page
+      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);
+      const headers = getEnterpriseHeaders();
+      
+      // Create the employee object to send to the server (matching the backend API format)
+      const employeeToCreate = {
+        firstName: employeeData.firstName,
+        lastName: employeeData.lastName,
+        email: employeeData.email,
+        phone: employeeData.phone,
+        position: employeeData.position || employeeData.title,
+        role: employeeData.role || "employee",
+        teamId: selectedTeamForEmployee?.id // Add the team ID
+      };
+      
+      console.log('Sending employee data:', employeeToCreate);
+      
+      // Make the POST request to create an employee
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(employeeToCreate)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const newEmployee = await response.json();
+      console.log('New employee created:', newEmployee);
+      
+      // Refresh the data
+      await fetchTeamsAndEmployees();
+      
+      // Close the modal
+      setIsEmployeeModalOpen(false);
+      setSelectedTeamForEmployee(null);
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      alert('Failed to create employee. Please try again.');
+    }
+  };
+
   const getLeaderName = (leaderId: string | null) => {
     if (!leaderId) return "No leader assigned";
     const leader = employees.find(emp => emp.id === leaderId);
@@ -282,6 +340,13 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
                             </button>
                             <button 
                               className="dropdown-item"
+                              onClick={() => handleAddEmployeeToTeam(team)}
+                            >
+                              <FaUserPlus className="action-icon" />
+                              <span>Add Employee</span>
+                            </button>
+                            <button 
+                              className="dropdown-item"
                               onClick={() => handleManageMembers(team)}
                             >
                               <FaUsers className="action-icon" />
@@ -354,6 +419,18 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
           teamName={selectedTeamForMembers?.name || ""}
           departmentId={departmentId}
           departmentName={departmentName}
+        />
+
+        {/* Add Employee Modal */}
+        <EmployeeModal 
+          isOpen={isEmployeeModalOpen}
+          onClose={() => {
+            setIsEmployeeModalOpen(false);
+            setSelectedTeamForEmployee(null);
+          }}
+          onSubmit={handleAddEmployee}
+          departments={[{ value: departmentId, label: departmentName }]}
+          prefillTeam={selectedTeamForEmployee}
         />
       </div>
     </div>

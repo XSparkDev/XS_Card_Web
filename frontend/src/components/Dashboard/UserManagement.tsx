@@ -21,8 +21,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/UI/dropdown-menu";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, DEFAULT_ENTERPRISE_ID } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN } from "../../utils/api";
+import SecurityAlerts from './SecurityAlerts';
 import "../../styles/UserManagement.css";
+import "../../styles/BusinessCards.css";
 
 // Define a type for icon names
 type IconName = 
@@ -38,7 +40,8 @@ type IconName =
   | "Filter"
   | "Download"
   | "AlertTriangle"
-  | "LogOut";
+  | "LogOut"
+  | "Eye";
 
 // Custom icons to replace lucide-react
 const IconComponent = ({ 
@@ -62,7 +65,8 @@ const IconComponent = ({
     Filter: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
     Download: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
     AlertTriangle: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
-    LogOut: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+    LogOut: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+    Eye: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
   };
 
   return icons[name] || null;
@@ -79,6 +83,1109 @@ interface User {
   lastActive: string;
 }
 
+// Email data structure for backend
+interface EmailData {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+  htmlBody?: string;
+  attachments?: {
+    filename: string;
+    content: string; // base64 encoded
+    contentType: string;
+  }[];
+  priority?: 'low' | 'normal' | 'high';
+  isHtml?: boolean;
+}
+
+// Card data structure for View Profile functionality
+interface CardData {
+  id?: string;
+  name: string;
+  surname: string;
+  occupation: string;
+  email: string;
+  phone: string;
+  colorScheme: string;
+  numberOfScan?: number;
+  departmentName?: string;
+  employeeTitle?: string;
+  company?: string;
+  profileImage?: string | null;
+  companyLogo?: string | null;
+  cardImage?: string | null;
+  linkedin?: string | { link: string; title: string };
+  twitter?: string | { link: string; title: string };
+  facebook?: string | { link: string; title: string };
+  instagram?: string | { link: string; title: string };
+  youtube?: string | { link: string; title: string };
+  tiktok?: string | { link: string; title: string };
+  snapchat?: string | { link: string; title: string };
+  whatsapp?: string | { link: string; title: string };
+  telegram?: string | { link: string; title: string };
+  discord?: string | { link: string; title: string };
+  skype?: string | { link: string; title: string };
+  github?: string | { link: string; title: string };
+  pinterest?: string | { link: string; title: string };
+  twitch?: string | { link: string; title: string };
+  spotify?: string | { link: string; title: string };
+  soundcloud?: string | { link: string; title: string };
+  behance?: string | { link: string; title: string };
+  dribbble?: string | { link: string; title: string };
+  medium?: string | { link: string; title: string };
+  reddit?: string | { link: string; title: string };
+  tumblr?: string | { link: string; title: string };
+  vimeo?: string | { link: string; title: string };
+  qrCodeUrl?: string;
+  socials?: { [key: string]: { link: string; title: string } };
+}
+
+// Send Email Modal Component
+const SendEmailModal = ({ user, users, onClose }: { user: User | null; users: User[]; onClose: () => void }) => {
+  // Check if this is a bulk email operation
+  const bulkEmailUsers = JSON.parse(localStorage.getItem('bulkEmailUsers') || '[]') as User[];
+  const isBulkEmail = bulkEmailUsers.length > 1;
+  
+  const [emailData, setEmailData] = useState<EmailData>({
+    to: isBulkEmail ? bulkEmailUsers.map(u => u.email) : (user ? [user.email] : []),
+    cc: [],
+    subject: '',
+    body: '',
+    isHtml: false,
+    priority: 'normal'
+  });
+  const [ccInput, setCcInput] = useState('');
+  const [showCcDropdown, setShowCcDropdown] = useState(false);
+  const [bccInput, setBccInput] = useState('');
+  const [showBccDropdown, setShowBccDropdown] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const handleInputChange = (field: keyof EmailData, value: any) => {
+    setEmailData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const addCcEmail = () => {
+    if (ccInput.trim() && ccInput.includes('@')) {
+      setEmailData(prev => ({
+        ...prev,
+        cc: [...(prev.cc || []), ccInput.trim()]
+      }));
+      setCcInput('');
+    }
+  };
+
+  const removeCcEmail = (index: number) => {
+    setEmailData(prev => ({
+      ...prev,
+      cc: prev.cc?.filter((_, i) => i !== index) || []
+    }));
+  };
+
+  const addBccEmail = () => {
+    if (bccInput.trim() && bccInput.includes('@')) {
+      setEmailData(prev => ({
+        ...prev,
+        bcc: [...(prev.bcc || []), bccInput.trim()]
+      }));
+      setBccInput('');
+    }
+  };
+
+  const removeBccEmail = (index: number) => {
+    setEmailData(prev => ({
+      ...prev,
+      bcc: prev.bcc?.filter((_, i) => i !== index) || []
+    }));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setAttachments(prev => [...prev, ...files]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.cc-dropdown-container')) {
+        setShowCcDropdown(false);
+      }
+      if (!target.closest('.bcc-dropdown-container')) {
+        setShowBccDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSend = async () => {
+    try {
+      setSendingEmail(true);
+      
+      // Convert attachments to base64
+      const processedAttachments = await Promise.all(
+        attachments.map(async (file) => {
+          return new Promise<{ filename: string; content: string; contentType: string }>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = (reader.result as string).split(',')[1];
+              resolve({
+                filename: file.name,
+                content: base64,
+                contentType: file.type
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+
+      const finalEmailData: EmailData = {
+        ...emailData,
+        attachments: processedAttachments
+      };
+
+      console.log('Email data to be sent to backend:', finalEmailData);
+      
+      // Get Firebase token
+      const firebaseToken = FIREBASE_TOKEN;
+      
+      const response = await fetch('http://localhost:8383/enterprise/email/send', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${firebaseToken}`
+        },
+        body: JSON.stringify(finalEmailData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Email send response:', result);
+
+      if (result.status) {
+        alert('Email sent successfully!');
+        onClose();
+      } else {
+        throw new Error(result.message || 'Failed to send email');
+      }
+
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('Failed to send email. Please try again.');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: '700px', width: '95vw', maxHeight: '90vh' }}>
+        <div className="modal-header">
+          <h2>{isBulkEmail ? `Send Email - ${bulkEmailUsers.length} Recipients` : 'Send Email'}</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+        
+        <div style={{ padding: '1.5rem', overflowY: 'auto', maxHeight: 'calc(90vh - 120px)' }}>
+          {/* Recipient Info */}
+          <div style={{
+            background: isBulkEmail ? '#f0fdf4' : '#f0f9ff',
+            border: `1px solid ${isBulkEmail ? '#10b981' : '#0ea5e9'}`,
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1.5rem'
+          }}>
+            {isBulkEmail ? (
+              <div>
+                <div style={{ fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
+                  Bulk Email - {bulkEmailUsers.length} Recipients
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                  Recipients: {bulkEmailUsers.map(u => u.name).join(', ')}
+                </div>
+                <div style={{ 
+                  background: '#fef3c7', 
+                  border: '1px solid #f59e0b', 
+                  borderRadius: '6px', 
+                  padding: '0.75rem',
+                  fontSize: '0.875rem',
+                  color: '#92400e'
+                }}>
+                  💡 <strong>Tip:</strong> Each recipient will receive the email individually. Use CC/BCC for department-wide visibility.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: '#0ea5e9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: '600'
+                }}>
+                  {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: '600', color: '#0c4a6e' }}>{user.name}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#075985' }}>{user.email}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Email Form */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* To Field */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                color: '#374151'
+              }}>
+                To
+              </label>
+              <input
+                type="email"
+                value={emailData.to[0] || ''}
+                onChange={(e) => handleInputChange('to', [e.target.value])}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
+
+            {/* CC Field */}
+            <div style={{ position: 'relative' }} className="cc-dropdown-container">
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                color: '#374151'
+              }}>
+                CC (Optional)
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="email"
+                  value={ccInput}
+                  onChange={(e) => setCcInput(e.target.value)}
+                  placeholder="Enter email address or select from employees"
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem'
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && addCcEmail()}
+                  onFocus={() => setShowCcDropdown(true)}
+                />
+                <Button
+                  onClick={() => setShowCcDropdown(!showCcDropdown)}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    color: '#374151'
+                  }}
+                >
+                  Select
+                </Button>
+                <Button
+                  onClick={addCcEmail}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    backgroundColor: '#3b82f6',
+                    border: '1px solid #3b82f6',
+                    borderRadius: '8px',
+                    color: 'white'
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              
+              {/* Employee Dropdown */}
+              {showCcDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  zIndex: 1000,
+                  marginTop: '0.25rem'
+                }}>
+                  {users
+                    .filter(u => u.email !== user?.email) // Exclude the primary recipient
+                    .map((employee) => (
+                      <div
+                        key={employee.id}
+                        onClick={() => {
+                          setEmailData(prev => ({
+                            ...prev,
+                            cc: [...(prev.cc || []), employee.email]
+                          }));
+                          setShowCcDropdown(false);
+                        }}
+                        style={{
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #f3f4f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                        }}
+                      >
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: '#3b82f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '0.875rem',
+                          fontWeight: '600'
+                        }}>
+                          {employee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '500', fontSize: '0.875rem' }}>
+                            {employee.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                            {employee.email}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+              {emailData.cc && emailData.cc.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {emailData.cc.map((email, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        background: '#e5e7eb',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      {email}
+                      <button
+                        onClick={() => removeCcEmail(index)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#6b7280',
+                          cursor: 'pointer',
+                          fontSize: '1rem'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* BCC Field */}
+            <div style={{ position: 'relative' }} className="bcc-dropdown-container">
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                color: '#374151'
+              }}>
+                BCC (Optional)
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="email"
+                  value={bccInput}
+                  onChange={(e) => setBccInput(e.target.value)}
+                  placeholder="Enter email address or select from employees"
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '0.875rem'
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && addBccEmail()}
+                  onFocus={() => setShowBccDropdown(true)}
+                />
+                <Button
+                  onClick={() => setShowBccDropdown(!showBccDropdown)}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    color: '#374151'
+                  }}
+                >
+                  Select
+                </Button>
+                <Button
+                  onClick={addBccEmail}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    backgroundColor: '#6b7280',
+                    border: '1px solid #6b7280',
+                    borderRadius: '8px',
+                    color: 'white'
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              
+              {/* Employee Dropdown for BCC */}
+              {showBccDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  zIndex: 1000,
+                  marginTop: '0.25rem'
+                }}>
+                  {users
+                    .filter(u => u.email !== user?.email) // Exclude the primary recipient
+                    .map((employee) => (
+                      <div
+                        key={employee.id}
+                        onClick={() => {
+                          setEmailData(prev => ({
+                            ...prev,
+                            bcc: [...(prev.bcc || []), employee.email]
+                          }));
+                          setShowBccDropdown(false);
+                        }}
+                        style={{
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #f3f4f6',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f3f4f6';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                        }}
+                      >
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: '#6b7280',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '0.875rem',
+                          fontWeight: '600'
+                        }}>
+                          {employee.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '500', fontSize: '0.875rem' }}>
+                            {employee.name}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                            {employee.email}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+              
+              {emailData.bcc && emailData.bcc.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {emailData.bcc.map((email, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        background: '#f3f4f6',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      {email}
+                      <button
+                        onClick={() => removeBccEmail(index)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#6b7280',
+                          cursor: 'pointer',
+                          fontSize: '1rem'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Subject Field */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                color: '#374151'
+              }}>
+                Subject
+              </label>
+              <input
+                type="text"
+                value={emailData.subject}
+                onChange={(e) => handleInputChange('subject', e.target.value)}
+                placeholder="Enter email subject"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem'
+                }}
+              />
+            </div>
+
+            {/* Priority */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                color: '#374151'
+              }}>
+                Priority
+              </label>
+              <select
+                value={emailData.priority}
+                onChange={(e) => handleInputChange('priority', e.target.value)}
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  backgroundColor: 'white'
+                }}
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+
+            {/* Attachments */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                color: '#374151'
+              }}>
+                Attachments
+              </label>
+              <input
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  backgroundColor: 'white'
+                }}
+              />
+              {attachments.length > 0 && (
+                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  {attachments.map((file, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.5rem',
+                        background: '#f9fafb',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '4px',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      <span>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      <button
+                        onClick={() => removeAttachment(index)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#dc2626',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Body Field */}
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '0.5rem', 
+                fontWeight: '500',
+                fontSize: '0.875rem',
+                color: '#374151'
+              }}>
+                Message
+              </label>
+              <textarea
+                value={emailData.body}
+                onChange={(e) => handleInputChange('body', e.target.value)}
+                placeholder="Enter your message here..."
+                rows={8}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{
+            display: 'flex',
+            gap: '0.75rem',
+            justifyContent: 'flex-end',
+            marginTop: '1.5rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              disabled={sendingEmail}
+              style={{
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px'
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSend}
+              disabled={sendingEmail || !emailData.subject || !emailData.body}
+              style={{
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                backgroundColor: '#0ea5e9',
+                borderColor: '#0ea5e9',
+                color: 'white'
+              }}
+            >
+              {sendingEmail ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  Sending...
+                </div>
+              ) : (
+                'Send Email'
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// View Profile Modal Component
+const ViewProfileModal = ({ user, onClose }: { user: User | null; onClose: () => void }) => {
+  const [card, setCard] = useState<CardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Function to get card color
+  const getCardColor = (colorScheme: string): string => {
+    return colorScheme || '#4361ee';
+  };
+
+  // Fetch the user's default card (index 0)
+  useEffect(() => {
+    const fetchUserCard = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch enterprise cards and find the user's default card
+        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        const headers = getEnterpriseHeaders();
+        
+        const response = await fetch(url, { headers });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cards: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Process cards data similar to BusinessCards component
+        let cardsData: CardData[] = [];
+        if (Array.isArray(data)) {
+          cardsData = data;
+        } else if (data && typeof data === 'object') {
+          if (Array.isArray(data.data)) {
+            cardsData = data.data;
+          } else if (Array.isArray(data.cards)) {
+            cardsData = data.cards;
+          } else {
+            cardsData = [data];
+          }
+        }
+
+        // Find the user's default card (card index 0) by matching email
+        const userCard = cardsData.find(card => 
+          card.email.toLowerCase() === user.email.toLowerCase()
+        );
+
+        if (userCard) {
+          setCard({
+            ...userCard,
+            id: userCard.id || '1',
+            numberOfScan: userCard.numberOfScan || 0,
+            departmentName: userCard.departmentName || 'N/A',
+            employeeTitle: userCard.employeeTitle || userCard.occupation || 'N/A'
+          });
+        } else {
+          setError('No business card found for this employee');
+        }
+      } catch (err) {
+        console.error('Error fetching user card:', err);
+        setError('Failed to load business card. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserCard();
+  }, [user]);
+
+  if (!user) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
+            View Profile - {user.name}
+          </h2>
+          <button 
+            onClick={onClose}
+            className="modal-close"
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              color: '#6b7280',
+              padding: '0.5rem'
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ padding: '1.5rem' }}>
+          {loading ? (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '3rem',
+              color: '#6b7280'
+            }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem'
+              }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  border: '3px solid #e5e7eb',
+                  borderTop: '3px solid #0ea5e9',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                <span>Loading profile...</span>
+              </div>
+            </div>
+          ) : error ? (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '3rem',
+              color: '#ef4444',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem'
+              }}>
+                <IconComponent name="AlertTriangle" className="icon-small" style={{ width: '32px', height: '32px' }} />
+                <span>{error}</span>
+              </div>
+            </div>
+          ) : card ? (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '1rem'
+            }}>
+              {/* Business Card Display - Matching BusinessCards.tsx structure */}
+              <div className="business-card">
+                <div className="business-card-content">
+                  <div className={`business-card-left ${!card.companyLogo && !card.profileImage ? 'no-images' : ''}`} 
+                       style={{ backgroundColor: !card.companyLogo && !card.profileImage ? getCardColor(card.colorScheme) : 'transparent' }}>
+                    {card.companyLogo ? (
+                      <div className="company-logo-full">
+                        <img src={card.companyLogo} alt="Company Logo" />
+                        {card.profileImage && (
+                          <div className="profile-image-overlay">
+                            <img src={card.profileImage} alt="Profile" />
+                          </div>
+                        )}
+                      </div>
+                    ) : card.profileImage ? (
+                      <div className="profile-image-full">
+                        <img src={card.profileImage} alt="Profile" />
+                      </div>
+                    ) : (
+                      <div className="xscard-logo">
+                        <span>XS</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="business-card-right">
+                    <div className="business-card-info">
+                      <h3 className="business-card-name">{card.name} {card.surname}</h3>
+                      <p className="business-card-title">{card.occupation || card.employeeTitle || 'N/A'}</p>
+                      {card.company && (
+                        <p className="business-card-company">{card.company}</p>
+                      )}
+                      {card.departmentName && card.departmentName !== 'N/A' && (
+                        <p className="business-card-department">{card.departmentName}</p>
+                      )}
+                    </div>
+                    
+                    <div className="business-card-contact-info">
+                      <div className="contact-item">
+                        <div 
+                          className="contact-icon" 
+                          style={{ 
+                            borderColor: getCardColor(card.colorScheme),
+                            color: getCardColor(card.colorScheme)
+                          }}
+                          title={`Email ${card.email}`}
+                        >
+                          <IconComponent name="Mail" />
+                        </div>
+                        <span className="contact-text">{card.email}</span>
+                      </div>
+                      {card.phone && (
+                        <div className="contact-item">
+                          <div 
+                            className="contact-icon" 
+                            style={{ 
+                              borderColor: getCardColor(card.colorScheme),
+                              color: getCardColor(card.colorScheme)
+                            }}
+                            title={`Call ${card.phone}`}
+                          >
+                            📞
+                          </div>
+                          <span className="contact-text">{card.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Social Media Links */}
+                    <div className="business-card-socials">
+                      {card.socials && Object.entries(card.socials).map(([key, socialData]) => {
+                        if (socialData && socialData.link && socialData.title) {
+                          return (
+                            <div key={key} className="social-item">
+                              <div 
+                                className="social-icon" 
+                                style={{ 
+                                  borderColor: getCardColor(card.colorScheme),
+                                  color: getCardColor(card.colorScheme)
+                                }}
+                                title={`Open ${socialData.title}`}
+                              >
+                                🔗
+                              </div>
+                              <span className="social-title">{socialData.title}</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                    
+                    <div className="business-card-footer">
+                      <span className="business-card-scans">{card.numberOfScan || 0} scans</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          padding: '1.5rem',
+          borderTop: '1px solid #e5e7eb'
+        }}>
+          <Button 
+            onClick={() => {
+              // Navigate to business cards page and trigger edit for this user's card
+              localStorage.setItem('editUserEmail', user.email);
+              window.location.href = '/business-cards';
+            }}
+            style={{
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              backgroundColor: '#0ea5e9',
+              borderColor: '#0ea5e9',
+              color: 'white'
+            }}
+          >
+            <IconComponent name="UserCheck" className="icon-small mr-2" />
+            Edit Profile
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            style={{
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px'
+            }}
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const UserManagement = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -90,6 +1197,44 @@ const UserManagement = () => {
   const [error, setError] = useState<string | null>(null);
   const [departments, setDepartments] = useState<string[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+  // Deactivate modal state
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+  // Reset password modal state
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
+  const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  // Send email modal state
+  const [isSendEmailModalOpen, setIsSendEmailModalOpen] = useState(false);
+  const [userToEmail, setUserToEmail] = useState<User | null>(null);
+  // Email logs state
+  const [emailLogs, setEmailLogs] = useState<any[]>([]);
+  const [showEmailLogs, setShowEmailLogs] = useState(false);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  // View Profile modal state
+  const [isViewProfileModalOpen, setIsViewProfileModalOpen] = useState(false);
+  const [userToViewProfile, setUserToViewProfile] = useState<User | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 5;
+  
+  // Security alerts stats
+  const [stats, setStats] = useState({
+    totalCount: 0,
+    unacknowledgedCount: 0,
+    criticalCount: 0
+  });
+
+  // Update security stats (placeholder for now)
+  const updateSecurityStats = () => {
+    // This would be called when security alerts are updated
+    setStats(prev => ({
+      ...prev,
+      criticalCount: Math.floor(Math.random() * 5) // Demo data
+    }));
+  };
 
   // Fetch users from API
   useEffect(() => {
@@ -115,6 +1260,8 @@ const UserManagement = () => {
           id: number;
           firstName: string;
           lastName: string;
+          name?: string;
+          surname?: string;
           email: string;
           role?: string;
           departmentName?: string;
@@ -129,13 +1276,17 @@ const UserManagement = () => {
 
         const processedUsers = (data as EmployeesResponse).employees.map((emp: EmployeeData) => ({
           id: emp.id,
-          name: `${emp.firstName} ${emp.lastName}`,
+          name: emp.name && emp.surname ? `${emp.name} ${emp.surname}` : `${emp.firstName} ${emp.lastName}`,
           email: emp.email,
           role: emp.role || 'Employee',
           department: emp.departmentName || 'Unassigned',
           status: emp.status || 'Active',
           lastActive: emp.lastActive || 'Never',
         }));
+        
+        // Debug: Log the actual role values to see what we're getting from the API
+        console.log('API Response employees:', (data as EmployeesResponse).employees);
+        console.log('Processed users with roles:', processedUsers.map(u => ({ name: u.name, role: u.role })));
         
         setUsers(processedUsers);
         
@@ -155,19 +1306,7 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
   
-  // If selected department changes, filter the users accordingly
-  // We'll handle this client-side for now, but this could be modified to call
-  // a department-specific API endpoint if needed in the future
-  useEffect(() => {
-    // Only filter if we have already loaded users
-    if (!loading && !error && selectedDepartment !== "all") {
-      const filteredUsers = users.filter(user => 
-        user.department === selectedDepartment
-      );
-      // For the filtered view, we would replace setUsers here
-      // For now we'll handle this in our getFilteredUsers function
-    }
-  }, [selectedDepartment]);
+  // Note: Department filtering is handled in getFilteredUsers function
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -187,16 +1326,33 @@ const UserManagement = () => {
   const getFilteredUsers = () => {
     let filtered = [...users];
     
-    // Filter based on activeFilter
+    // First apply department filter if selected
+    if (selectedDepartment !== "all") {
+      filtered = filtered.filter(user => user.department === selectedDepartment);
+    }
+    
+    // Then filter based on activeFilter
     switch (activeFilter) {
       case "administrators":
-        filtered = filtered.filter(user => user.role === "Administrator");
+        filtered = filtered.filter(user => 
+          user.role.toLowerCase().includes('admin') || 
+          user.role.toLowerCase().includes('administrator')
+        );
         break;
       case "managers":
-        filtered = filtered.filter(user => user.role === "Manager");
+        filtered = filtered.filter(user => 
+          user.role.toLowerCase().includes('manager') || 
+          user.role.toLowerCase().includes('lead')
+        );
         break;
       case "employees":
-        filtered = filtered.filter(user => user.role === "Employee");
+        filtered = filtered.filter(user => 
+          user.role.toLowerCase().includes('employee') || 
+          user.role.toLowerCase().includes('staff') ||
+          (!user.role.toLowerCase().includes('admin') && 
+           !user.role.toLowerCase().includes('manager') && 
+           !user.role.toLowerCase().includes('lead'))
+        );
         break;
       case "active":
         filtered = filtered.filter(user => user.status === "Active");
@@ -222,14 +1378,41 @@ const UserManagement = () => {
   };
 
   const filteredUsers = getFilteredUsers();
+  
+  // Pagination logic
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
-  // Count users for each filter
-  const adminCount = users.filter(user => user.role === "Administrator").length;
-  const managerCount = users.filter(user => user.role === "Manager").length;
-  const employeeCount = users.filter(user => user.role === "Employee").length;
-  const activeCount = users.filter(user => user.status === "Active").length;
-  const inactiveCount = users.filter(user => user.status === "Inactive").length;
-  const pendingCount = users.filter(user => user.status === "Pending").length;
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Get users filtered by department only (for counting purposes)
+  const departmentFilteredUsers = selectedDepartment !== "all" 
+    ? users.filter(user => user.department === selectedDepartment)
+    : users;
+
+  // Count users for each filter based on actual data (respecting department filter)
+  const adminCount = departmentFilteredUsers.filter(user => 
+    user.role.toLowerCase().includes('admin') || 
+    user.role.toLowerCase().includes('administrator')
+  ).length;
+  const managerCount = departmentFilteredUsers.filter(user => 
+    user.role.toLowerCase().includes('manager') || 
+    user.role.toLowerCase().includes('lead')
+  ).length;
+  const employeeCount = departmentFilteredUsers.filter(user => 
+    user.role.toLowerCase().includes('employee') || 
+    user.role.toLowerCase().includes('staff') ||
+    (!user.role.toLowerCase().includes('admin') && 
+     !user.role.toLowerCase().includes('manager') && 
+     !user.role.toLowerCase().includes('lead'))
+  ).length;
+  const activeCount = departmentFilteredUsers.filter(user => user.status === "Active").length;
+  const inactiveCount = departmentFilteredUsers.filter(user => user.status === "Inactive").length;
+  const pendingCount = departmentFilteredUsers.filter(user => user.status === "Pending").length;
 
   const getBadgeVariant = (status: string) => {
     switch (status) {
@@ -246,6 +1429,230 @@ const UserManagement = () => {
     navigate('/department');
   };
 
+  // Handle deactivate account
+  const handleDeactivateUser = (user: User) => {
+    setUserToDeactivate(user);
+    setIsDeactivateModalOpen(true);
+  };
+
+  const confirmDeactivateUser = async () => {
+    if (!userToDeactivate) return;
+
+    try {
+      setDeactivateLoading(true);
+      
+      // Get Firebase token from your auth system (you may need to adjust this)
+      const firebaseIdToken = FIREBASE_TOKEN; // Using the token from api.ts for now
+      
+      const response = await fetch('http://localhost:8383/deactivate', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${firebaseIdToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          active: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Deactivate response:', result);
+
+      // Update the user in the local state
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userToDeactivate.id 
+            ? { ...user, status: 'Inactive' }
+            : user
+        )
+      );
+
+      // Close modal and reset state
+      setIsDeactivateModalOpen(false);
+      setUserToDeactivate(null);
+
+      // Show success message (you can replace this with a toast notification)
+      alert('User account deactivated successfully');
+
+    } catch (error) {
+      console.error('Error deactivating user:', error);
+      alert('Failed to deactivate user account. Please try again.');
+    } finally {
+      setDeactivateLoading(false);
+    }
+  };
+
+  const closeDeactivateModal = () => {
+    setIsDeactivateModalOpen(false);
+    setUserToDeactivate(null);
+  };
+
+  // Handle reset password
+  const handleResetPassword = (user: User) => {
+    setUserToResetPassword(user);
+    setIsResetPasswordModalOpen(true);
+  };
+
+  const confirmResetPassword = async () => {
+    if (!userToResetPassword) return;
+
+    try {
+      setResetPasswordLoading(true);
+      
+      const response = await fetch('http://localhost:8383/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: userToResetPassword.email
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Reset password response:', result);
+
+      // Close modal and reset state
+      setIsResetPasswordModalOpen(false);
+      setUserToResetPassword(null);
+
+      // Show success message
+      alert('Password reset link has been sent to the user\'s email address.');
+
+    } catch (error) {
+      console.error('Error sending password reset:', error);
+      alert('Failed to send password reset email. Please try again.');
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  const closeResetPasswordModal = () => {
+    setIsResetPasswordModalOpen(false);
+    setUserToResetPassword(null);
+  };
+
+  // Handle send email
+  const handleSendEmail = (user: User) => {
+    setUserToEmail(user);
+    setIsSendEmailModalOpen(true);
+  };
+
+  const closeSendEmailModal = () => {
+    setIsSendEmailModalOpen(false);
+    setUserToEmail(null);
+    // Clean up bulk email data
+    localStorage.removeItem('bulkEmailUsers');
+  };
+
+  // Handle email logs
+  const handleShowEmailLogs = async () => {
+    try {
+      setLoadingLogs(true);
+      setShowEmailLogs(true);
+      
+      const firebaseToken = FIREBASE_TOKEN;
+      const response = await fetch('http://localhost:8383/enterprise/email/logs?limit=50', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${firebaseToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Email logs response:', result);
+
+      if (result.status) {
+        setEmailLogs(result.data.emailLogs || []);
+      } else {
+        throw new Error(result.message || 'Failed to fetch email logs');
+      }
+
+    } catch (error) {
+      console.error('Error fetching email logs:', error);
+      alert('Failed to fetch email logs. Please try again.');
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const closeEmailLogs = () => {
+    setShowEmailLogs(false);
+    setEmailLogs([]);
+  };
+
+  // Handle view profile
+  const handleViewProfile = (user: User) => {
+    setUserToViewProfile(user);
+    setIsViewProfileModalOpen(true);
+  };
+
+  const closeViewProfileModal = () => {
+    setIsViewProfileModalOpen(false);
+    setUserToViewProfile(null);
+  };
+
+  // Bulk Operations Handlers
+  const handleBulkSendEmail = () => {
+    const selectedUsersData = users.filter(user => selectedUsers.includes(user.id));
+    if (selectedUsersData.length === 0) return;
+
+    // For bulk email, we'll create a special modal that allows sending to multiple recipients
+    setUserToEmail(selectedUsersData[0]); // Use first user as primary recipient
+    setIsSendEmailModalOpen(true);
+    
+    // Store selected users for bulk email processing
+    localStorage.setItem('bulkEmailUsers', JSON.stringify(selectedUsersData));
+  };
+
+  const handleBulkDeactivate = () => {
+    const selectedUsersData = users.filter(user => selectedUsers.includes(user.id));
+    if (selectedUsersData.length === 0) return;
+
+    const confirmMessage = `Are you sure you want to deactivate ${selectedUsersData.length} user account${selectedUsersData.length > 1 ? 's' : ''}?\n\n${selectedUsersData.map(u => u.name).join(', ')}`;
+    
+    if (window.confirm(confirmMessage)) {
+      // TODO: Implement bulk deactivate API call
+      console.log('Bulk deactivating users:', selectedUsersData);
+      alert(`Bulk deactivation feature coming soon for ${selectedUsersData.length} users`);
+    }
+  };
+
+  const handleBulkExport = () => {
+    const selectedUsersData = users.filter(user => selectedUsers.includes(user.id));
+    if (selectedUsersData.length === 0) return;
+
+    // Export selected users to CSV
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      "Name,Email,Role,Department,Status,Last Active\n" +
+      selectedUsersData.map(user => 
+        `"${user.name}","${user.email}","${user.role}","${user.department}","${user.status}","${user.lastActive}"`
+      ).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clear selection after export
+    setSelectedUsers([]);
+  };
+
   return (
     <div className="user-management-container">
       <div className="user-management-header">
@@ -253,10 +1660,26 @@ const UserManagement = () => {
           <h1 className="page-title">User Management</h1>
           <p className="page-description">Manage users and their permissions</p>
         </div>
-        <Button onClick={navigateToDepartmentAddEmployee} className="header-button outline-button">
-          <IconComponent name="UserPlus" className="icon-small mr-2" />
-          Add Employee
-        </Button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* Security Alerts Badge */}
+          <Button variant="outline" className="header-button">
+            <IconComponent name="Shield" className="icon-small mr-2" />
+            Security Alerts
+            {stats.criticalCount > 0 && (
+              <Badge className="ml-2 bg-red-500 text-white text-xs">
+                {stats.criticalCount}
+              </Badge>
+            )}
+          </Button>
+          <Button onClick={handleShowEmailLogs} className="header-button outline-button">
+            <IconComponent name="Mail" className="icon-small mr-2" />
+            Email Logs
+          </Button>
+          <Button onClick={navigateToDepartmentAddEmployee} className="header-button outline-button">
+            <IconComponent name="UserPlus" className="icon-small mr-2" />
+            Add Employee
+          </Button>
+        </div>
       </div>
 
       <div className="user-management-layout">
@@ -358,6 +1781,7 @@ const UserManagement = () => {
                 variant="outline" 
                 className="action-button"
                 disabled={selectedUsers.length === 0}
+                onClick={handleBulkSendEmail}
               >
                 <IconComponent name="Mail" className="icon-small mr-2" />
                 Send Email
@@ -366,22 +1790,25 @@ const UserManagement = () => {
                 variant="outline" 
                 className="action-button"
                 disabled={selectedUsers.length === 0}
+                onClick={handleBulkExport}
               >
-                <IconComponent name="Shield" className="icon-small mr-2" />
-                Change Role
+                <IconComponent name="Download" className="icon-small mr-2" />
+                Export Data
               </Button>
               <Button 
                 variant="outline" 
                 className="action-button"
                 disabled={selectedUsers.length === 0}
+                title="Coming soon - Assign users to different departments"
               >
-                <IconComponent name="RefreshCw" className="icon-small mr-2" />
-                Reset Password
+                <IconComponent name="UserPlus" className="icon-small mr-2" />
+                Assign Department
               </Button>
               <Button 
                 variant="outline" 
                 className="action-button action-destructive"
                 disabled={selectedUsers.length === 0}
+                onClick={handleBulkDeactivate}
               >
                 <IconComponent name="UserX" className="icon-small mr-2" />
                 Deactivate
@@ -419,7 +1846,7 @@ const UserManagement = () => {
               ) : error ? (
                 <div className="error-state">{error}</div>
               ) : (
-                <div className="users-table">
+                <div className="users-table-scrollable">
                   <div className="table-header">
                     <div className="select-all">
                       <Checkbox 
@@ -433,7 +1860,7 @@ const UserManagement = () => {
                     </div>
                   </div>
                   
-                  <div className="table-body">
+                  <div className="table-body-scrollable">
                     {filteredUsers.map((user) => (
                       <div key={user.id} className="table-row">
                         <div className="user-info">
@@ -470,24 +1897,27 @@ const UserManagement = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="dropdown-menu-content">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <IconComponent name="UserCheck" className="icon-small mr-2" />
+                              <DropdownMenuItem onClick={() => handleViewProfile(user)}>
+                                <IconComponent name="Eye" className="icon-small mr-2" />
                                 View Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem title="Coming soon - Role and permission management">
                                 <IconComponent name="Shield" className="icon-small mr-2" />
                                 Edit Permissions
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleSendEmail(user)}>
                                 <IconComponent name="Mail" className="icon-small mr-2" />
                                 Send Email
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleResetPassword(user)}>
                                 <IconComponent name="RefreshCw" className="icon-small mr-2" />
                                 Reset Password
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="dropdown-destructive">
+                              <DropdownMenuItem 
+                                className="dropdown-destructive"
+                                onClick={() => handleDeactivateUser(user)}
+                              >
                                 <IconComponent name="UserX" className="icon-small mr-2" />
                                 Deactivate Account
                               </DropdownMenuItem>
@@ -506,47 +1936,16 @@ const UserManagement = () => {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="card-footer">
-              <div className="pagination-info">
-                Showing {filteredUsers.length} of {users.length} users
-              </div>
-              <div className="pagination-controls">
-                <Button variant="outline" size="sm" disabled className="pagination-button">
-                  Previous
-                </Button>
-                <Button variant="outline" size="sm" disabled className="pagination-button">
-                  Next
-                </Button>
-              </div>
-            </CardFooter>
           </Card>
           
           {/* Security Alerts Card */}
           <Card className="content-card">
             <CardHeader className="card-header">
               <CardTitle>Security Alerts</CardTitle>
-              <CardDescription>Users requiring attention</CardDescription>
+              <CardDescription>Real-time security monitoring</CardDescription>
             </CardHeader>
             <CardContent className="card-content">
-              <div className="alerts-container">
-                <div className="alert alert-warning">
-                  <IconComponent name="AlertTriangle" className="alert-icon" />
-                  <div className="alert-content">
-                    <h4 className="alert-title">Inactive Admin Account</h4>
-                    <p className="alert-description">Emily Davis has admin privileges but hasn't logged in for over 30 days</p>
-                    <Button size="sm" variant="outline" className="alert-action">Review Account</Button>
-                  </div>
-                </div>
-                
-                <div className="alert alert-danger">
-                  <IconComponent name="LogOut" className="alert-icon" />
-                  <div className="alert-content">
-                    <h4 className="alert-title">Failed Login Attempts</h4>
-                    <p className="alert-description">Multiple failed login attempts for account: michael.brown@xscard.com</p>
-                    <Button size="sm" variant="outline" className="alert-action">View Details</Button>
-                  </div>
-                </div>
-              </div>
+              <SecurityAlerts />
             </CardContent>
           </Card>
         </div>
@@ -606,6 +2005,499 @@ const UserManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Deactivate User Modal - Using business cards modal style */}
+      {isDeactivateModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90vw' }}>
+            <div className="modal-header">
+              <h2>Deactivate User Account</h2>
+              <button 
+                className="modal-close" 
+                onClick={closeDeactivateModal}
+                disabled={deactivateLoading}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '2rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  backgroundColor: '#fee2e2',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem'
+                }}>
+                  <IconComponent 
+                    name="UserX" 
+                    style={{ 
+                      width: '24px', 
+                      height: '24px', 
+                      color: '#dc2626' 
+                    }} 
+                  />
+                </div>
+                <h3 style={{ 
+                  margin: '0 0 0.5rem 0', 
+                  fontSize: '1.25rem', 
+                  fontWeight: '600',
+                  color: '#111827'
+                }}>
+                  Deactivate Account
+                </h3>
+                <p style={{ 
+                  margin: '0 0 1rem 0', 
+                  color: '#6b7280',
+                  fontSize: '0.875rem'
+                }}>
+                  Are you sure you want to deactivate this user account?
+                </p>
+              </div>
+
+              {userToDeactivate && (
+                <div style={{
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div style={{ 
+                    fontWeight: '600', 
+                    color: '#111827',
+                    marginBottom: '0.25rem'
+                  }}>
+                    {userToDeactivate.name}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.875rem', 
+                    color: '#6b7280',
+                    marginBottom: '0.25rem'
+                  }}>
+                    {userToDeactivate.email}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.875rem', 
+                    color: '#6b7280'
+                  }}>
+                    {userToDeactivate.role} • {userToDeactivate.department}
+                  </div>
+                </div>
+              )}
+
+              <div style={{
+                background: '#fef3cd',
+                border: '1px solid #f59e0b',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.75rem'
+                }}>
+                  <IconComponent 
+                    name="AlertTriangle" 
+                    style={{ 
+                      width: '20px', 
+                      height: '20px', 
+                      color: '#d97706',
+                      marginTop: '2px',
+                      flexShrink: 0
+                    }} 
+                  />
+                  <div>
+                    <div style={{
+                      fontWeight: '500',
+                      color: '#92400e',
+                      fontSize: '0.875rem',
+                      marginBottom: '0.25rem'
+                    }}>
+                      Warning
+                    </div>
+                    <div style={{
+                      color: '#92400e',
+                      fontSize: '0.875rem',
+                      lineHeight: '1.4'
+                    }}>
+                      This action will immediately deactivate the user's account. 
+                      They will no longer be able to access the system.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end'
+              }}>
+                <Button 
+                  variant="outline" 
+                  onClick={closeDeactivateModal}
+                  disabled={deactivateLoading}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px'
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={confirmDeactivateUser}
+                  disabled={deactivateLoading}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    backgroundColor: '#dc2626',
+                    borderColor: '#dc2626',
+                    color: 'white'
+                  }}
+                >
+                  {deactivateLoading ? (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                        borderTop: '2px solid white',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                      Deactivating...
+                    </div>
+                  ) : (
+                    'Deactivate Account'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {isResetPasswordModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px', width: '90vw' }}>
+            <div className="modal-header">
+              <h2>Reset User Password</h2>
+              <button 
+                className="modal-close" 
+                onClick={closeResetPasswordModal}
+                disabled={resetPasswordLoading}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '2rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  backgroundColor: '#dbeafe',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem'
+                }}>
+                  <IconComponent 
+                    name="RefreshCw" 
+                    style={{ 
+                      width: '24px', 
+                      height: '24px', 
+                      color: '#3b82f6' 
+                    }} 
+                  />
+                </div>
+                <h3 style={{ 
+                  margin: '0 0 0.5rem 0', 
+                  fontSize: '1.25rem', 
+                  fontWeight: '600',
+                  color: '#111827'
+                }}>
+                  Reset Password
+                </h3>
+                <p style={{ 
+                  margin: '0 0 1rem 0', 
+                  color: '#6b7280',
+                  fontSize: '0.875rem'
+                }}>
+                  Send a password reset link to this user's email address
+                </p>
+              </div>
+
+              {userToResetPassword && (
+                <div style={{
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div style={{ 
+                    fontWeight: '600', 
+                    color: '#111827',
+                    marginBottom: '0.25rem'
+                  }}>
+                    {userToResetPassword.name}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.875rem', 
+                    color: '#6b7280',
+                    marginBottom: '0.25rem'
+                  }}>
+                    {userToResetPassword.email}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.875rem', 
+                    color: '#6b7280'
+                  }}>
+                    {userToResetPassword.role} • {userToResetPassword.department}
+                  </div>
+                </div>
+              )}
+
+              <div style={{
+                background: '#eff6ff',
+                border: '1px solid #3b82f6',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.75rem'
+                }}>
+                  <IconComponent 
+                    name="Mail" 
+                    style={{ 
+                      width: '20px', 
+                      height: '20px', 
+                      color: '#3b82f6',
+                      marginTop: '2px',
+                      flexShrink: 0
+                    }} 
+                  />
+                  <div>
+                    <div style={{
+                      fontWeight: '500',
+                      color: '#1e40af',
+                      fontSize: '0.875rem',
+                      marginBottom: '0.25rem'
+                    }}>
+                      Password Reset Email
+                    </div>
+                    <div style={{
+                      color: '#1e40af',
+                      fontSize: '0.875rem',
+                      lineHeight: '1.4'
+                    }}>
+                      A secure password reset link will be sent to the user's email address. 
+                      The link will expire after a certain time for security.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.75rem',
+                justifyContent: 'flex-end'
+              }}>
+                <Button 
+                  variant="outline" 
+                  onClick={closeResetPasswordModal}
+                  disabled={resetPasswordLoading}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px'
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={confirmResetPassword}
+                  disabled={resetPasswordLoading}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    backgroundColor: '#3b82f6',
+                    borderColor: '#3b82f6',
+                    color: 'white'
+                  }}
+                >
+                  {resetPasswordLoading ? (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                        borderTop: '2px solid white',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                      Sending...
+                    </div>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Email Modal */}
+      {isSendEmailModalOpen && <SendEmailModal user={userToEmail} users={users} onClose={closeSendEmailModal} />}
+
+      {/* Email Logs Modal */}
+      {showEmailLogs && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '900px', width: '95vw', maxHeight: '90vh' }}>
+            <div className="modal-header">
+              <h2>Email Audit Trail</h2>
+              <button className="modal-close" onClick={closeEmailLogs} aria-label="Close">
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '1.5rem', overflowY: 'auto', maxHeight: 'calc(90vh - 120px)' }}>
+              {loadingLogs ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    border: '3px solid #f3f4f6',
+                    borderTop: '3px solid #3b82f6',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto 1rem'
+                  }}></div>
+                  <p>Loading email logs...</p>
+                </div>
+              ) : emailLogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                  <IconComponent name="Mail" style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }} />
+                  <h3>No Email Logs</h3>
+                  <p>No emails have been sent yet. Send your first email to see the audit trail.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {emailLogs.map((log, index) => (
+                    <div
+                      key={log.id || index}
+                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        background: 'white'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '1rem', color: '#111827' }}>
+                            {log.subject}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                            From: {log.senderName} ({log.senderEmail})
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            backgroundColor: log.status === 'sent' ? '#dcfce7' : '#fef3c7',
+                            color: log.status === 'sent' ? '#166534' : '#92400e'
+                          }}>
+                            {log.status}
+                          </span>
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            backgroundColor: log.priority === 'high' ? '#fef2f2' : log.priority === 'low' ? '#f0f9ff' : '#f0fdf4',
+                            color: log.priority === 'high' ? '#dc2626' : log.priority === 'low' ? '#0ea5e9' : '#16a34a'
+                          }}>
+                            {log.priority}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div style={{ fontSize: '0.875rem', color: '#374151', marginBottom: '0.5rem' }}>
+                        <div><strong>To:</strong> {log.recipients.join(', ')}</div>
+                        {log.ccRecipients && log.ccRecipients.length > 0 && (
+                          <div><strong>CC:</strong> {log.ccRecipients.join(', ')}</div>
+                        )}
+                        {log.bccRecipientCount > 0 && (
+                          <div><strong>BCC:</strong> {log.bccRecipientCount} recipient(s)</div>
+                        )}
+                      </div>
+                      
+                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                        {log.bodyPreview}
+                      </div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#9ca3af' }}>
+                        <div>
+                          {log.attachmentCount > 0 && (
+                            <span style={{ marginRight: '1rem' }}>
+                              📎 {log.attachmentCount} attachment(s)
+                            </span>
+                          )}
+                          <span>
+                            📅 {new Date(log.sentAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <div>
+                          {log.accepted && log.accepted.length > 0 && (
+                            <span style={{ marginRight: '1rem', color: '#16a34a' }}>
+                              ✓ {log.accepted.length} accepted
+                            </span>
+                          )}
+                          {log.rejected && log.rejected.length > 0 && (
+                            <span style={{ color: '#dc2626' }}>
+                              ✗ {log.rejected.length} rejected
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Profile Modal */}
+      {isViewProfileModalOpen && (
+        <ViewProfileModal user={userToViewProfile} onClose={closeViewProfileModal} />
+      )}
     </div>
   );
 };
