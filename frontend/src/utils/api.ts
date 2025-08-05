@@ -8,6 +8,75 @@ export interface PasscreatorResponse {
     colorScheme?: string; // Add default color support
 }
 
+// Employee Types
+export interface Employee {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  position?: string;
+  departmentId?: string;
+  departmentName?: string;
+  employeeNumber?: string;
+  title?: string;
+  role?: string;
+  profileImage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+}
+
+export interface EmployeeSearchResponse {
+  success: boolean;
+  data: {
+    employees: Employee[];
+    total: number;
+    page?: number;
+    limit?: number;
+  };
+  message?: string;
+}
+
+// Template Types
+export interface Template {
+  id: string;
+  name: string;
+  description?: string;
+  colorScheme: string;
+  companyLogo?: string | null;
+  departmentId?: string | null;
+  isEnterprise?: boolean;
+  createdBy?: string;
+  createdByRole?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+}
+
+export interface DepartmentTemplatesResponse {
+  success: boolean;
+  data: {
+    departmentId: string;
+    templates: Template[];
+    total: number;
+  };
+}
+
+export interface EffectiveTemplateResponse {
+  success: boolean;
+  data: {
+    template?: Template;
+    source?: 'department' | 'enterprise' | 'default';
+    inheritance?: string;
+  } | null;
+  message?: string;
+  fallback?: {
+    colorScheme: string;
+    companyLogo?: string | null;
+  };
+}
+
 // Billing Types
 export interface SubscriptionStatus {
   subscriptionStatus: 'none' | 'trial' | 'active' | 'cancelled' | 'past_due';
@@ -60,13 +129,16 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0MzA4MDExLCJ1c2VyX2lkIjoiWDh6aThhdlQ1T2RQSDBsYkNxN3E0ODJmWU91MSIsInN1YiI6Ilg4emk4YXZUNU9kUEgwbGJDcTdxNDgyZllPdTEiLCJpYXQiOjE3NTQzMDgwMTEsImV4cCI6MTc1NDMxMTYxMSwiZW1haWwiOiJ4YXBheWk5NTY3QGNvdXJzb3JhLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInhhcGF5aTk1NjdAY291cnNvcmEuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.Y18knD3unbWKcwhe6NHtpKFPAFhyYyDF3mExgkKG9qYq3WUSD54MyPyfODYxYiVFHvCSJApZEumB9acXPjtkIJ4IPErXkTCUadg72Y9nOffymvYS_4Caf-tyumXOnvyUcZcAqSKAeCIBmkhomfmVYqLmAVkzUpVee2VeYs_Eki3ukIbZCTkTdHktovf634el9WE9Ay-MjjxLcUy2hv1yJBvZXbMS6okVAjkkTCnVq_IOjc-s3di6As05uBUwUXNjRNXCUMjLZu2dX8ZfhhzAdPtfiIgSVKl93_rbj8_xhTPIBPDYZwWN8xMDcriwV0u2eQkusahydJiVUgsR8Sg9ng";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0MzcxMTI2LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTQzNzExMjYsImV4cCI6MTc1NDM3NDcyNiwiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.g2hc4TxKR2mJ28aiOIuPREyFZ42hjZv0e7PffX7XjuN62VKHkI66g8L7b_DzjFf_5rO_RVHa94S68dxvgbRRWYs0pR-eHk_iVba4SYcSD-qczeHWUyyzGEMVCqnK2HO76g9W-uOdnAYT1FqKv4Kx6cAlJz7cXTZbS5fjDVnZAGYNVyKuFZbYWEXX8voBPySRQKbpd9Sm0w6l3-MXpkCfnO1cU-0uk3MQ4e5ap4R3XkBOCHUiDV59WtChIzhegyr_KwCZ6fN0Bhaf7lQEzDRz3ruvWhQ3nV8YXyrTuh1YaJgq8SZkiWT6PfrBcTmvU4PPh3zWUTHepK-XOND43s7cYg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 
 // Default user ID specifically for meetings and user-specific features
-export const DEFAULT_USER_ID = "X8zi8avT5OdPH0lbCq7q482fYOu1";//"RP6lMeJ2G1emh8WXMpPVXY7qSpD2";////"EccyMCv7uiS1eYHB3ZMu6zRR1DG2";
+//export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
+//export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
+//export const DEFAULT_USER_ID = "RP6lMeJ2G1emh8WXMpPVXY7qSpD2"; // admin
+export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // manager
 
 // Example payment method ID for testing
 export const EXAMPLE_PAYMENT_METHOD_ID = "C1qy82bmgPwZdqjfqBQ8";
@@ -115,7 +187,7 @@ const getBaseUrl = () => {
       console.warn('🔧 For development only - do not use in production');
     }
     
-    return 'http://localhost:8383';
+    return 'http://192.168.2.237:8383';
   }
   
   // In production, use secure connection
@@ -610,3 +682,222 @@ export const bypassSecurityForDevelopment = () => {
     }, 1000);
   }
 })();
+
+// Template API Functions
+export const fetchDepartmentTemplates = async (departmentId: string, enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<DepartmentTemplatesResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/api/templates/${enterpriseId}/departments/${departmentId}`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
+    const result = await response.json();
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchEffectiveTemplate = async (departmentId: string, enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<EffectiveTemplateResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/api/templates/${enterpriseId}/${departmentId}/effective`);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🎨 Fetching effective template:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        data: null,
+        message: `HTTP ${response.status}: ${errorText}`,
+        fallback: {
+          colorScheme: '#1B2B5B',
+          companyLogo: null
+        }
+      };
+    }
+    
+    const result = await response.json();
+    
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      fallback: {
+        colorScheme: '#1B2B5B',
+        companyLogo: null
+      }
+    };
+  }
+};
+
+export const getAvailableTemplatesForDepartment = async (departmentId: string, enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<{
+  departmentTemplates: Template[];
+  enterpriseTemplates: Template[];
+  defaultTemplate: Template;
+}> => {
+  try {
+    // Fetch department templates
+    const deptResponse = await fetchDepartmentTemplates(departmentId, enterpriseId);
+    const departmentTemplates = deptResponse.success ? deptResponse.data.templates : [];
+    
+    // Fetch enterprise templates (all templates for the enterprise)
+    const enterpriseUrl = buildEnterpriseUrl(`/api/templates/${enterpriseId}`);
+    const headers = getEnterpriseHeaders();
+    
+    const enterpriseResponse = await fetch(enterpriseUrl, {
+      method: 'GET',
+      headers
+    });
+    
+    let enterpriseTemplates: Template[] = [];
+    if (enterpriseResponse.ok) {
+      const enterpriseResult = await enterpriseResponse.json();
+      if (enterpriseResult.success && enterpriseResult.data) {
+        enterpriseTemplates = enterpriseResult.data.enterpriseTemplates || [];
+      }
+    }
+    
+    // Create default template
+    const defaultTemplate: Template = {
+      id: 'default',
+      name: 'Default Template',
+      description: 'Default card template with standard styling',
+      colorScheme: '#1B2B5B',
+      companyLogo: null,
+      departmentId: null,
+      isEnterprise: false
+    };
+    
+    return {
+      departmentTemplates,
+      enterpriseTemplates,
+      defaultTemplate
+    };
+  } catch (error) {
+    return {
+      departmentTemplates: [],
+      enterpriseTemplates: [],
+      defaultTemplate: {
+        id: 'default',
+        name: 'Default Template',
+        description: 'Default card template with standard styling',
+        colorScheme: '#1B2B5B',
+        companyLogo: null,
+        departmentId: null,
+        isEnterprise: false
+      }
+    };
+  }
+};
+
+// Employee Search Functions
+export const fetchAllEmployees = async (enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<EmployeeSearchResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/enterprise/${enterpriseId}/employees`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        data: {
+          employees: [],
+          total: 0
+        },
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    
+    // Transform backend response to match expected structure
+    return {
+      success: result.success,
+      data: {
+        employees: result.employees || [],
+        total: result.totalCount || 0
+      },
+      message: result.message
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: {
+        employees: [],
+        total: 0
+      },
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+export const searchEmployees = async (
+  searchTerm: string, 
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<EmployeeSearchResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/enterprise/${enterpriseId}/employees?search=${encodeURIComponent(searchTerm)}`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        data: {
+          employees: [],
+          total: 0
+        },
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    
+    // Transform backend response to match expected structure
+    return {
+      success: result.success,
+      data: {
+        employees: result.employees || [],
+        total: result.totalCount || 0
+      },
+      message: result.message
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: {
+        employees: [],
+        total: 0
+      },
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};

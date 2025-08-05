@@ -274,10 +274,23 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
     try {
       console.log('Employee modal submitted with data:', employeeData);
       
-      // Fetch the effective template for this department
-      console.log('Fetching template for department:', departmentId);
-      const templateData = await fetchEffectiveTemplate(departmentId);
-      console.log('Template data for employee:', templateData);
+      // Use the selected template from the modal, or fetch the effective template as fallback
+      let templateData;
+      if (employeeData.selectedTemplate) {
+        console.log('🎨 Using selected template:', employeeData.selectedTemplate.name);
+        templateData = {
+          colorScheme: employeeData.selectedTemplate.colorScheme,
+          companyLogo: employeeData.selectedTemplate.companyLogo,
+          templateId: employeeData.selectedTemplate.id,
+          templateName: employeeData.selectedTemplate.name,
+          templateSource: employeeData.selectedTemplate.isEnterprise ? 'enterprise' : 'department'
+        };
+      } else {
+        // Fallback to fetching effective template
+        console.log('🎨 Fetching effective template for department:', departmentId);
+        templateData = await fetchEffectiveTemplate(departmentId);
+        console.log('Template data for employee:', templateData);
+      }
       
       // Use the same endpoint as the main department page
       const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);

@@ -1519,12 +1519,9 @@ const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: {
   };
 
   const handleImageUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setTemplateData(prev => ({ ...prev, companyLogo: result }));
-    };
-    reader.readAsDataURL(file);
+    // For template creation, we'll store the file reference
+    // The actual upload will happen during form submission
+    setTemplateData(prev => ({ ...prev, companyLogo: URL.createObjectURL(file) }));
   };
 
   const handleRemoveImage = () => {
@@ -1558,9 +1555,6 @@ const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: {
 
     // Validate enterprise ID
     const enterpriseId = userContext.enterpriseId || localStorage.getItem('enterpriseId') || 'x-spark-test';
-    console.log('Using enterprise ID:', enterpriseId);
-    console.log('User context enterprise ID:', userContext.enterpriseId);
-    console.log('LocalStorage enterprise ID:', localStorage.getItem('enterpriseId'));
     
     if (!enterpriseId) {
       alert('❌ Enterprise ID is required');
@@ -1576,40 +1570,34 @@ const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: {
     try {
       setLoading(true);
 
-      // Prepare template payload
-      const payload = {
-        enterpriseId: enterpriseId,
-        departmentId: templateData.isEnterprise ? null : templateData.departmentId,
-        name: templateData.name.trim(),
-        description: templateData.description.trim(),
-        colorScheme: templateData.colorScheme,
-        companyLogo: templateData.companyLogo
-      };
+      // Create FormData for multipart upload
+      const formData = new FormData();
+      formData.append('enterpriseId', enterpriseId);
+      formData.append('departmentId', templateData.isEnterprise ? '' : (templateData.departmentId || ''));
+      formData.append('name', templateData.name.trim());
+      formData.append('description', templateData.description.trim());
+      formData.append('colorScheme', templateData.colorScheme);
 
-      console.log('Template creation payload:', payload);
+      // Add logo file if selected
+      const logoFile = companyLogoRef.current?.files?.[0];
+      if (logoFile) {
+        formData.append('companyLogo', logoFile);
+      }
 
-      // Create template via API  
+      // Create template via API with multipart form data
       const templateUrl = buildUrl('/api/templates');
-      
-      console.log('Template creation URL:', templateUrl);
-      console.log('Full API Base URL:', API_BASE_URL);
       
       const response = await fetch(templateUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${FIREBASE_TOKEN}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+          // Don't set Content-Type - let browser set it with boundary for multipart
         },
-        body: JSON.stringify(payload)
+        body: formData
       });
-
-      console.log('Template creation response status:', response.status);
-      console.log('Template creation response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Template creation failed:', response.status, response.statusText, errorText);
-        console.error('Full error response:', errorText);
         
         // Try to parse as JSON for better error message
         try {
@@ -1621,7 +1609,6 @@ const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: {
       }
       
       const result = await response.json();
-      console.log('Template creation response:', result);
 
       if (result.success) {
         onSave(result.data);
@@ -1638,9 +1625,13 @@ const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: {
         });
         setSelectedTheme('#1B2B5B');
         
+        // Clear file input
+        if (companyLogoRef.current) {
+          companyLogoRef.current.value = '';
+        }
+        
         alert('✅ Template created successfully!');
       } else {
-        console.error('Template creation failed:', result);
         alert(`❌ Failed to create template: ${result.message}`);
       }
     } catch (error) {
