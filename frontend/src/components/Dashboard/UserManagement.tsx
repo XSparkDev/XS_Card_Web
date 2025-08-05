@@ -5,8 +5,7 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle, 
-  CardDescription,
-  CardFooter
+  CardDescription
 } from "../UI/card";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
@@ -21,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/UI/dropdown-menu";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN, API_BASE_URL } from "../../utils/api";
 import SecurityAlerts from './SecurityAlerts';
 import "../../styles/UserManagement.css";
 import "../../styles/BusinessCards.css";
@@ -75,6 +74,7 @@ const IconComponent = ({
 // Define a user type
 interface User {
   id: number;
+  userId?: string; // Firebase user ID
   name: string;
   email: string;
   role: string;
@@ -1227,84 +1227,93 @@ const UserManagement = () => {
     criticalCount: 0
   });
 
-  // Update security stats (placeholder for now)
-  const updateSecurityStats = () => {
-    // This would be called when security alerts are updated
-    setStats(prev => ({
-      ...prev,
-      criticalCount: Math.floor(Math.random() * 5) // Demo data
-    }));
-  };
+
 
   // Fetch users from API
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        
-        // Use the enterprise employees endpoint from our API utils
-        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
-        const headers = getEnterpriseHeaders();
-        
-        const response = await fetch(url, { headers });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        // Process the API response into our User interface format
-        // Define interface for API employee data structure
-        interface EmployeeData {
-          id: number;
-          firstName: string;
-          lastName: string;
-          name?: string;
-          surname?: string;
-          email: string;
-          role?: string;
-          departmentName?: string;
-          status?: string;
-          lastActive?: string;
-        }
-
-        // Define interface for the API response
-        interface EmployeesResponse {
-          employees: EmployeeData[];
-        }
-
-        const processedUsers = (data as EmployeesResponse).employees.map((emp: EmployeeData) => ({
-          id: emp.id,
-          name: emp.name && emp.surname ? `${emp.name} ${emp.surname}` : `${emp.firstName} ${emp.lastName}`,
-          email: emp.email,
-          role: emp.role || 'Employee',
-          department: emp.departmentName || 'Unassigned',
-          status: emp.status || 'Active',
-          lastActive: emp.lastActive || 'Never',
-        }));
-        
-        // Debug: Log the actual role values to see what we're getting from the API
-        console.log('API Response employees:', (data as EmployeesResponse).employees);
-        console.log('Processed users with roles:', processedUsers.map(u => ({ name: u.name, role: u.role })));
-        
-        setUsers(processedUsers);
-        
-        // Extract unique departments for filtering
-        const uniqueDepartments = [...new Set(processedUsers.map(user => user.department))];
-        setDepartments(uniqueDepartments);
-        
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching users:", err);
-        setError("Failed to load user data. Please try again later.");
-      } finally {
-        setLoading(false);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      
+      // Use the enterprise employees endpoint from our API utils
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-    };
-    
+      
+      const data = await response.json();
+      
+      // Process the API response into our User interface format
+      // Define interface for API employee data structure
+      interface EmployeeData {
+        id: number;
+        userId?: string; // Firebase user ID
+        firstName: string;
+        lastName: string;
+        name?: string;
+        surname?: string;
+        email: string;
+        role?: string;
+        departmentName?: string;
+        status?: string;
+        lastActive?: string;
+        active?: boolean; // Legacy field
+        isActive?: boolean; // Current field used in employees collection
+      }
+
+      // Define interface for the API response
+      interface EmployeesResponse {
+        employees: EmployeeData[];
+      }
+
+      const processedUsers = (data as EmployeesResponse).employees.map((emp: EmployeeData) => ({
+        id: emp.id,
+        userId: emp.userId, // Include Firebase user ID
+        name: emp.name && emp.surname ? `${emp.name} ${emp.surname}` : `${emp.firstName} ${emp.lastName}`,
+        email: emp.email,
+        role: emp.role || 'Employee',
+        department: emp.departmentName || 'Unassigned',
+        // Note: We use isActive from employees collection for display, but will check users collection for actual status
+        status: emp.isActive === false ? 'Inactive' : 'Active',
+        lastActive: emp.lastActive || 'Never',
+      }));
+
+      // Check for duplicate IDs and log them
+      const duplicateIds = processedUsers.filter((user, index, self) => 
+        self.findIndex(u => u.id === user.id) !== index
+      );
+      if (duplicateIds.length > 0) {
+        console.warn('Duplicate user IDs found:', duplicateIds.map(u => ({ id: u.id, name: u.name })));
+      }
+      
+      // Debug: Log the actual role values to see what we're getting from the API
+      console.log('API Response employees:', (data as EmployeesResponse).employees);
+      console.log('Processed users with roles:', processedUsers.map(u => ({ name: u.name, role: u.role })));
+      
+      setUsers(processedUsers);
+      
+      // Extract unique departments for filtering
+      const uniqueDepartments = [...new Set(processedUsers.map(user => user.department))];
+      setDepartments(uniqueDepartments);
+      
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError("Failed to load user data. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch users on component mount
+  useEffect(() => {
     fetchUsers();
   }, []);
+
+
   
   // Note: Department filtering is handled in getFilteredUsers function
 
@@ -1379,20 +1388,22 @@ const UserManagement = () => {
 
   const filteredUsers = getFilteredUsers();
   
-  // Pagination logic
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  // Pagination logic (currently unused but kept for future use)
+  // const indexOfLastUser = currentPage * usersPerPage;
+  // const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  // const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  // const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
-  const handlePageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
+  // const handlePageChange = (pageNumber: number) => {
+  //   setCurrentPage(pageNumber);
+  // };
 
   // Get users filtered by department only (for counting purposes)
   const departmentFilteredUsers = selectedDepartment !== "all" 
     ? users.filter(user => user.department === selectedDepartment)
     : users;
+
+
 
   // Count users for each filter based on actual data (respecting department filter)
   const adminCount = departmentFilteredUsers.filter(user => 
@@ -1414,6 +1425,8 @@ const UserManagement = () => {
   const inactiveCount = departmentFilteredUsers.filter(user => user.status === "Inactive").length;
   const pendingCount = departmentFilteredUsers.filter(user => user.status === "Pending").length;
 
+
+
   const getBadgeVariant = (status: string) => {
     switch (status) {
       case "Active": return "default";
@@ -1429,8 +1442,13 @@ const UserManagement = () => {
     navigate('/department');
   };
 
-  // Handle deactivate account
+  // Handle deactivate/reactivate account
   const handleDeactivateUser = (user: User) => {
+    setUserToDeactivate(user);
+    setIsDeactivateModalOpen(true);
+  };
+
+  const handleReactivateUser = (user: User) => {
     setUserToDeactivate(user);
     setIsDeactivateModalOpen(true);
   };
@@ -1441,18 +1459,35 @@ const UserManagement = () => {
     try {
       setDeactivateLoading(true);
       
-      // Get Firebase token from your auth system (you may need to adjust this)
-      const firebaseIdToken = FIREBASE_TOKEN; // Using the token from api.ts for now
+      const firebaseIdToken = FIREBASE_TOKEN;
       
-      const response = await fetch('http://localhost:8383/deactivate', {
+      // Use isActive status from the employee data (no need to check users collection)
+      const isCurrentlyActive = userToDeactivate.status === 'Active';
+      
+      console.log('Employee status check:', {
+        userId: userToDeactivate.id,
+        employeeDisplayStatus: userToDeactivate.status,
+        isCurrentlyActive
+      });
+      
+      // Deactivate or reactivate based on current status
+      const endpoint = isCurrentlyActive ? '/deactivate' : '/reactivate';
+      const url = `${API_BASE_URL}${endpoint}`;
+
+      const payload = { 
+        active: !isCurrentlyActive,
+        targetUserId: userToDeactivate.id.toString()
+      };
+      
+
+
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${firebaseIdToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          active: false
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -1460,13 +1495,13 @@ const UserManagement = () => {
       }
 
       const result = await response.json();
-      console.log('Deactivate response:', result);
+      console.log(`${isCurrentlyActive ? 'Deactivate' : 'Reactivate'} response:`, result);
 
       // Update the user in the local state
       setUsers(prevUsers => 
         prevUsers.map(user => 
           user.id === userToDeactivate.id 
-            ? { ...user, status: 'Inactive' }
+            ? { ...user, status: isCurrentlyActive ? 'Inactive' : 'Active' }
             : user
         )
       );
@@ -1475,12 +1510,21 @@ const UserManagement = () => {
       setIsDeactivateModalOpen(false);
       setUserToDeactivate(null);
 
-      // Show success message (you can replace this with a toast notification)
-      alert('User account deactivated successfully');
+      // Show success message
+      const action = isCurrentlyActive ? 'deactivated' : 'reactivated';
+      alert(`User account ${action} successfully`);
+
+      // Force immediate re-render to update filter counts
+      setCurrentPage(currentPage);
+
+      // Refresh user list to ensure status is up to date
+      setTimeout(() => {
+        fetchUsers();
+      }, 1000);
 
     } catch (error) {
-      console.error('Error deactivating user:', error);
-      alert('Failed to deactivate user account. Please try again.');
+      console.error(`Error ${userToDeactivate.status === 'Active' ? 'deactivating' : 'reactivating'} user:`, error);
+      alert(`Failed to ${userToDeactivate.status === 'Active' ? 'deactivate' : 'reactivate'} user account. Please try again.`);
     } finally {
       setDeactivateLoading(false);
     }
@@ -1603,6 +1647,8 @@ const UserManagement = () => {
     setIsViewProfileModalOpen(false);
     setUserToViewProfile(null);
   };
+
+
 
   // Bulk Operations Handlers
   const handleBulkSendEmail = () => {
@@ -1861,8 +1907,8 @@ const UserManagement = () => {
                   </div>
                   
                   <div className="table-body-scrollable">
-                    {filteredUsers.map((user) => (
-                      <div key={user.id} className="table-row">
+                    {filteredUsers.map((user, index) => (
+                      <div key={`${user.id}-${index}`} className="table-row">
                         <div className="user-info">
                           <Checkbox 
                             checked={selectedUsers.includes(user.id)}
@@ -1915,11 +1961,11 @@ const UserManagement = () => {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                className="dropdown-destructive"
-                                onClick={() => handleDeactivateUser(user)}
+                                className={user.status === 'Active' ? "dropdown-destructive" : ""}
+                                onClick={() => user.status === 'Active' ? handleDeactivateUser(user) : handleReactivateUser(user)}
                               >
-                                <IconComponent name="UserX" className="icon-small mr-2" />
-                                Deactivate Account
+                                <IconComponent name={user.status === 'Active' ? "UserX" : "UserCheck"} className="icon-small mr-2" />
+                                {user.status === 'Active' ? 'Deactivate Account' : 'Reactivate Account'}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -2006,12 +2052,12 @@ const UserManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Deactivate User Modal - Using business cards modal style */}
-      {isDeactivateModalOpen && (
+      {/* Deactivate/Reactivate User Modal - Using business cards modal style */}
+      {isDeactivateModalOpen && userToDeactivate && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', width: '90vw' }}>
             <div className="modal-header">
-              <h2>Deactivate User Account</h2>
+              <h2>{userToDeactivate.status === 'Active' ? 'Deactivate' : 'Reactivate'} User Account</h2>
               <button 
                 className="modal-close" 
                 onClick={closeDeactivateModal}
@@ -2027,7 +2073,7 @@ const UserManagement = () => {
                 <div style={{
                   width: '60px',
                   height: '60px',
-                  backgroundColor: '#fee2e2',
+                  backgroundColor: userToDeactivate.status === 'Active' ? '#fee2e2' : '#dcfce7',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -2035,11 +2081,11 @@ const UserManagement = () => {
                   margin: '0 auto 1rem'
                 }}>
                   <IconComponent 
-                    name="UserX" 
+                    name={userToDeactivate.status === 'Active' ? "UserX" : "UserCheck"} 
                     style={{ 
                       width: '24px', 
                       height: '24px', 
-                      color: '#dc2626' 
+                      color: userToDeactivate.status === 'Active' ? '#dc2626' : '#16a34a' 
                     }} 
                   />
                 </div>
@@ -2049,14 +2095,17 @@ const UserManagement = () => {
                   fontWeight: '600',
                   color: '#111827'
                 }}>
-                  Deactivate Account
+                  {userToDeactivate.status === 'Active' ? 'Deactivate' : 'Reactivate'} Account
                 </h3>
                 <p style={{ 
                   margin: '0 0 1rem 0', 
                   color: '#6b7280',
                   fontSize: '0.875rem'
                 }}>
-                  Are you sure you want to deactivate this user account?
+                  {userToDeactivate.status === 'Active' 
+                    ? 'Are you sure you want to deactivate this user account?' 
+                    : 'Are you sure you want to reactivate this user account?'
+                  }
                 </p>
               </div>
 
@@ -2092,8 +2141,8 @@ const UserManagement = () => {
               )}
 
               <div style={{
-                background: '#fef3cd',
-                border: '1px solid #f59e0b',
+                background: userToDeactivate.status === 'Active' ? '#fef3cd' : '#eff6ff',
+                border: `1px solid ${userToDeactivate.status === 'Active' ? '#f59e0b' : '#3b82f6'}`,
                 borderRadius: '8px',
                 padding: '1rem',
                 marginBottom: '1.5rem'
@@ -2104,11 +2153,11 @@ const UserManagement = () => {
                   gap: '0.75rem'
                 }}>
                   <IconComponent 
-                    name="AlertTriangle" 
+                    name={userToDeactivate.status === 'Active' ? "AlertTriangle" : "Shield"} 
                     style={{ 
                       width: '20px', 
                       height: '20px', 
-                      color: '#d97706',
+                      color: userToDeactivate.status === 'Active' ? '#d97706' : '#3b82f6',
                       marginTop: '2px',
                       flexShrink: 0
                     }} 
@@ -2116,19 +2165,21 @@ const UserManagement = () => {
                   <div>
                     <div style={{
                       fontWeight: '500',
-                      color: '#92400e',
+                      color: userToDeactivate.status === 'Active' ? '#92400e' : '#1e40af',
                       fontSize: '0.875rem',
                       marginBottom: '0.25rem'
                     }}>
-                      Warning
+                      {userToDeactivate.status === 'Active' ? 'Warning' : 'Information'}
                     </div>
                     <div style={{
-                      color: '#92400e',
+                      color: userToDeactivate.status === 'Active' ? '#92400e' : '#1e40af',
                       fontSize: '0.875rem',
                       lineHeight: '1.4'
                     }}>
-                      This action will immediately deactivate the user's account. 
-                      They will no longer be able to access the system.
+                      {userToDeactivate.status === 'Active' 
+                        ? 'This action will immediately deactivate the user\'s account. They will no longer be able to access the system.'
+                        : 'This action will reactivate the user\'s account. They will regain access to the system immediately.'
+                      }
                     </div>
                   </div>
                 </div>
@@ -2156,8 +2207,8 @@ const UserManagement = () => {
                   style={{
                     padding: '0.75rem 1.5rem',
                     borderRadius: '8px',
-                    backgroundColor: '#dc2626',
-                    borderColor: '#dc2626',
+                    backgroundColor: userToDeactivate.status === 'Active' ? '#dc2626' : '#16a34a',
+                    borderColor: userToDeactivate.status === 'Active' ? '#dc2626' : '#16a34a',
                     color: 'white'
                   }}
                 >
@@ -2175,10 +2226,10 @@ const UserManagement = () => {
                         borderRadius: '50%',
                         animation: 'spin 1s linear infinite'
                       }}></div>
-                      Deactivating...
+                      {userToDeactivate.status === 'Active' ? 'Deactivating...' : 'Reactivating...'}
                     </div>
                   ) : (
-                    'Deactivate Account'
+                    `${userToDeactivate.status === 'Active' ? 'Deactivate' : 'Reactivate'} Account`
                   )}
                 </Button>
               </div>

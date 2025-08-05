@@ -51,27 +51,27 @@
 
 .outline-button {
   background-color: transparent;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
+  border: 1px solid #BE1E2D;
+  color: #BE1E2D;
 }
 
 .outline-button:hover {
-  background-color: rgba(59, 130, 246, 0.05);
+  background-color: rgba(190, 30, 45, 0.05);
 }
 
 .primary-button {
-  background-color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  background-color: #BE1E2D;
+  border: 1px solid #BE1E2D;
   color: white;
 }
 
 .primary-button:hover {
-  background-color: rgba(59, 130, 246, 0.9);
+  background-color: rgba(190, 30, 45, 0.9);
 }
 
 /* Summary Card */
 .summary-card {
-  background-color: var(--color-primary);
+  background-color: #BE1E2D;
   margin-bottom: 1.5rem;
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -163,8 +163,8 @@
 
 .search-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #BE1E2D;
+  box-shadow: 0 0 0 3px rgba(190, 30, 45, 0.1);
 }
 
 /* Department Cards Grid */
@@ -283,7 +283,7 @@
 
 .progress-bar-fill {
   height: 100%;
-  background-color: var(--color-primary);
+  background-color: #BE1E2D;
   border-radius: 9999px;
   transition: width 0.3s ease;
 }
@@ -316,12 +316,12 @@
 
 .footer-button:hover {
   background-color: #f1f5f9;
-  color: var(--color-primary);
+  color: #BE1E2D;
 }
 
 .footer-button i {
   font-size: 0.625rem;
-  color: var(--color-primary);
+  color: #BE1E2D;
 }
 
 /* Responsive adjustments */
@@ -403,9 +403,9 @@
 }
 
 @keyframes highlightButton {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(190, 30, 45, 0.7); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(190, 30, 45, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(190, 30, 45, 0); }
 }
 
 .outline-button.animate-highlight {
