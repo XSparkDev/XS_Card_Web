@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/UI/dropdown-menu";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN, API_BASE_URL } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN, API_BASE_URL, DEFAULT_ENTERPRISE_ID } from "../../utils/api";
 import SecurityAlerts from './SecurityAlerts';
 import "../../styles/UserManagement.css";
 import "../../styles/BusinessCards.css";
@@ -79,6 +79,7 @@ interface User {
   email: string;
   role: string;
   department: string;
+  departmentId?: string; // Add department ID for API calls
   status: string;
   lastActive: string;
 }
@@ -100,47 +101,7 @@ interface EmailData {
   isHtml?: boolean;
 }
 
-// Card data structure for View Profile functionality
-interface CardData {
-  id?: string;
-  name: string;
-  surname: string;
-  occupation: string;
-  email: string;
-  phone: string;
-  colorScheme: string;
-  numberOfScan?: number;
-  departmentName?: string;
-  employeeTitle?: string;
-  company?: string;
-  profileImage?: string | null;
-  companyLogo?: string | null;
-  cardImage?: string | null;
-  linkedin?: string | { link: string; title: string };
-  twitter?: string | { link: string; title: string };
-  facebook?: string | { link: string; title: string };
-  instagram?: string | { link: string; title: string };
-  youtube?: string | { link: string; title: string };
-  tiktok?: string | { link: string; title: string };
-  snapchat?: string | { link: string; title: string };
-  whatsapp?: string | { link: string; title: string };
-  telegram?: string | { link: string; title: string };
-  discord?: string | { link: string; title: string };
-  skype?: string | { link: string; title: string };
-  github?: string | { link: string; title: string };
-  pinterest?: string | { link: string; title: string };
-  twitch?: string | { link: string; title: string };
-  spotify?: string | { link: string; title: string };
-  soundcloud?: string | { link: string; title: string };
-  behance?: string | { link: string; title: string };
-  dribbble?: string | { link: string; title: string };
-  medium?: string | { link: string; title: string };
-  reddit?: string | { link: string; title: string };
-  tumblr?: string | { link: string; title: string };
-  vimeo?: string | { link: string; title: string };
-  qrCodeUrl?: string;
-  socials?: { [key: string]: { link: string; title: string } };
-}
+
 
 // Send Email Modal Component
 const SendEmailModal = ({ user, users, onClose }: { user: User | null; users: User[]; onClose: () => void }) => {
@@ -897,292 +858,1051 @@ const SendEmailModal = ({ user, users, onClose }: { user: User | null; users: Us
 
 // View Profile Modal Component
 const ViewProfileModal = ({ user, onClose }: { user: User | null; onClose: () => void }) => {
-  const [card, setCard] = useState<CardData | null>(null);
+  const [employeeData, setEmployeeData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [teamData, setTeamData] = useState<any>(null);
+  const [cardCount, setCardCount] = useState<number | null>(null);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+  const [loadingCards, setLoadingCards] = useState(false);
+  const [departmentName, setDepartmentName] = useState<string | null>(null);
+  const [leaderName, setLeaderName] = useState<string | null>(null);
+  const [loadingDepartment, setLoadingDepartment] = useState(false);
+  const [loadingLeader, setLoadingLeader] = useState(false);
 
-  // Function to get card color
-  const getCardColor = (colorScheme: string): string => {
-    return colorScheme || '#4361ee';
-  };
-
-  // Fetch the user's default card (index 0)
+  // Fetch employee data from enterprise API
   useEffect(() => {
-    const fetchUserCard = async () => {
+    const fetchEmployeeData = async () => {
       if (!user) return;
 
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch enterprise cards and find the user's default card
-        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
+        // Use enterprise ID from API utils and department ID from user data
+        const enterpriseId = DEFAULT_ENTERPRISE_ID;
+        const departmentId = user.departmentId || 'default-department-id';
+        
+        // Use the user's ID as employee ID
+        const employeeId = user.id.toString();
+
+        const url = `${API_BASE_URL}/enterprise/${enterpriseId}/departments/${departmentId}/employees/${employeeId}`;
         const headers = getEnterpriseHeaders();
         
         const response = await fetch(url, { headers });
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch cards: ${response.status} ${response.statusText}`);
+          throw new Error(`Failed to fetch employee data: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
+        console.log('Employee data:', data);
         
-        // Process cards data similar to BusinessCards component
-        let cardsData: CardData[] = [];
-        if (Array.isArray(data)) {
-          cardsData = data;
-        } else if (data && typeof data === 'object') {
-          if (Array.isArray(data.data)) {
-            cardsData = data.data;
-          } else if (Array.isArray(data.cards)) {
-            cardsData = data.cards;
-          } else {
-            cardsData = [data];
-          }
-        }
-
-        // Find the user's default card (card index 0) by matching email
-        const userCard = cardsData.find(card => 
-          card.email.toLowerCase() === user.email.toLowerCase()
-        );
-
-        if (userCard) {
-          setCard({
-            ...userCard,
-            id: userCard.id || '1',
-            numberOfScan: userCard.numberOfScan || 0,
-            departmentName: userCard.departmentName || 'N/A',
-            employeeTitle: userCard.employeeTitle || userCard.occupation || 'N/A'
-          });
+        // Extract employee data from the response structure
+        if (data.success && data.employee) {
+          setEmployeeData(data.employee);
         } else {
-          setError('No business card found for this employee');
+          setEmployeeData(data);
         }
       } catch (err) {
-        console.error('Error fetching user card:', err);
-        setError('Failed to load business card. Please try again.');
+        console.error('Error fetching employee data:', err);
+        setError('Failed to load employee profile. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserCard();
-  }, [user]);
+    fetchEmployeeData();
+  }, [user?.id, user?.departmentId]); // Only re-run when user ID or department ID changes
+
+  // Fetch team details
+  const handleTeamClick = async () => {
+    if (!employeeData?.teamId || loadingTeam) return;
+
+    try {
+      setLoadingTeam(true);
+      setShowTeamModal(true);
+      
+      // Reset department and leader names
+      setDepartmentName(null);
+      setLeaderName(null);
+
+      const enterpriseId = DEFAULT_ENTERPRISE_ID;
+      const departmentId = user?.departmentId || 'default-department-id';
+      
+      const url = `${API_BASE_URL}/enterprise/${enterpriseId}/departments/${departmentId}/teams/${employeeData.teamId}`;
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch team data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Team data:', data);
+      
+      // Extract team data from the response structure
+      let team = null;
+      if (data.success && data.team) {
+        team = data.team;
+        setTeamData(data.team);
+      } else {
+        team = data;
+        setTeamData(data);
+      }
+
+      // Fetch department and leader names if team data is available
+      if (team) {
+        if (team.departmentId) {
+          fetchDepartmentName(team.departmentId);
+        }
+        if (team.leaderId) {
+          fetchLeaderName(team.leaderId);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching team data:', err);
+      alert('Failed to load team details. Please try again.');
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+
+  // Fetch department name
+  const fetchDepartmentName = async (departmentId: string) => {
+    if (!departmentId || loadingDepartment) return;
+
+    try {
+      setLoadingDepartment(true);
+      const enterpriseId = DEFAULT_ENTERPRISE_ID;
+      const url = `${API_BASE_URL}/enterprise/${enterpriseId}/departments/${departmentId}`;
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch department data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Department data:', data);
+      
+      // Extract department name from the response structure
+      if (data.success && data.department) {
+        setDepartmentName(data.department.name || data.department.id);
+      } else if (data.name) {
+        setDepartmentName(data.name);
+      } else {
+        setDepartmentName(departmentId);
+      }
+    } catch (err) {
+      console.error('Error fetching department data:', err);
+      setDepartmentName(departmentId); // Fallback to ID if fetch fails
+    } finally {
+      setLoadingDepartment(false);
+    }
+  };
+
+  // Fetch leader name
+  const fetchLeaderName = async (leaderId: string) => {
+    if (!leaderId || loadingLeader) return;
+
+    try {
+      setLoadingLeader(true);
+      const enterpriseId = DEFAULT_ENTERPRISE_ID;
+      const departmentId = user?.departmentId || 'default-department-id';
+      const url = `${API_BASE_URL}/enterprise/${enterpriseId}/departments/${departmentId}/employees/${leaderId}`;
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch leader data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Leader data:', data);
+      
+      // Extract leader name from the response structure
+      if (data.success && data.employee) {
+        const leader = data.employee;
+        setLeaderName(`${leader.name} ${leader.surname}`.trim() || leader.id);
+      } else if (data.name && data.surname) {
+        setLeaderName(`${data.name} ${data.surname}`.trim());
+      } else if (data.name) {
+        setLeaderName(data.name);
+      } else {
+        setLeaderName(leaderId);
+      }
+    } catch (err) {
+      console.error('Error fetching leader data:', err);
+      setLeaderName(leaderId); // Fallback to ID if fetch fails
+    } finally {
+      setLoadingLeader(false);
+    }
+  };
+
+  // Fetch card count
+  const handleCardClick = async () => {
+    if ((!employeeData?.cardsRefPath && !employeeData?.cardsRef) || loadingCards) return;
+
+    try {
+      setLoadingCards(true);
+      setShowCardModal(true);
+
+      // Extract card ID from cardsRefPath (assuming it's a path like "cards/DW1QbgLTiCgFxOBbvPKdjlLvIgo1")
+      const cardId = employeeData.cardsRefPath ? employeeData.cardsRefPath.split('/').pop() : employeeData.cardsRef?.split('/').pop();
+      
+      const url = `${API_BASE_URL}/Cards/${cardId}`;
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch card data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Card data:', data);
+      
+      // Count the number of cards based on the response structure
+      let count = 0;
+      if (data.success && data.cards && Array.isArray(data.cards)) {
+        count = data.cards.length;
+      } else if (Array.isArray(data)) {
+        count = data.length;
+      } else if (data.count) {
+        count = data.count;
+      }
+      setCardCount(count);
+    } catch (err) {
+      console.error('Error fetching card data:', err);
+      alert('Failed to load card details. Please try again.');
+    } finally {
+      setLoadingCards(false);
+    }
+  };
 
   if (!user) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
-            View Profile - {user.name}
-          </h2>
-          <button 
-            onClick={onClose}
-            className="modal-close"
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.5rem'
-            }}
-          >
-            ×
-          </button>
-        </div>
+    <>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
+              Employee Profile - {user.name}
+            </h2>
+            <button 
+              onClick={onClose}
+              className="modal-close"
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                color: '#6b7280',
+                padding: '0.5rem'
+              }}
+            >
+              ×
+            </button>
+          </div>
 
-        <div style={{ padding: '1.5rem' }}>
-          {loading ? (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: '3rem',
-              color: '#6b7280'
-            }}>
+          <div style={{ padding: '1.5rem' }}>
+            {loading ? (
               <div style={{
                 display: 'flex',
-                flexDirection: 'column',
+                justifyContent: 'center',
                 alignItems: 'center',
-                gap: '1rem'
+                padding: '3rem',
+                color: '#6b7280'
               }}>
                 <div style={{
-                  width: '32px',
-                  height: '32px',
-                  border: '3px solid #e5e7eb',
-                  borderTop: '3px solid #0ea5e9',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }}></div>
-                <span>Loading profile...</span>
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1rem'
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    border: '3px solid #e5e7eb',
+                    borderTop: '3px solid #0ea5e9',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  <span>Loading profile...</span>
+                </div>
               </div>
-            </div>
-          ) : error ? (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: '3rem',
-              color: '#ef4444',
-              textAlign: 'center'
-            }}>
+            ) : error ? (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: '3rem',
+                color: '#ef4444',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1rem'
+                }}>
+                  <IconComponent name="AlertTriangle" className="icon-small" style={{ width: '32px', height: '32px' }} />
+                  <span>{error}</span>
+                </div>
+              </div>
+            ) : employeeData ? (
               <div style={{
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                gap: '1rem'
+                gap: '1.5rem'
               }}>
-                <IconComponent name="AlertTriangle" className="icon-small" style={{ width: '32px', height: '32px' }} />
-                <span>{error}</span>
-              </div>
-            </div>
-          ) : card ? (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              padding: '1rem'
-            }}>
-              {/* Business Card Display - Matching BusinessCards.tsx structure */}
-              <div className="business-card">
-                <div className="business-card-content">
-                  <div className={`business-card-left ${!card.companyLogo && !card.profileImage ? 'no-images' : ''}`} 
-                       style={{ backgroundColor: !card.companyLogo && !card.profileImage ? getCardColor(card.colorScheme) : 'transparent' }}>
-                    {card.companyLogo ? (
-                      <div className="company-logo-full">
-                        <img src={card.companyLogo} alt="Company Logo" />
-                        {card.profileImage && (
-                          <div className="profile-image-overlay">
-                            <img src={card.profileImage} alt="Profile" />
-                          </div>
-                        )}
-                      </div>
-                    ) : card.profileImage ? (
-                      <div className="profile-image-full">
-                        <img src={card.profileImage} alt="Profile" />
-                      </div>
-                    ) : (
-                      <div className="xscard-logo">
-                        <span>XS</span>
-                      </div>
-                    )}
-                  </div>
+                {/* Employee Information Form */}
+                <div style={{
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '1.5rem'
+                }}>
+                  <h3 style={{
+                    margin: '0 0 1.5rem 0',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    color: '#111827'
+                  }}>
+                    Employee Information
+                  </h3>
                   
-                  <div className="business-card-right">
-                    <div className="business-card-info">
-                      <h3 className="business-card-name">{card.name} {card.surname}</h3>
-                      <p className="business-card-title">{card.occupation || card.employeeTitle || 'N/A'}</p>
-                      {card.company && (
-                        <p className="business-card-company">{card.company}</p>
-                      )}
-                      {card.departmentName && card.departmentName !== 'N/A' && (
-                        <p className="business-card-department">{card.departmentName}</p>
-                      )}
-                    </div>
-                    
-                    <div className="business-card-contact-info">
-                      <div className="contact-item">
-                        <div 
-                          className="contact-icon" 
-                          style={{ 
-                            borderColor: getCardColor(card.colorScheme),
-                            color: getCardColor(card.colorScheme)
-                          }}
-                          title={`Email ${card.email}`}
-                        >
-                          <IconComponent name="Mail" />
-                        </div>
-                        <span className="contact-text">{card.email}</span>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem'
+                  }}>
+                    {/* Name */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Name
+                      </label>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#111827'
+                      }}>
+                        {employeeData.name || 'N/A'}
                       </div>
-                      {card.phone && (
-                        <div className="contact-item">
-                          <div 
-                            className="contact-icon" 
-                            style={{ 
-                              borderColor: getCardColor(card.colorScheme),
-                              color: getCardColor(card.colorScheme)
-                            }}
-                            title={`Call ${card.phone}`}
-                          >
-                            📞
-                          </div>
-                          <span className="contact-text">{card.phone}</span>
-                        </div>
-                      )}
                     </div>
-                    
-                    {/* Social Media Links */}
-                    <div className="business-card-socials">
-                      {card.socials && Object.entries(card.socials).map(([key, socialData]) => {
-                        if (socialData && socialData.link && socialData.title) {
-                          return (
-                            <div key={key} className="social-item">
-                              <div 
-                                className="social-icon" 
-                                style={{ 
-                                  borderColor: getCardColor(card.colorScheme),
-                                  color: getCardColor(card.colorScheme)
-                                }}
-                                title={`Open ${socialData.title}`}
-                              >
-                                🔗
-                              </div>
-                              <span className="social-title">{socialData.title}</span>
-                            </div>
-                          );
+
+                    {/* Surname */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Surname
+                      </label>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#111827'
+                      }}>
+                        {employeeData.surname || 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Email
+                      </label>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#111827'
+                      }}>
+                        {employeeData.email || 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Phone
+                      </label>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#111827'
+                      }}>
+                        {employeeData.phone || 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Role */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Role
+                      </label>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#111827'
+                      }}>
+                        {employeeData.role || 'N/A'}
+                      </div>
+                    </div>
+
+                    {/* Position */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Position
+                      </label>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#111827'
+                      }}>
+                        {employeeData.position || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Indicators */}
+                <div style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  flexWrap: 'wrap'
+                }}>
+                  {/* Team Indicator */}
+                  <div style={{
+                    flex: '1',
+                    minWidth: '200px'
+                  }}>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}>
+                      Team
+                    </label>
+                    <button
+                      onClick={handleTeamClick}
+                      disabled={!employeeData.teamId || loadingTeam}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: employeeData.teamId ? '#eff6ff' : '#f3f4f6',
+                        border: `1px solid ${employeeData.teamId ? '#3b82f6' : '#d1d5db'}`,
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: employeeData.teamId ? '#1e40af' : '#6b7280',
+                        cursor: employeeData.teamId ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (employeeData.teamId) {
+                          e.currentTarget.style.background = '#dbeafe';
                         }
-                        return null;
-                      })}
+                      }}
+                      onMouseLeave={(e) => {
+                        if (employeeData.teamId) {
+                          e.currentTarget.style.background = '#eff6ff';
+                        }
+                      }}
+                    >
+                      <span>
+                        {employeeData.teamId ? 'View Team Details' : 'No Team Assigned'}
+                      </span>
+                      {employeeData.teamId && (
+                        <IconComponent name="Eye" style={{ width: '16px', height: '16px' }} />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Card Reference Indicator */}
+                  <div style={{
+                    flex: '1',
+                    minWidth: '200px'
+                  }}>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}>
+                      Business Cards
+                    </label>
+                    <button
+                      onClick={handleCardClick}
+                      disabled={!employeeData.cardsRefPath && !employeeData.cardsRef || loadingCards}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: (employeeData.cardsRefPath || employeeData.cardsRef) ? '#f0fdf4' : '#f3f4f6',
+                        border: `1px solid ${(employeeData.cardsRefPath || employeeData.cardsRef) ? '#10b981' : '#d1d5db'}`,
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: (employeeData.cardsRefPath || employeeData.cardsRef) ? '#166534' : '#6b7280',
+                        cursor: (employeeData.cardsRefPath || employeeData.cardsRef) ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (employeeData.cardsRefPath || employeeData.cardsRef) {
+                          e.currentTarget.style.background = '#dcfce7';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (employeeData.cardsRefPath || employeeData.cardsRef) {
+                          e.currentTarget.style.background = '#f0fdf4';
+                        }
+                      }}
+                    >
+                      <span>
+                        {(employeeData.cardsRefPath || employeeData.cardsRef) ? 'View Card Details' : 'No Cards Available'}
+                      </span>
+                      {(employeeData.cardsRefPath || employeeData.cardsRef) && (
+                        <IconComponent name="Eye" style={{ width: '16px', height: '16px' }} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Status Information */}
+                <div style={{
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '1.5rem'
+                }}>
+                  <h3 style={{
+                    margin: '0 0 1rem 0',
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    color: '#111827'
+                  }}>
+                    Account Status
+                  </h3>
+                  
+                  <div style={{
+                    display: 'flex',
+                    gap: '2rem',
+                    flexWrap: 'wrap'
+                  }}>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Status
+                      </label>
+                      <div style={{
+                        padding: '0.5rem 1rem',
+                        background: employeeData.isActive ? '#dcfce7' : '#fee2e2',
+                        border: `1px solid ${employeeData.isActive ? '#10b981' : '#ef4444'}`,
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: employeeData.isActive ? '#166534' : '#dc2626',
+                        display: 'inline-block'
+                      }}>
+                        {employeeData.isActive ? 'Active' : 'Inactive'}
+                      </div>
                     </div>
                     
-                    <div className="business-card-footer">
-                      <span className="business-card-scans">{card.numberOfScan || 0} scans</span>
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#374151'
+                      }}>
+                        Employee ID
+                      </label>
+                      <div style={{
+                        padding: '0.75rem',
+                        background: 'white',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '0.875rem',
+                        color: '#111827'
+                      }}>
+                        {employeeData.employeeId || 'N/A'}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
 
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: '1rem',
-          padding: '1.5rem',
-          borderTop: '1px solid #e5e7eb'
-        }}>
-          <Button 
-            onClick={() => {
-              // Navigate to business cards page and trigger edit for this user's card
-              localStorage.setItem('editUserEmail', user.email);
-              window.location.href = '/business-cards';
-            }}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              backgroundColor: '#0ea5e9',
-              borderColor: '#0ea5e9',
-              color: 'white'
-            }}
-          >
-            <IconComponent name="UserCheck" className="icon-small mr-2" />
-            Edit Profile
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={onClose}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px'
-            }}
-          >
-            Close
-          </Button>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '1.5rem',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <Button 
+              variant="outline" 
+              onClick={onClose}
+              style={{
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px'
+              }}
+            >
+              Close
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Team Details Modal */}
+      {showTeamModal && (
+        <div className="modal-overlay" onClick={() => setShowTeamModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', width: '90vw' }}>
+            <div className="modal-header">
+              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
+                Team Details
+              </h2>
+              <button 
+                onClick={() => setShowTeamModal(false)}
+                className="modal-close"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  padding: '0.5rem'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '1.5rem' }}>
+              {loadingTeam ? (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '2rem',
+                  color: '#6b7280'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      border: '3px solid #e5e7eb',
+                      borderTop: '3px solid #3b82f6',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <span>Loading team details...</span>
+                  </div>
+                </div>
+              ) : teamData ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1.5rem'
+                }}>
+                  <div style={{
+                    background: '#eff6ff',
+                    border: '1px solid #3b82f6',
+                    borderRadius: '12px',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      margin: '0 0 1rem 0',
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: '#1e40af'
+                    }}>
+                      {teamData.name}
+                    </h3>
+                    
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem'
+                    }}>
+                      <div>
+                        <label style={{
+                          display: 'block',
+                          marginBottom: '0.5rem',
+                          fontWeight: '500',
+                          fontSize: '0.875rem',
+                          color: '#374151'
+                        }}>
+                          Description
+                        </label>
+                        <div style={{
+                          padding: '0.75rem',
+                          background: 'white',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          color: '#111827'
+                        }}>
+                          {teamData.description || 'No description available'}
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        display: 'flex',
+                        gap: '2rem',
+                        flexWrap: 'wrap'
+                      }}>
+                        <div>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '0.5rem',
+                            fontWeight: '500',
+                            fontSize: '0.875rem',
+                            color: '#374151'
+                          }}>
+                            Department
+                          </label>
+                          <div style={{
+                            padding: '0.75rem',
+                            background: 'white',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            fontSize: '0.875rem',
+                            color: '#111827',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            {loadingDepartment ? (
+                              <div style={{
+                                width: '16px',
+                                height: '16px',
+                                border: '2px solid #e5e7eb',
+                                borderTop: '2px solid #3b82f6',
+                                borderRadius: '50%',
+                                animation: 'spin 1s linear infinite'
+                              }}></div>
+                            ) : null}
+                            {departmentName || teamData.departmentId || teamData.departmentRef || 'N/A'}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '0.5rem',
+                            fontWeight: '500',
+                            fontSize: '0.875rem',
+                            color: '#374151'
+                          }}>
+                            Members
+                          </label>
+                          <div style={{
+                            padding: '0.75rem',
+                            background: 'white',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            fontSize: '0.875rem',
+                            color: '#111827'
+                          }}>
+                            {teamData.memberCount || 0} member(s)
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {(teamData.leaderId || teamData.leaderRef) && (
+                        <div>
+                          <label style={{
+                            display: 'block',
+                            marginBottom: '0.5rem',
+                            fontWeight: '500',
+                            fontSize: '0.875rem',
+                            color: '#374151'
+                          }}>
+                            Department Head
+                          </label>
+                          <div style={{
+                            padding: '0.75rem',
+                            background: 'white',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            fontSize: '0.875rem',
+                            color: '#111827',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            {loadingLeader ? (
+                              <div style={{
+                                width: '16px',
+                                height: '16px',
+                                border: '2px solid #e5e7eb',
+                                borderTop: '2px solid #3b82f6',
+                                borderRadius: '50%',
+                                animation: 'spin 1s linear infinite'
+                              }}></div>
+                            ) : null}
+                            {leaderName || teamData.leaderId || teamData.leaderRef || 'N/A'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '2rem',
+                  color: '#ef4444',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}>
+                    <IconComponent name="AlertTriangle" style={{ width: '32px', height: '32px' }} />
+                    <span>Failed to load team details</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '1.5rem',
+              borderTop: '1px solid #e5e7eb'
+            }}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowTeamModal(false)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px'
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Details Modal */}
+      {showCardModal && (
+        <div className="modal-overlay" onClick={() => setShowCardModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', width: '90vw' }}>
+            <div className="modal-header">
+              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
+                Business Cards
+              </h2>
+              <button 
+                onClick={() => setShowCardModal(false)}
+                className="modal-close"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  padding: '0.5rem'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '1.5rem' }}>
+              {loadingCards ? (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '2rem',
+                  color: '#6b7280'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      border: '3px solid #e5e7eb',
+                      borderTop: '3px solid #10b981',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <span>Loading card details...</span>
+                  </div>
+                </div>
+              ) : cardCount !== null ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '1.5rem',
+                  padding: '2rem'
+                }}>
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    background: '#f0fdf4',
+                    border: '3px solid #10b981',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2rem',
+                    fontWeight: '600',
+                    color: '#166534'
+                  }}>
+                    {cardCount}
+                  </div>
+                  
+                  <div style={{ textAlign: 'center' }}>
+                    <h3 style={{
+                      margin: '0 0 0.5rem 0',
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: '#111827'
+                    }}>
+                      Business Cards
+                    </h3>
+                    <p style={{
+                      margin: 0,
+                      color: '#6b7280',
+                      fontSize: '0.875rem'
+                    }}>
+                      {cardCount === 1 ? '1 card available' : `${cardCount} cards available`}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '2rem',
+                  color: '#ef4444',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}>
+                    <IconComponent name="AlertTriangle" style={{ width: '32px', height: '32px' }} />
+                    <span>Failed to load card details</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '1.5rem',
+              borderTop: '1px solid #e5e7eb'
+            }}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCardModal(false)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px'
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -1218,10 +1938,9 @@ const UserManagement = () => {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 5;
   
   // Security alerts stats
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     totalCount: 0,
     unacknowledgedCount: 0,
     criticalCount: 0
@@ -1262,6 +1981,7 @@ const UserManagement = () => {
         lastActive?: string;
         active?: boolean; // Legacy field
         isActive?: boolean; // Current field used in employees collection
+        departmentId?: string; // Add department ID for API calls
       }
 
       // Define interface for the API response
@@ -1276,6 +1996,7 @@ const UserManagement = () => {
         email: emp.email,
         role: emp.role || 'Employee',
         department: emp.departmentName || 'Unassigned',
+        departmentId: emp.departmentId, // Include department ID for API calls
         // Note: We use isActive from employees collection for display, but will check users collection for actual status
         status: emp.isActive === false ? 'Inactive' : 'Active',
         lastActive: emp.lastActive || 'Never',

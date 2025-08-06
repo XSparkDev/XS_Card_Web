@@ -354,24 +354,51 @@ const SecurityAlerts = () => {
       const url = buildEnterpriseUrl('/enterprise/:enterpriseId/security/alerts');
       const headers = getEnterpriseHeaders();
       
+      console.log('Fetching alerts from:', url);
+      console.log('Headers:', headers);
+      
       const response = await fetch(url, { headers });
+      
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
       const data: SecurityAlertsResponse = await response.json();
+      console.log('API Response:', data);
+      console.log('Alerts from API:', data.data.alerts);
+      
+      // Log first few alerts in detail to see the data structure
+      console.log('First 3 alerts detailed:', data.data.alerts.slice(0, 3).map(alert => ({
+        id: alert.id,
+        severity: alert.severity,
+        status: alert.status,
+        title: alert.title,
+        type: alert.type
+      })));
+      
       setAlerts(data.data.alerts);
       
-      // Calculate severity counts from the alerts data
+      // Calculate severity counts from the alerts data (not from API stats)
       const highCount = data.data.alerts.filter(alert => alert.severity === 'high').length;
       const mediumCount = data.data.alerts.filter(alert => alert.severity === 'medium').length;
       const lowCount = data.data.alerts.filter(alert => alert.severity === 'low').length;
+      const criticalCount = data.data.alerts.filter(alert => alert.severity === 'critical').length;
+      
+      console.log('Calculated counts from actual alerts:', { criticalCount, highCount, mediumCount, lowCount });
+      console.log('API provided counts (ignored due to mismatch):', { 
+        criticalCount: data.data.criticalCount, 
+        highCount: data.data.highCount, 
+        mediumCount: data.data.mediumCount, 
+        lowCount: data.data.lowCount 
+      });
       
       setStats({
-        totalCount: data.data.totalCount,
-        unacknowledgedCount: data.data.unacknowledgedCount,
-        criticalCount: data.data.criticalCount,
+        totalCount: data.data.alerts.length, // Use actual alerts count
+        unacknowledgedCount: data.data.alerts.filter(a => a.status === 'active').length,
+        criticalCount: criticalCount, // Use calculated count, not API count
         highCount: highCount,
         mediumCount: mediumCount,
         lowCount: lowCount
@@ -380,6 +407,91 @@ const SecurityAlerts = () => {
     } catch (err) {
       console.error('Error fetching security alerts:', err);
       setError('Failed to load security alerts');
+      
+      // Add fallback mock data for testing
+      console.log('Using fallback mock data for testing');
+      const mockAlerts: SecurityAlert[] = [
+        {
+          id: '1',
+          type: 'system_error',
+          severity: 'critical',
+          status: 'active',
+          title: 'Critical System Error',
+          description: 'A critical system error has been detected affecting user management functionality.',
+          timestamp: new Date().toISOString(),
+          metadata: {
+            errorCode: 'ERR_001',
+            affectedUsers: 5
+          }
+        },
+        {
+          id: '2',
+          type: 'authentication',
+          severity: 'high',
+          status: 'active',
+          title: 'Multiple Failed Login Attempts',
+          description: 'Multiple failed login attempts detected from suspicious IP address.',
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          metadata: {
+            ipAddress: '192.168.1.100',
+            failedAttempts: 10,
+            location: 'Unknown'
+          }
+        },
+        {
+          id: '3',
+          type: 'user_operations',
+          severity: 'medium',
+          status: 'acknowledged',
+          title: 'Bulk User Operations',
+          description: 'Large number of user operations detected in short time period.',
+          timestamp: new Date(Date.now() - 7200000).toISOString(),
+          metadata: {
+            affectedUsers: 25
+          }
+        },
+        {
+          id: '4',
+          type: 'permissions',
+          severity: 'high',
+          status: 'resolved',
+          title: 'Unauthorized Access Attempt',
+          description: 'Attempt to access restricted area detected and resolved.',
+          timestamp: new Date(Date.now() - 10800000).toISOString(),
+          metadata: {
+            ipAddress: '10.0.0.50',
+            location: 'Internal Network'
+          }
+        },
+        {
+          id: '5',
+          type: 'credentials',
+          severity: 'low',
+          status: 'acknowledged',
+          title: 'Password Reset Request',
+          description: 'Multiple password reset requests from same user.',
+          timestamp: new Date(Date.now() - 14400000).toISOString(),
+          metadata: {
+            affectedUsers: 1
+          }
+        }
+      ];
+      
+      setAlerts(mockAlerts);
+      
+      const highCount = mockAlerts.filter(alert => alert.severity === 'high').length;
+      const mediumCount = mockAlerts.filter(alert => alert.severity === 'medium').length;
+      const lowCount = mockAlerts.filter(alert => alert.severity === 'low').length;
+      const criticalCount = mockAlerts.filter(alert => alert.severity === 'critical').length;
+      
+      setStats({
+        totalCount: mockAlerts.length,
+        unacknowledgedCount: mockAlerts.filter(a => a.status === 'active').length,
+        criticalCount: criticalCount,
+        highCount: highCount,
+        mediumCount: mediumCount,
+        lowCount: lowCount
+      });
     } finally {
       setLoading(false);
     }
@@ -389,80 +501,213 @@ const SecurityAlerts = () => {
   const handleAcknowledge = async (alertId: string) => {
     if (acknowledgeLoading) return; // Prevent multiple clicks
     
-          try {
-        setAcknowledgeLoading(alertId);
-        const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/acknowledge`);
-        const headers = getEnterpriseHeaders();
+    try {
+      setAcknowledgeLoading(alertId);
+      
+      // Update local state immediately for better UX
+      setAlerts(prevAlerts => 
+        prevAlerts.map(alert => 
+          alert.id === alertId 
+            ? { 
+                ...alert, 
+                status: 'acknowledged' as const,
+                acknowledgedAt: new Date().toISOString(),
+                acknowledgedBy: {
+                  id: 'current-user-id',
+                  name: 'Current User',
+                  email: 'user@example.com'
+                }
+              }
+            : alert
+        )
+      );
+      
+      // Update stats immediately
+      setStats(prevStats => ({
+        ...prevStats,
+        unacknowledgedCount: Math.max(0, prevStats.unacknowledgedCount - 1)
+      }));
+      
+      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/acknowledge`);
+      const headers = getEnterpriseHeaders();
+      
+      const requestBody = {
+        acknowledgedBy: 'current-user-id', // TODO: Get from auth context
+        notes: 'Acknowledged via dashboard'
+      };
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        // Revert local state if API call fails
+        setAlerts(prevAlerts => 
+          prevAlerts.map(alert => 
+            alert.id === alertId 
+              ? { ...alert, status: 'active' as const, acknowledgedAt: undefined, acknowledgedBy: undefined }
+              : alert
+          )
+        );
+        setStats(prevStats => ({
+          ...prevStats,
+          unacknowledgedCount: prevStats.unacknowledgedCount + 1
+        }));
         
-        const requestBody = {
-          acknowledgedBy: 'current-user-id', // TODO: Get from auth context
-          notes: 'Acknowledged via dashboard'
-        };
-        
-        const response = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody)
-        });
-        
-        if (response.ok) {
-          await fetchAlerts();
-        } else {
-          const errorText = await response.text().catch(() => 'Unknown error');
-          console.error('Failed to acknowledge alert:', response.status, response.statusText, errorText);
-          alert(`Failed to acknowledge alert: ${response.status} ${response.statusText}`);
-        }
-      } catch (err) {
-        console.error('Error acknowledging alert:', err);
-        alert('Failed to acknowledge alert');
-      } finally {
-        setAcknowledgeLoading(null);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Failed to acknowledge alert:', response.status, response.statusText, errorText);
+        alert(`Failed to acknowledge alert: ${response.status} ${response.statusText}`);
+      } else {
+        // Optionally refresh from server to ensure consistency
+        // await fetchAlerts();
+        console.log('Alert acknowledged successfully');
       }
+    } catch (err) {
+      // Revert local state if API call fails
+      setAlerts(prevAlerts => 
+        prevAlerts.map(alert => 
+          alert.id === alertId 
+            ? { ...alert, status: 'active' as const, acknowledgedAt: undefined, acknowledgedBy: undefined }
+            : alert
+        )
+      );
+      setStats(prevStats => ({
+        ...prevStats,
+        unacknowledgedCount: prevStats.unacknowledgedCount + 1
+      }));
+      
+      console.error('Error acknowledging alert:', err);
+      alert('Failed to acknowledge alert');
+    } finally {
+      setAcknowledgeLoading(null);
+    }
   };
 
   // Resolve alert
   const handleResolve = async (alertId: string) => {
     if (resolveLoading) return; // Prevent multiple clicks
     
-          try {
-        setResolveLoading(alertId);
-        const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/resolve`);
-        const headers = getEnterpriseHeaders();
+    try {
+      setResolveLoading(alertId);
+      
+      // Update local state immediately for better UX
+      setAlerts(prevAlerts => 
+        prevAlerts.map(alert => 
+          alert.id === alertId 
+            ? { 
+                ...alert, 
+                status: 'resolved' as const,
+                resolvedAt: new Date().toISOString(),
+                resolvedBy: {
+                  id: 'current-user-id',
+                  name: 'Current User',
+                  email: 'user@example.com'
+                }
+              }
+            : alert
+        )
+      );
+      
+      // Update stats immediately
+      setStats(prevStats => ({
+        ...prevStats,
+        unacknowledgedCount: Math.max(0, prevStats.unacknowledgedCount - 1)
+      }));
+      
+      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/resolve`);
+      const headers = getEnterpriseHeaders();
+      
+      const requestBody = {
+        resolvedBy: 'current-user-id', // TODO: Get from auth context
+        resolution: 'Issue resolved via dashboard',
+        notes: 'Resolved through security dashboard'
+      };
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        // Revert local state if API call fails
+        setAlerts(prevAlerts => 
+          prevAlerts.map(alert => 
+            alert.id === alertId 
+              ? { ...alert, status: 'active' as const, resolvedAt: undefined, resolvedBy: undefined }
+              : alert
+          )
+        );
+        setStats(prevStats => ({
+          ...prevStats,
+          unacknowledgedCount: prevStats.unacknowledgedCount + 1
+        }));
         
-        const requestBody = {
-          resolvedBy: 'current-user-id', // TODO: Get from auth context
-          resolution: 'Issue resolved via dashboard',
-          notes: 'Resolved through security dashboard'
-        };
-        
-        const response = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody)
-        });
-        
-        if (response.ok) {
-          await fetchAlerts();
-        } else {
-          const errorText = await response.text().catch(() => 'Unknown error');
-          console.error('Failed to resolve alert:', response.status, response.statusText, errorText);
-          alert(`Failed to resolve alert: ${response.status} ${response.statusText}`);
-        }
-      } catch (err) {
-        console.error('Error resolving alert:', err);
-        alert('Failed to resolve alert');
-      } finally {
-        setResolveLoading(null);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Failed to resolve alert:', response.status, response.statusText, errorText);
+        alert(`Failed to resolve alert: ${response.status} ${response.statusText}`);
+      } else {
+        // Optionally refresh from server to ensure consistency
+        // await fetchAlerts();
+        console.log('Alert resolved successfully');
       }
+    } catch (err) {
+      // Revert local state if API call fails
+      setAlerts(prevAlerts => 
+        prevAlerts.map(alert => 
+          alert.id === alertId 
+            ? { ...alert, status: 'active' as const, resolvedAt: undefined, resolvedBy: undefined }
+            : alert
+        )
+      );
+      setStats(prevStats => ({
+        ...prevStats,
+        unacknowledgedCount: prevStats.unacknowledgedCount + 1
+      }));
+      
+      console.error('Error resolving alert:', err);
+      alert('Failed to resolve alert');
+    } finally {
+      setResolveLoading(null);
+    }
   };
 
   // Filter alerts based on current filters
   const getFilteredAlerts = () => {
-    return alerts.filter(alert => {
+    console.log('Current filters:', filters);
+    console.log('All alerts:', alerts);
+    
+    // Check status distribution
+    const statusCounts = alerts.reduce((acc, alert) => {
+      acc[alert.status] = (acc[alert.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    console.log('Status distribution:', statusCounts);
+    
+    console.log('Alerts with severity:', alerts.map(a => ({ id: a.id, severity: a.severity, status: a.status })));
+    
+    const filtered = alerts.filter(alert => {
       const severityMatch = filters.severity === 'all' || alert.severity === filters.severity;
       const statusMatch = filters.status === 'all' || alert.status === filters.status;
+      
+      console.log(`Alert ${alert.id}: severity=${alert.severity}, status=${alert.status}, severityMatch=${severityMatch}, statusMatch=${statusMatch}`);
+      
       return severityMatch && statusMatch;
     });
+    
+    console.log('Filtered alerts:', filtered);
+    console.log('Filter summary:', {
+      severityFilter: filters.severity,
+      statusFilter: filters.status,
+      totalAlerts: alerts.length,
+      filteredCount: filtered.length,
+      severityMatches: alerts.filter(a => filters.severity === 'all' || a.severity === filters.severity).length,
+      statusMatches: alerts.filter(a => filters.status === 'all' || a.status === filters.status).length
+    });
+    
+    return filtered;
   };
 
   // Set up polling for real-time updates
