@@ -27,6 +27,26 @@ export interface Employee {
   isActive?: boolean;
 }
 
+// Team Types
+export interface Team {
+  id: string;
+  name: string;
+  description: string;
+  departmentId: string;
+  departmentRef: string;
+  leaderId: string;
+  leaderRef: string | null;
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamsResponse {
+  success: boolean;
+  teams: Team[];
+  count: number;
+}
+
 export interface EmployeeSearchResponse {
   success: boolean;
   data: {
@@ -129,7 +149,7 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0NDU2NzIwLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTQ0NTY3MjAsImV4cCI6MTc1NDQ2MDMyMCwiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.EzSBDwCcn2CwUqdbJTizRy0_eF2OilhOu-MIvc5ztpW0AmHZDwWO9HV90FTZqpppcmpfu1a2coXRnJ5t4YRWGiBdbEP2j0ej0SAkvceIxMHkgxf93p6nDEP68qkM50eN-zxyCJzgum4luppMACxLIRu8BcrmoGnT-8i4qN52mc1JFF2gJcCU3ghqJlp67hJ4MFH2VRNKKhnNS_MlhWXdoHwZWVF2ePb7o_vNHEfkuaGXoVNh5zwdXz3zSJKyDa2KiNGht942EudG9c7CfB_JFdq57AKwx9hQQuir4SxlDFWSci-9TfrszwaJ6vOPIp4jIhMt7JGt94tsW9VfPp2ucw";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0NDgwMjI3LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTQ0ODAyMjcsImV4cCI6MTc1NDQ4MzgyNywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.I3EkBBwlvwChSlUMSMtQKJLUjIrLgvh5SeqcEzit1HNDuVJtDJXSnPPMmqg7FxAYLx0xH8Ob020zRofxie0W1HjsMmUWw_MnDuOVrmIaChTO_Uumos-6MT3ZLzFVXfb2TdLgIMb3EmhvcsS0eF5qm3wtuNxjq9Yh3gTRXuIs29KoUxwdzjBsfIfeNmnUNzrNvx5WxPFfvJkHQ7obo4z_dArtAPI5V7tSG3sjvLn7k1X0dreEULG9vYKL6EI9I4oGnUOnXng28yRiiDgIZsUti9kCEMlzcHRXzi6IqeDCmftC_IImfooCBwGZ9ISA7xUKL-Dd3ZdM5XHYxk_8MuGewQ";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -187,7 +207,7 @@ const getBaseUrl = () => {
       console.warn('🔧 For development only - do not use in production');
     }
     
-    return 'http://192.168.221.93:8383';
+    return 'http://192.168.8.85:8383';
   }
   
   // In production, use secure connection
@@ -898,6 +918,45 @@ export const searchEmployees = async (
         total: 0
       },
       message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// Team Functions
+export const fetchTeamsForDepartment = async (
+  departmentId: string,
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<TeamsResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/enterprise/${enterpriseId}/departments/${departmentId}/teams`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        teams: [],
+        count: 0
+      };
+    }
+    
+    const result = await response.json();
+    
+    return {
+      success: result.success,
+      teams: result.teams || [],
+      count: result.count || 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      teams: [],
+      count: 0
     };
   }
 };

@@ -8,7 +8,7 @@ import TeamManagement from '../UI/TeamManagement';
 import { FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
 import { Button } from "../UI/button";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL, FIREBASE_TOKEN } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL, FIREBASE_TOKEN, fetchTeamsForDepartment, Team } from "../../utils/api";
 
 // Interface for the department data
 interface DepartmentData {
@@ -203,6 +203,9 @@ const Department: FC = () => {
   const [animateAddEmployee, setAnimateAddEmployee] = useState(false);
   const [isTeamManagementOpen, setIsTeamManagementOpen] = useState(false);
   const [selectedDepartmentForTeams, setSelectedDepartmentForTeams] = useState(null);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+  const [employeeCreating, setEmployeeCreating] = useState(false);
   
   // Check for animation flag from UserManagement
   useEffect(() => {
@@ -285,11 +288,49 @@ const Department: FC = () => {
       console.error("Error fetching data:", err);
     }
   };
+
+  // Add fetchTeams as a helper function
+  const fetchTeams = async () => {
+    try {
+      setTeamsLoading(true);
+      const allTeams: Team[] = [];
+      
+      console.log('Fetching teams for departments:', departments.map(d => d.name));
+      
+      // Fetch teams for each department
+      for (const department of departments) {
+        console.log(`Fetching teams for department: ${department.name} (${department.id})`);
+        const teamsResponse = await fetchTeamsForDepartment(department.id);
+        console.log(`Teams response for ${department.name}:`, teamsResponse);
+        
+        if (teamsResponse.success) {
+          allTeams.push(...teamsResponse.teams);
+          console.log(`Added ${teamsResponse.teams.length} teams from ${department.name}`);
+        } else {
+          console.warn(`Failed to fetch teams for ${department.name}`);
+        }
+      }
+      
+      console.log('Total teams fetched:', allTeams.length);
+      setTeams(allTeams);
+      setTeamsLoading(false);
+    } catch (err) {
+      console.error("Error fetching teams:", err);
+      setTeamsLoading(false);
+    }
+  };
   
   // In useEffect, replace fetchData with fetchDepartments
   useEffect(() => {
     fetchDepartments();
   }, []);
+
+  // Fetch teams when departments are loaded
+  useEffect(() => {
+    if (departments.length > 0) {
+      fetchTeams();
+    }
+  }, [departments]);
   
   const filteredDepartments = departments.filter(department => 
     department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -356,6 +397,7 @@ const Department: FC = () => {
 
   const handleAddEmployee = async (employeeData) => {
     try {
+      setEmployeeCreating(true);
       console.log('Employee modal submitted with data:', employeeData);
       
       // Use the proper endpoint from Department_Management_UI_Testing_Guide.md
@@ -401,9 +443,17 @@ const Department: FC = () => {
         phone: employeeData.phone,
         position: employeeData.position || employeeData.title,
         role: employeeData.role || "employee",
+        teamId: employeeData.team || null, // Include team assignment if selected
         // Include template data for automatic card creation
         template: templateData
       };
+      
+      // Log team assignment if present
+      if (employeeData.team) {
+        console.log('🎯 Assigning employee to team:', employeeData.team);
+      } else {
+        console.log('⚠️ No team selected for employee');
+      }
       
       console.log('Sending employee data with template:', employeeToCreate);
       
@@ -431,6 +481,8 @@ const Department: FC = () => {
     } catch (error) {
       console.error('Error creating employee:', error);
       alert('Failed to create employee. Please try again.');
+    } finally {
+      setEmployeeCreating(false);
     }
   };
   
@@ -656,6 +708,11 @@ const Department: FC = () => {
           value: dept.id || '', 
           label: dept.name 
         }))}
+        teams={teams.map(team => ({
+          value: team.id,
+          label: team.name
+        }))}
+        isLoading={employeeCreating}
       />
       
       <DepartmentModal 

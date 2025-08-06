@@ -11,7 +11,9 @@ interface EmployeeModalProps {
   onClose: () => void;
   onSubmit: (employeeData: EmployeeData) => void;
   departments: { value: string; label: string }[];
+  teams: { value: string; label: string }[];
   prefillTeam?: { id: string; name: string } | null;
+  isLoading?: boolean;
 }
 
 export interface EmployeeData {
@@ -32,16 +34,10 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   onClose,
   onSubmit,
   departments,
-  prefillTeam = null
+  teams,
+  prefillTeam = null,
+  isLoading = false
 }) => {
-  const teams = [
-    { value: "engineering", label: "Engineering Team" },
-    { value: "design", label: "Design Team" },
-    { value: "marketing", label: "Marketing Team" },
-    { value: "sales", label: "Sales Team" },
-    { value: "support", label: "Customer Support" },
-    { value: "product", label: "Product Management" }
-  ];
 
   const [employeeData, setEmployeeData] = useState<EmployeeData>({
     firstName: "",
@@ -320,7 +316,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="employee-modal-form">
+        <form onSubmit={handleSubmit} className={`employee-modal-form ${isLoading ? 'loading' : ''}`}>
           {/* Employee Search Section */}
           <div className="employee-modal-form-group">
             <Label htmlFor="employeeSearch">Search Existing Employees</Label>
@@ -440,9 +436,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 name="team"
                 value={employeeData.team}
                 onChange={handleChange}
-                options={teams}
+                options={teams.length > 0 ? teams : [{ value: "", label: "No teams available" }]}
                 placeholder="Select a team"
-                disabled={!!prefillTeam} // Disable if team is pre-filled
+                disabled={!!prefillTeam || teams.length === 0} // Disable if team is pre-filled or no teams available
               />
             </div>
           </div>
@@ -512,11 +508,18 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
           </div>
           
           <div className="employee-modal-actions">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">
-              {prefillTeam ? `Add to ${prefillTeam.name}` : "Add Employee"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  {prefillTeam ? `Adding to ${prefillTeam.name}...` : "Adding Employee..."}
+                </>
+              ) : (
+                prefillTeam ? `Add to ${prefillTeam.name}` : "Add Employee"
+              )}
             </Button>
           </div>
         </form>

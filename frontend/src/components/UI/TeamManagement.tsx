@@ -57,6 +57,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
   // Add employee modal state
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [selectedTeamForEmployee, setSelectedTeamForEmployee] = useState<TeamData | null>(null);
+  const [employeeCreating, setEmployeeCreating] = useState(false);
 
   // Fetch teams and employees for this department
   const fetchTeamsAndEmployees = async () => {
@@ -272,6 +273,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
 
   const handleAddEmployee = async (employeeData: any) => {
     try {
+      setEmployeeCreating(true);
       console.log('Employee modal submitted with data:', employeeData);
       
       // Use the selected template from the modal, or fetch the effective template as fallback
@@ -334,6 +336,8 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
     } catch (error) {
       console.error('Error creating employee:', error);
       alert('Failed to create employee. Please try again.');
+    } finally {
+      setEmployeeCreating(false);
     }
   };
 
@@ -505,6 +509,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
           onSubmit={handleAddEmployee}
           departments={[{ value: departmentId, label: departmentName }]}
           prefillTeam={selectedTeamForEmployee}
+          isLoading={employeeCreating}
         />
       </div>
     </div>
