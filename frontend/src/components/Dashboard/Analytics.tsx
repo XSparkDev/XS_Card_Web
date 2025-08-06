@@ -15,7 +15,14 @@ import {
   FaCloud,
   FaArrowUp,
   FaCalendarAlt,
-  FaEye
+  FaEye,
+  FaHashtag,
+  FaShare,
+  FaHeart,
+  FaRetweet,
+  FaTicketAlt,
+  FaMapMarkerAlt,
+  FaClock
 } from "react-icons/fa";
 import { 
   LineChart, 
@@ -116,6 +123,29 @@ interface GrowthDataPoint {
   totalContacts: number;
 }
 
+// Event interfaces for the new events feature
+interface EventEngagement {
+  metric: string;
+  value: number;
+  percentage: number;
+  trend: number;
+  icon: string;
+}
+
+interface EventDesign {
+  eventType: string;
+  count: number;
+  attendees: number;
+  color: string;
+}
+
+interface EventAnalytics {
+  totalEvents: number;
+  totalAttendees: number;
+  avgEngagement: number;
+  topEvent: string;
+}
+
 const Analytics = () => {
   const [activeCardsCount, setActiveCardsCount] = useState<number>(0);
   const [connectionsCount, setConnectionsCount] = useState<number>(0);
@@ -141,6 +171,21 @@ const Analytics = () => {
 
   // Add a new state for tracking expanded state of connection growth chart
   const [growthExpanded, setGrowthExpanded] = useState<boolean>(false);
+
+  // Add expandable states for event cards
+  const [eventSocialExpanded, setEventSocialExpanded] = useState<boolean>(false);
+  const [eventTypesExpanded, setEventTypesExpanded] = useState<boolean>(false);
+
+  // Event analytics states
+  const [eventEngagement, setEventEngagement] = useState<EventEngagement[]>([]);
+  const [eventDesigns, setEventDesigns] = useState<EventDesign[]>([]);
+  const [eventAnalytics, setEventAnalytics] = useState<EventAnalytics>({
+    totalEvents: 0,
+    totalAttendees: 0,
+    avgEngagement: 0,
+    topEvent: ""
+  });
+  const [eventsLoading, setEventsLoading] = useState<boolean>(false);
 
   // Fetch cards count
   useEffect(() => {
@@ -408,6 +453,49 @@ const Analytics = () => {
     };
     
     fetchMeetings();
+  }, []);
+
+  // Initialize event analytics data
+  useEffect(() => {
+    const initializeEventData = () => {
+      setEventsLoading(true);
+      
+      // Dummy event engagement data (internal event metrics)
+      const dummyEngagement: EventEngagement[] = [
+        { metric: "Attendance Rate", value: 847, percentage: 92.3, trend: 5.2, icon: "attendance" },
+        { metric: "Satisfaction Score", value: 4.7, percentage: 94.0, trend: 2.1, icon: "satisfaction" },
+        { metric: "Registration Rate", value: 1203, percentage: 78.5, trend: -1.3, icon: "registration" },
+        { metric: "Completion Rate", value: 592, percentage: 87.1, trend: 3.8, icon: "completion" }
+      ];
+
+      // Dummy event design data (event types and attendance)
+      const dummyDesigns: EventDesign[] = [
+        { eventType: "Conferences", count: 8, attendees: 2400, color: "#3b82f6" },
+        { eventType: "Workshops", count: 15, attendees: 450, color: "#10b981" },
+        { eventType: "Networking", count: 12, attendees: 960, color: "#f59e0b" },
+        { eventType: "Webinars", count: 22, attendees: 3300, color: "#8b5cf6" },
+        { eventType: "Trade Shows", count: 5, attendees: 1800, color: "#ef4444" }
+      ];
+
+      // Calculate analytics
+      const totalEvents = dummyDesigns.reduce((sum, design) => sum + design.count, 0);
+      const totalAttendees = dummyDesigns.reduce((sum, design) => sum + design.attendees, 0);
+      const avgEngagement = dummyEngagement.reduce((sum, engagement) => sum + engagement.percentage, 0) / dummyEngagement.length;
+      const topEvent = dummyDesigns.sort((a, b) => b.attendees - a.attendees)[0].eventType;
+
+      setEventEngagement(dummyEngagement);
+      setEventDesigns(dummyDesigns);
+      setEventAnalytics({
+        totalEvents,
+        totalAttendees,
+        avgEngagement,
+        topEvent
+      });
+      
+      setEventsLoading(false);
+    };
+
+    initializeEventData();
   }, []);
     // Helper to extract date from contact
   const getDateFromContact = (contact: Contact): Date | null => {
@@ -741,6 +829,15 @@ const Analytics = () => {
   // Add a function to toggle the expanded state for growth chart
   const toggleGrowthExpand = () => {
     setGrowthExpanded(!growthExpanded);
+  };
+
+  // Add toggle functions for event cards
+  const toggleEventSocialExpand = () => {
+    setEventSocialExpanded(!eventSocialExpanded);
+  };
+
+  const toggleEventTypesExpand = () => {
+    setEventTypesExpanded(!eventTypesExpanded);
   };
   // Calculate filtered meeting stats for display
   const calculateFilteredMeetingStats = () => {
@@ -1115,28 +1212,211 @@ const Analytics = () => {
               </CardContent>
             </Card>
 
-            <Card className="chart-card">
-              <CardHeader>
+            <Card className={`chart-card ${eventSocialExpanded ? 'event-engagement-expanded' : ''}`}>
+              <CardHeader onClick={toggleEventSocialExpand} className="event-engagement-card-header">
                 <CardTitle className="chart-title">
-                  <FaCommentDots className="chart-icon" /> Mention Tools
+                  <FaChartLine className="chart-icon" /> Event Performance Metrics
                 </CardTitle>
+                <div className="expand-icon">
+                  {eventSocialExpanded ? '−' : '+'}
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="chart-container donut-chart">
-                  {/* Placeholder for donut chart */}
+              <CardContent className={`event-engagement-content-wrapper ${eventSocialExpanded ? 'event-engagement-content-expanded' : ''}`}>
+                <div className="chart-container event-engagement">
+                  {eventsLoading ? (
+                    <div className="loading-indicator">Loading event data...</div>
+                  ) : (
+                    <div className="event-engagement-content">
+                      <div className="engagement-summary">
+                        <div className="engagement-summary-item">
+                          <span className="engagement-summary-value">{eventAnalytics.avgEngagement.toFixed(1)}%</span>
+                          <span className="engagement-summary-label">Avg Performance</span>
+                        </div>
+                        <div className="engagement-summary-item">
+                          <span className="engagement-summary-value">{eventEngagement.filter(e => e.trend > 0).length}/{eventEngagement.length}</span>
+                          <span className="engagement-summary-label">Improving Metrics</span>
+                        </div>
+                        {eventSocialExpanded && (
+                          <div className="engagement-summary-item">
+                            <span className="engagement-summary-value">{eventEngagement.sort((a, b) => b.percentage - a.percentage)[0].percentage.toFixed(1)}%</span>
+                            <span className="engagement-summary-label">Best Metric</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="engagement-metrics-list">
+                        {eventEngagement.map((engagement, index) => (
+                          <div key={index} className="engagement-metric-item">
+                            <div className="engagement-metric-info">
+                              <div className={`metric-icon ${engagement.icon}`}>
+                                {engagement.metric.charAt(0)}
+                              </div>
+                              <span className="metric-name">{engagement.metric}</span>
+                            </div>
+                            <div className="engagement-metric-stats">
+                              <div className="engagement-stat">
+                                <span className="stat-value">{engagement.metric === "Satisfaction Score" ? engagement.value.toFixed(1) : engagement.value.toLocaleString()}</span>
+                                <span className="stat-unit">{engagement.metric === "Satisfaction Score" ? "/5.0" : ""}</span>
+                              </div>
+                              <div className="engagement-stat">
+                                <span className={`trend-indicator ${engagement.trend >= 0 ? 'positive' : 'negative'}`}>
+                                  {engagement.trend >= 0 ? '↗' : '↘'} {Math.abs(engagement.trend).toFixed(1)}%
+                                </span>
+                              </div>
+                              {eventSocialExpanded && (
+                                <div className="engagement-stat">
+                                  <span className="percentage-value">{engagement.percentage.toFixed(1)}%</span>
+                                </div>
+                              )}
+                            </div>
+                            {eventSocialExpanded && (
+                              <div className="engagement-details">
+                                <div className="engagement-detail-item">
+                                  <span className="detail-label">Performance:</span>
+                                  <span className="detail-value">{engagement.percentage.toFixed(1)}%</span>
+                                </div>
+                                <div className="engagement-detail-item">
+                                  <span className="detail-label">Trend:</span>
+                                  <span className={`detail-value ${engagement.trend >= 0 ? 'positive' : 'negative'}`}>
+                                    {engagement.trend >= 0 ? '+' : ''}{engagement.trend.toFixed(1)}%
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {eventSocialExpanded && (
+                        <div className="performance-insights">
+                          <h4>Performance Insights</h4>
+                          <div className="insights-grid">
+                            <div className="insight-item">
+                              <span className="insight-label">Top Performer:</span>
+                              <span className="insight-value">{eventEngagement.sort((a, b) => b.percentage - a.percentage)[0].metric}</span>
+                            </div>
+                            <div className="insight-item">
+                              <span className="insight-label">Best Trend:</span>
+                              <span className="insight-value">{eventEngagement.sort((a, b) => b.trend - a.trend)[0].metric}</span>
+                            </div>
+                            <div className="insight-item">
+                              <span className="insight-label">Needs Focus:</span>
+                              <span className="insight-value">{eventEngagement.sort((a, b) => a.percentage - b.percentage)[0].metric}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="chart-card">
-              <CardHeader>
+            <Card className={`chart-card ${eventTypesExpanded ? 'event-types-expanded' : ''}`}>
+              <CardHeader onClick={toggleEventTypesExpand} className="event-types-card-header">
                 <CardTitle className="chart-title">
-                  <FaPalette className="chart-icon" /> Design Cards
+                  <FaTicketAlt className="chart-icon" /> Event Types & Attendance
                 </CardTitle>
+                <div className="expand-icon">
+                  {eventTypesExpanded ? '−' : '+'}
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="chart-container area-chart">
-                  {/* Placeholder for area chart */}
+              <CardContent className={`event-types-content-wrapper ${eventTypesExpanded ? 'event-types-content-expanded' : ''}`}>
+                <div className="chart-container event-designs">
+                  {eventsLoading ? (
+                    <div className="loading-indicator">Loading event types...</div>
+                  ) : (
+                    <div className="event-designs-content">
+                      <div className="event-overview">
+                        <div className="event-overview-item">
+                          <span className="event-overview-value">{eventAnalytics.totalEvents}</span>
+                          <span className="event-overview-label">Total Events</span>
+                        </div>
+                        <div className="event-overview-item">
+                          <span className="event-overview-value">{eventAnalytics.totalAttendees.toLocaleString()}</span>
+                          <span className="event-overview-label">Total Attendees</span>
+                        </div>
+                        {eventTypesExpanded && (
+                          <>
+                            <div className="event-overview-item">
+                              <span className="event-overview-value">{Math.round(eventAnalytics.totalAttendees / eventAnalytics.totalEvents)}</span>
+                              <span className="event-overview-label">Avg per Event</span>
+                            </div>
+                            <div className="event-overview-item">
+                              <span className="event-overview-value">{eventAnalytics.topEvent}</span>
+                              <span className="event-overview-label">Top Event Type</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className="event-types-list">
+                        {eventDesigns.map((design, index) => (
+                          <div key={index} className="event-type-item">
+                            <div className="event-type-info">
+                              <div className="event-type-indicator" style={{ backgroundColor: design.color }}></div>
+                              <div className="event-type-details">
+                                <span className="event-type-name">{design.eventType}</span>
+                                <div className="event-type-stats">
+                                  <span className="event-count">
+                                    <FaCalendarAlt className="event-stat-icon" />
+                                    {design.count} events
+                                  </span>
+                                  <span className="attendee-count">
+                                    <FaUsers className="event-stat-icon" />
+                                    {design.attendees.toLocaleString()} attendees
+                                  </span>
+                                  {eventTypesExpanded && (
+                                    <span className="avg-attendance">
+                                      <FaClock className="event-stat-icon" />
+                                      {Math.round(design.attendees / design.count)} avg
+                                    </span>
+                                  )}
+                                </div>
+                                {eventTypesExpanded && (
+                                  <div className="event-type-expanded-stats">
+                                    <div className="expanded-stat-item">
+                                      <span className="expanded-stat-label">Attendance Rate:</span>
+                                      <span className="expanded-stat-value">{((design.attendees / eventAnalytics.totalAttendees) * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="expanded-stat-item">
+                                      <span className="expanded-stat-label">Event Frequency:</span>
+                                      <span className="expanded-stat-value">{((design.count / eventAnalytics.totalEvents) * 100).toFixed(1)}%</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="event-type-progress">
+                              <div 
+                                className="event-progress-bar" 
+                                style={{ 
+                                  width: `${(design.attendees / eventAnalytics.totalAttendees) * 100}%`,
+                                  backgroundColor: design.color 
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {eventTypesExpanded && (
+                        <div className="event-analytics-summary">
+                          <h4>Event Performance Summary</h4>
+                          <div className="analytics-summary-grid">
+                            <div className="summary-item">
+                              <span className="summary-label">Most Popular:</span>
+                              <span className="summary-value">{eventDesigns.sort((a, b) => b.attendees - a.attendees)[0].eventType}</span>
+                            </div>
+                            <div className="summary-item">
+                              <span className="summary-label">Most Frequent:</span>
+                              <span className="summary-value">{eventDesigns.sort((a, b) => b.count - a.count)[0].eventType}</span>
+                            </div>
+                            <div className="summary-item">
+                              <span className="summary-label">Best Avg Attendance:</span>
+                              <span className="summary-value">{eventDesigns.sort((a, b) => (b.attendees/b.count) - (a.attendees/a.count))[0].eventType}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

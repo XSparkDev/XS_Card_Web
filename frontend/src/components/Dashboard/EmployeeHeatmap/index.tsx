@@ -9,41 +9,47 @@ import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from '../../../ut
 // Fix Leaflet icon issues
 fixLeafletIcons();
 
-// Sample data for testing when API fails
-const sampleData = [
-  { lat: -25.757, lng: 28.1443, intensity: 15, radius: 20 }, // Pretoria
-  { lat: -26.1, lng: 28.25, intensity: 20, radius: 25 }, // Thembisa
-  { lat: -26.2041, lng: 28.0473, intensity: 30, radius: 35 }, // Johannesburg
-  { lat: -33.9249, lng: 18.4241, intensity: 18, radius: 22 }, // Cape Town
-  { lat: -29.8587, lng: 31.0218, intensity: 22, radius: 28 }, // Durban
-];
+// Removed sample data - only use real backend data
 
-// Define contact interface based on enterprise API response
+// Define contact interface based on actual API response
 interface Contact {
   name: string;
   surname: string;
-  phone: string;
-  howWeMet: string;
   email: string;
+  phone: string;
+  company?: string;
+  howWeMet: string;
   createdAt: {
     _seconds: number;
     _nanoseconds: number;
+  };
+  location?: {
+    name?: string;
+    latitude: number;
+    longitude: number;
+    city: string;
+    region: string;
+    country: string;
+    countryCode: string;
+    timezone: string;
+    provider: string;
+    area?: string;
+    createdAt?: {
+      _seconds: number;
+      _nanoseconds: number;
+    };
+    assignedAt?: string;
+    randomized?: boolean;
   };
   ownerInfo: {
     userId: string;
     email: string;
     department: string;
-    departmentName?: string;
   };
   enterpriseId: string;
-  enterpriseName?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
 }
 
-// Define API response interfaces
+// Define API response interfaces based on actual API response
 interface EnterpriseContactsResponse {
   success: boolean;
   cached: boolean;
@@ -55,9 +61,18 @@ interface EnterpriseContactsResponse {
     departmentStats: Record<string, {
       name: string;
       contactCount: number;
-      contacts: Contact[];
+      employeeCount: number;
     }>;
+    contactsByDepartment: Record<string, {
+      departmentName: string;
+      departmentId: string;
+      contacts: Contact[];
+      contactCount: number;
+    }>;
+    generatedAt: string;
+    cacheExpiry: string;
   };
+  timestamp: string;
 }
 
 interface LocationPoint {
@@ -76,7 +91,18 @@ const clusterLocationData = (contacts: Contact[]): LocationPoint[] => {
     typeof contact.location.longitude === 'number'
   );
   
-  console.log(`Found ${validContacts.length} contacts with valid location data`);
+  console.log(`🗺️  Found ${validContacts.length} contacts with valid location data out of ${contacts.length} total contacts`);
+  
+  // Log some location details for debugging
+  if (validContacts.length > 0) {
+    const firstContact = validContacts[0];
+    console.log(`📍 Sample location data:`, {
+      name: `${firstContact.name} ${firstContact.surname}`,
+      city: firstContact.location?.city,
+      coordinates: `${firstContact.location?.latitude}, ${firstContact.location?.longitude}`,
+      provider: firstContact.location?.provider
+    });
+  }
   
   if (validContacts.length === 0) return [];
   
@@ -138,7 +164,15 @@ const clusterLocationData = (contacts: Contact[]): LocationPoint[] => {
     });
   }
   
-  console.log(`Created ${pointsArray.length} clustered points from ${validContacts.length} contacts with varying sizes`);
+  console.log(`🎯 Created ${pointsArray.length} clustered heat map points from ${validContacts.length} contacts with location data`);
+  
+  // Log clustering summary
+  if (pointsArray.length > 0) {
+    const totalIntensity = pointsArray.reduce((sum, p) => sum + p.intensity, 0);
+    const avgIntensity = (totalIntensity / pointsArray.length).toFixed(1);
+    console.log(`📊 Heat map intensity range: ${Math.min(...pointsArray.map(p => p.intensity))} - ${Math.max(...pointsArray.map(p => p.intensity))} (avg: ${avgIntensity})`);
+  }
+  
   return pointsArray;
 };
 
@@ -146,7 +180,6 @@ const EmployeeHeatmap: React.FC = () => {
   const [connectionData, setConnectionData] = useState<LocationPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [usingSampleData, setUsingSampleData] = useState<boolean>(false);
   useEffect(() => {
     const fetchContactLocations = async () => {
       try {
@@ -168,19 +201,23 @@ const EmployeeHeatmap: React.FC = () => {
         const responseData: EnterpriseContactsResponse = await response.json();
         console.log('Raw API response:', responseData);
         
-        // Extract contacts data from all departments
+        // Extract contacts data from all departments using actual API format
         let contactsData: Contact[] = [];
         
-        if (responseData && responseData.data && responseData.data.departmentStats) {
+        if (responseData && responseData.data && responseData.data.contactsByDepartment) {
           // Flatten contacts from all departments
-          Object.values(responseData.data.departmentStats).forEach(department => {
+          Object.values(responseData.data.contactsByDepartment).forEach(department => {
+            console.log(`Processing department: ${department.departmentName} with ${department.contactCount} contacts`);
+            
             if (department.contacts && Array.isArray(department.contacts)) {
               contactsData.push(...department.contacts);
+              console.log(`✅ Added ${department.contacts.length} contacts from department: ${department.departmentName}`);
             }
           });
-          console.log('Found contacts from enterprise departments');
+          console.log(`✅ Found contacts from ${Object.keys(responseData.data.contactsByDepartment).length} enterprise departments`);
         } else {
-          console.log('Unexpected response format, could not extract contacts');
+          console.log('❌ Unexpected response format, could not extract contacts');
+          console.log('Response structure:', JSON.stringify(responseData, null, 2));
         }
         
         console.log(`Extracted ${contactsData.length} contacts`);
@@ -191,20 +228,18 @@ const EmployeeHeatmap: React.FC = () => {
         
         if (locationData.length > 0) {
           setConnectionData(locationData);
-          setUsingSampleData(false);
+          setError(null);
+          console.log(`✅ Successfully loaded ${locationData.length} location points from backend data`);
         } else {
-          console.log('No location data found in API response, using sample data');
-          setConnectionData(sampleData);
-          setUsingSampleData(true);
+          console.log('❌ No location data found in API response');
+          setConnectionData([]);
+          setError('No location data available from contacts');
         }
-        
-        setError(null);
       } catch (err) {
-        console.error("Error fetching contact locations:", err);
+        console.error("❌ Error fetching contact locations:", err);
         setError(`Failed to load from API: ${err instanceof Error ? err.message : String(err)}`);
-        console.log('Using sample data due to API error');
-        setConnectionData(sampleData);
-        setUsingSampleData(true);
+        setConnectionData([]);
+        console.log('🚫 No fallback data - will show error message');
       } finally {
         setTimeout(() => {
           setLoading(false);
@@ -219,10 +254,11 @@ const EmployeeHeatmap: React.FC = () => {
     <div className="heatmap-container">
       {loading ? (
         <div className="loading-indicator">Loading networking data...</div>
-      ) : error ? (
+      ) : error || connectionData.length === 0 ? (
         <div className="error-indicator">
-          {error}
-          <p>Using sample location data instead.</p>
+          <h3>No Heat Map Data Available</h3>
+          <p>{error || 'No contacts with location data found.'}</p>
+          <p>Heat map will display when contacts have location information.</p>
         </div>
       ) : (
         <MapContainer 
@@ -243,30 +279,22 @@ const EmployeeHeatmap: React.FC = () => {
               gradient: {0.4: '#3b82f6', 0.65: '#10b981', 1: '#ef4444'}
             }}
           />
-          {usingSampleData && (
-            <div className="sample-data-notice" style={{
-              position: 'absolute',
-              bottom: '10px',
-              left: '10px',
-              backgroundColor: 'rgba(255,255,255,0.8)',
-              padding: '5px 10px',
-              borderRadius: '4px',
-              zIndex: 1000,
-              fontSize: '12px'
-            }}>
-              Using sample data
-            </div>
-          )}
+          <div className="backend-data-notice" style={{
+            position: 'absolute',
+            bottom: '10px',
+            left: '10px',
+            backgroundColor: 'rgba(16, 185, 129, 0.9)',
+            color: 'white',
+            padding: '5px 10px',
+            borderRadius: '4px',
+            zIndex: 1000,
+            fontSize: '12px',
+            fontWeight: '500'
+          }}>
+            ✅ Real backend data ({connectionData.length} locations)
+          </div>
         </MapContainer>
       )}
-      {/* {debugInfo && (
-        <details style={{ position: 'absolute', bottom: '10px', right: '10px', zIndex: 1000, maxWidth: '300px' }}>
-          <summary style={{ backgroundColor: 'white', padding: '5px', cursor: 'pointer' }}>Debug Info</summary>
-          <pre style={{ fontSize: '10px', maxHeight: '200px', overflow: 'auto', backgroundColor: 'white', padding: '5px' }}>
-            {debugInfo}
-          </pre>
-        </details>
-      )} */}
     </div>
   );
 };
