@@ -102,6 +102,62 @@
   margin-top: 0.25rem;
 }
 
+/* Team leader select specific styling */
+.team-modal-form .select-trigger {
+  background-color: white;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+}
+
+.team-modal-form .select-content {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.team-modal-form .select-item {
+  color: #0f172a;
+  background-color: white;
+}
+
+.team-modal-form .select-item:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.team-modal-form .select-item[data-highlighted] {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Specific team leader select styling */
+.team-leader-select {
+  background-color: white !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.team-leader-dropdown {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.team-leader-dropdown .select-item {
+  color: #0f172a !important;
+  background-color: white !important;
+}
+
+.team-leader-dropdown .select-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.team-leader-dropdown .select-item[data-highlighted] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
 .team-modal-actions {
   display: flex;
   justify-content: flex-end;

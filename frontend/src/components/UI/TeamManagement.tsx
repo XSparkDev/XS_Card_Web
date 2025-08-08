@@ -30,10 +30,20 @@ interface TeamData {
 
 interface EmployeeData {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  surname: string;
   email: string;
   position: string;
+  role: string;
+  phone: string;
+  profileImage: string;
+  employeeId: string;
+  teamId: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: any;
+  migratedAt?: any;
+  migratedFrom?: string;
 }
 
 const TeamManagement: React.FC<TeamManagementProps> = ({
@@ -349,7 +359,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
   const getLeaderName = (leaderId: string | null) => {
     if (!leaderId) return "No leader assigned";
     const leader = employees.find(emp => emp.id === leaderId);
-    return leader ? `${leader.firstName} ${leader.lastName}` : "Unknown leader";
+    return leader ? `${leader.name} ${leader.surname}` : "Unknown leader";
   };
 
   if (!isOpen) return null;

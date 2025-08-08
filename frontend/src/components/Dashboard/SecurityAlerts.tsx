@@ -48,7 +48,6 @@ interface SecurityAlertsResponse {
   data: {
     alerts: SecurityAlert[];
     totalCount: number;
-    unacknowledgedCount: number;
     criticalCount: number;
     highCount?: number;
     mediumCount?: number;
@@ -335,7 +334,6 @@ const SecurityAlerts = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalCount: 0,
-    unacknowledgedCount: 0,
     criticalCount: 0,
     highCount: 0,
     mediumCount: 0,
@@ -344,8 +342,8 @@ const SecurityAlerts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const alertsPerPage = 5;
   const [filters, setFilters] = useState({
-    severity: 'all',
-    status: 'all' // Changed from 'active' to 'all' to show all alerts by default
+    severity: 'all'
+    // Status filter removed - only severity filtering available
   });
 
     // Fetch alerts from backend
@@ -397,7 +395,6 @@ const SecurityAlerts = () => {
       
       setStats({
         totalCount: data.data.alerts.length, // Use actual alerts count
-        unacknowledgedCount: data.data.alerts.filter(a => a.status === 'active').length,
         criticalCount: criticalCount, // Use calculated count, not API count
         highCount: highCount,
         mediumCount: mediumCount,
@@ -486,7 +483,6 @@ const SecurityAlerts = () => {
       
       setStats({
         totalCount: mockAlerts.length,
-        unacknowledgedCount: mockAlerts.filter(a => a.status === 'active').length,
         criticalCount: criticalCount,
         highCount: highCount,
         mediumCount: mediumCount,
@@ -522,11 +518,7 @@ const SecurityAlerts = () => {
         )
       );
       
-      // Update stats immediately
-      setStats(prevStats => ({
-        ...prevStats,
-        unacknowledgedCount: Math.max(0, prevStats.unacknowledgedCount - 1)
-      }));
+      // Stats updated automatically when alerts state changes
       
       const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/acknowledge`);
       const headers = getEnterpriseHeaders();
@@ -551,10 +543,7 @@ const SecurityAlerts = () => {
               : alert
           )
         );
-        setStats(prevStats => ({
-          ...prevStats,
-          unacknowledgedCount: prevStats.unacknowledgedCount + 1
-        }));
+        // Stats will be updated when alerts state changes
         
         const errorText = await response.text().catch(() => 'Unknown error');
         console.error('Failed to acknowledge alert:', response.status, response.statusText, errorText);
@@ -573,10 +562,7 @@ const SecurityAlerts = () => {
             : alert
         )
       );
-      setStats(prevStats => ({
-        ...prevStats,
-        unacknowledgedCount: prevStats.unacknowledgedCount + 1
-      }));
+      // Stats will be updated when alerts state changes
       
       console.error('Error acknowledging alert:', err);
       alert('Failed to acknowledge alert');
@@ -610,11 +596,7 @@ const SecurityAlerts = () => {
         )
       );
       
-      // Update stats immediately
-      setStats(prevStats => ({
-        ...prevStats,
-        unacknowledgedCount: Math.max(0, prevStats.unacknowledgedCount - 1)
-      }));
+      // Stats updated automatically when alerts state changes
       
       const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/resolve`);
       const headers = getEnterpriseHeaders();
@@ -640,10 +622,7 @@ const SecurityAlerts = () => {
               : alert
           )
         );
-        setStats(prevStats => ({
-          ...prevStats,
-          unacknowledgedCount: prevStats.unacknowledgedCount + 1
-        }));
+        // Stats will be updated when alerts state changes
         
         const errorText = await response.text().catch(() => 'Unknown error');
         console.error('Failed to resolve alert:', response.status, response.statusText, errorText);
@@ -662,10 +641,7 @@ const SecurityAlerts = () => {
             : alert
         )
       );
-      setStats(prevStats => ({
-        ...prevStats,
-        unacknowledgedCount: prevStats.unacknowledgedCount + 1
-      }));
+      // Stats will be updated when alerts state changes
       
       console.error('Error resolving alert:', err);
       alert('Failed to resolve alert');
@@ -679,7 +655,7 @@ const SecurityAlerts = () => {
     console.log('Current filters:', filters);
     console.log('All alerts:', alerts);
     
-    // Check status distribution
+    // Check status distribution for debugging
     const statusCounts = alerts.reduce((acc, alert) => {
       acc[alert.status] = (acc[alert.status] || 0) + 1;
       return acc;
@@ -690,21 +666,19 @@ const SecurityAlerts = () => {
     
     const filtered = alerts.filter(alert => {
       const severityMatch = filters.severity === 'all' || alert.severity === filters.severity;
-      const statusMatch = filters.status === 'all' || alert.status === filters.status;
       
-      console.log(`Alert ${alert.id}: severity=${alert.severity}, status=${alert.status}, severityMatch=${severityMatch}, statusMatch=${statusMatch}`);
+      console.log(`Alert ${alert.id}: severity=${alert.severity}, status=${alert.status}, severityMatch=${severityMatch}`);
       
-      return severityMatch && statusMatch;
+      return severityMatch; // Only filter by severity now
     });
     
     console.log('Filtered alerts:', filtered);
     console.log('Filter summary:', {
       severityFilter: filters.severity,
-      statusFilter: filters.status,
       totalAlerts: alerts.length,
       filteredCount: filtered.length,
       severityMatches: alerts.filter(a => filters.severity === 'all' || a.severity === filters.severity).length,
-      statusMatches: alerts.filter(a => filters.status === 'all' || a.status === filters.status).length
+      statusDistribution: statusCounts
     });
     
     return filtered;
@@ -811,17 +785,7 @@ const SecurityAlerts = () => {
             </div>
             
             <div>
-              <label className="form-label">Status</label>
-              <select 
-                value={filters.status}
-                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="select-input"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="acknowledged">Acknowledged</option>
-                <option value="resolved">Resolved</option>
-              </select>
+              {/* Empty space to maintain layout balance */}
             </div>
           </div>
         </CardContent>

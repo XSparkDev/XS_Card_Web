@@ -112,7 +112,7 @@ const TeamModal: React.FC<TeamModalProps> = ({
             {team ? "Edit Team" : "Create New Team"}
           </h2>
           <button 
-            className="close-button" 
+            className="team-modal-close" 
             onClick={handleClose}
             disabled={loading}
           >
@@ -161,14 +161,14 @@ const TeamModal: React.FC<TeamModalProps> = ({
               onValueChange={(value: string) => handleInputChange("leaderId", value)}
               disabled={loading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="team-leader-select">
                 <SelectValue placeholder="Select a team leader (optional)" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="team-leader-dropdown">
                 <SelectItem value="none">No leader assigned</SelectItem>
                 {employees.map(employee => (
                   <SelectItem key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName} - {employee.position}
+                    {employee.name} {employee.surname}
                   </SelectItem>
                 ))}
               </SelectContent>

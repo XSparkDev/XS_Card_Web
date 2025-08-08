@@ -126,7 +126,13 @@ const DepartmentCard = ({
             Team
           </button>
           
-          <button className="footer-button">
+          <button 
+            className="footer-button"
+            onClick={() => {
+              console.log('🔘 Export button clicked for department:', department.name);
+              exportDepartmentCSV(department);
+            }}
+          >
             <i className="fas fa-chart-bar"></i>
             Export Report
           </button>
@@ -174,11 +180,10 @@ const DepartmentsSummaryCard = ({ departments }) => {
         </div>
         
         <div className="summary-footer">
-          <button className="summary-button">
-            <i className="fas fa-building"></i>
-            Department Structure
-          </button>
-          <button className="summary-button">
+          <button className="summary-button" onClick={() => {
+            console.log('🔘 Summary export button clicked');
+            exportDepartmentsCSV(departments);
+          }}>
             <i className="fas fa-file-download"></i>
             Export Report
           </button>
@@ -640,6 +645,76 @@ const Department: FC = () => {
   const handleTeamClick = (department: DepartmentData) => {
     setSelectedDepartmentForTeams(department);
     setIsTeamManagementOpen(true);
+  };
+
+  // CSV Export Functions
+  const exportDepartmentCSV = (department: DepartmentData) => {
+    console.log('📊 Exporting department CSV:', department.name);
+    
+    // Simple test to see if function is called
+    alert(`Exporting ${department.name} department data...`);
+    
+    const csvData = [
+      ['Department Name', 'Description', 'Employees', 'Cards Issued', 'Total Scans', 'Card Coverage (%)', 'Growth Rate (%)'],
+      [
+        department.name,
+        department.description,
+        department.employeeCount.toString(),
+        department.cardCount.toString(),
+        department.scanCount.toString(),
+        department.progress.toString(),
+        department.growthRate.toString()
+      ]
+    ];
+    
+    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${department.name}_report.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ Department CSV exported successfully');
+  };
+
+  const exportDepartmentsCSV = (departments: DepartmentData[]) => {
+    console.log('📊 Exporting all departments CSV:', departments.length, 'departments');
+    
+    // Simple test to see if function is called
+    alert(`Exporting all ${departments.length} departments data...`);
+    
+    const csvData = [
+      ['Department Name', 'Description', 'Employees', 'Cards Issued', 'Total Scans', 'Card Coverage (%)', 'Growth Rate (%)']
+    ];
+    
+    departments.forEach(department => {
+      csvData.push([
+        department.name,
+        department.description,
+        department.employeeCount.toString(),
+        department.cardCount.toString(),
+        department.scanCount.toString(),
+        department.progress.toString(),
+        department.growthRate.toString()
+      ]);
+    });
+    
+    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'departments_report.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ All departments CSV exported successfully');
   };
 
   return (

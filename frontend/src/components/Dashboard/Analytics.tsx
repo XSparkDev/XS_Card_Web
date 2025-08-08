@@ -882,6 +882,42 @@ const Analytics = () => {
   // Get filtered stats for display
   const filteredStats = calculateFilteredMeetingStats();
 
+  // CSV Export Function for Analytics
+  const exportAnalyticsCSV = () => {
+    console.log('📊 Exporting analytics CSV');
+    
+    // Simple test to see if function is called
+    alert('Exporting analytics data...');
+    
+    const csvData = [
+      ['Metric', 'Value', 'Change'],
+      ['Total Contacts', connectionsCount.toString(), '12.5% increase'],
+      ['Active Cards', activeCardsCount.toString(), '8.3% increase'],
+      ['Contact Growth', `${growthPercentage === 999 ? newContactsThisMonth : Math.abs(growthPercentage)}%`, growthPercentage === 999 ? 'new this month' : `${growthPercentage >= 0 ? 'increase' : 'decrease'} from previous period`],
+      ['Total Scans', totalScansCount.toLocaleString(), 'Card views this month'],
+      ['Average Scans', activeCardsCount > 0 ? (totalScansCount / activeCardsCount).toFixed(1) : '0.0', 'Scans per business card'],
+      ['Upcoming Meetings', filteredStats.meetingsCount.toString(), ''],
+      ['Expected Participants', filteredStats.participantsCount.toString(), ''],
+      ['Trees Saved', treesSaved.toString(), ''],
+      ['Water Saved', `${waterSavedLitres}L`, ''],
+      ['CO2 Reduced', `${co2SavedKg} kg`, ''],
+      ['Paper Saved', `${paperSavedKg} kg`, '']
+    ];
+    
+    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'analytics_report.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ Analytics CSV exported successfully');
+  };
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -1430,7 +1466,10 @@ const Analytics = () => {
         <Card className="crm-card">
           <CardHeader className="flex justify-between items-center">
             <CardTitle>CRM Integration</CardTitle>
-            <button className="export-button">
+            <button className="export-button" onClick={() => {
+              console.log('🔘 Analytics export button clicked');
+              exportAnalyticsCSV();
+            }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>

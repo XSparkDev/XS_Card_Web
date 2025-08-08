@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/UI/dropdown-menu";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN, API_BASE_URL, DEFAULT_ENTERPRISE_ID } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN, API_BASE_URL, DEFAULT_ENTERPRISE_ID, buildUrl } from "../../utils/api";
 import SecurityAlerts from './SecurityAlerts';
 import "../../styles/UserManagement.css";
 import "../../styles/BusinessCards.css";
@@ -1873,7 +1873,7 @@ const UserManagement = () => {
   ).length;
   const activeCount = departmentFilteredUsers.filter(user => user.status === "Active").length;
   const inactiveCount = departmentFilteredUsers.filter(user => user.status === "Inactive").length;
-  const pendingCount = departmentFilteredUsers.filter(user => user.status === "Pending").length;
+
 
 
 
@@ -2113,41 +2113,109 @@ const UserManagement = () => {
     localStorage.setItem('bulkEmailUsers', JSON.stringify(selectedUsersData));
   };
 
-  const handleBulkDeactivate = () => {
+  const handleBulkDeactivate = async () => {
     const selectedUsersData = users.filter(user => selectedUsers.includes(user.id));
     if (selectedUsersData.length === 0) return;
 
-    const confirmMessage = `Are you sure you want to deactivate ${selectedUsersData.length} user account${selectedUsersData.length > 1 ? 's' : ''}?\n\n${selectedUsersData.map(u => u.name).join(', ')}`;
+    // Check if all selected users are currently active
+    const activeUsers = selectedUsersData.filter(user => user.status === 'Active');
+    const inactiveUsers = selectedUsersData.filter(user => user.status === 'Inactive');
     
-    if (window.confirm(confirmMessage)) {
-      // TODO: Implement bulk deactivate API call
-      console.log('Bulk deactivating users:', selectedUsersData);
-      alert(`Bulk deactivation feature coming soon for ${selectedUsersData.length} users`);
+    let confirmMessage = '';
+    let isDeactivating = true;
+    
+    if (activeUsers.length > 0 && inactiveUsers.length > 0) {
+      // Mixed status - ask user what they want to do
+      const action = window.confirm(
+        `You have selected users with different statuses:\n\n` +
+        `Active users (${activeUsers.length}): ${activeUsers.map(u => u.name).join(', ')}\n` +
+        `Inactive users (${inactiveUsers.length}): ${inactiveUsers.map(u => u.name).join(', ')}\n\n` +
+        `Click OK to deactivate active users, or Cancel to reactivate inactive users.`
+      );
+      
+      if (action) {
+        // Deactivate active users
+        confirmMessage = `Are you sure you want to deactivate ${activeUsers.length} user account${activeUsers.length > 1 ? 's' : ''}?\n\n${activeUsers.map(u => u.name).join(', ')}`;
+        isDeactivating = true;
+      } else {
+        // Reactivate inactive users
+        confirmMessage = `Are you sure you want to reactivate ${inactiveUsers.length} user account${inactiveUsers.length > 1 ? 's' : ''}?\n\n${inactiveUsers.map(u => u.name).join(', ')}`;
+        isDeactivating = false;
+      }
+    } else if (activeUsers.length > 0) {
+      // All active users - deactivate them
+      confirmMessage = `Are you sure you want to deactivate ${activeUsers.length} user account${activeUsers.length > 1 ? 's' : ''}?\n\n${activeUsers.map(u => u.name).join(', ')}`;
+      isDeactivating = true;
+    } else if (inactiveUsers.length > 0) {
+      // All inactive users - reactivate them
+      confirmMessage = `Are you sure you want to reactivate ${inactiveUsers.length} user account${inactiveUsers.length > 1 ? 's' : ''}?\n\n${inactiveUsers.map(u => u.name).join(', ')}`;
+      isDeactivating = false;
+    } else {
+      alert('No users selected for bulk operation.');
+      return;
+    }
+    
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      // Determine which users to process based on the action
+      const usersToProcess = isDeactivating ? activeUsers : inactiveUsers;
+      const userIds = usersToProcess.map(user => user.id.toString());
+      
+      console.log(`Bulk ${isDeactivating ? 'deactivating' : 'reactivating'} users:`, usersToProcess);
+      
+      const endpoint = isDeactivating ? ENDPOINTS.BULK_DEACTIVATE : ENDPOINTS.BULK_REACTIVATE;
+      const url = buildUrl(endpoint);
+      
+      const payload = { userIds };
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`Bulk ${isDeactivating ? 'deactivate' : 'reactivate'} response:`, result);
+
+      // Update the users in the local state
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          userIds.includes(user.id.toString())
+            ? { ...user, status: isDeactivating ? 'Inactive' : 'Active' }
+            : user
+        )
+      );
+
+      // Clear selection after successful operation
+      setSelectedUsers([]);
+
+      // Show success message
+      const action = isDeactivating ? 'deactivated' : 'reactivated';
+      alert(`Successfully ${action} ${usersToProcess.length} user account${usersToProcess.length > 1 ? 's' : ''}`);
+
+      // Force immediate re-render to update filter counts
+      setCurrentPage(currentPage);
+
+      // Refresh user list to ensure status is up to date
+      setTimeout(() => {
+        fetchUsers();
+      }, 1000);
+
+    } catch (error) {
+      console.error(`Error bulk ${isDeactivating ? 'deactivating' : 'reactivating'} users:`, error);
+      alert(`Failed to ${isDeactivating ? 'deactivate' : 'reactivate'} user accounts. Please try again.`);
     }
   };
 
-  const handleBulkExport = () => {
-    const selectedUsersData = users.filter(user => selectedUsers.includes(user.id));
-    if (selectedUsersData.length === 0) return;
 
-    // Export selected users to CSV
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Name,Email,Role,Department,Status,Last Active\n" +
-      selectedUsersData.map(user => 
-        `"${user.name}","${user.email}","${user.role}","${user.department}","${user.status}","${user.lastActive}"`
-      ).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `users_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    // Clear selection after export
-    setSelectedUsers([]);
-  };
 
   return (
     <div className="user-management-container">
@@ -2230,12 +2298,6 @@ const UserManagement = () => {
               >
                 Inactive ({inactiveCount})
               </button>
-              <button
-                className={`filter-button ${activeFilter === "pending" ? "filter-active" : ""}`}
-                onClick={() => setActiveFilter("pending")}
-              >
-                Pending Activation ({pendingCount})
-              </button>
               
               <hr className="divider" />
               
@@ -2284,30 +2346,12 @@ const UserManagement = () => {
               </Button>
               <Button 
                 variant="outline" 
-                className="action-button"
-                disabled={selectedUsers.length === 0}
-                onClick={handleBulkExport}
-              >
-                <IconComponent name="Download" className="icon-small mr-2" />
-                Export Data
-              </Button>
-              <Button 
-                variant="outline" 
-                className="action-button"
-                disabled={selectedUsers.length === 0}
-                title="Coming soon - Assign users to different departments"
-              >
-                <IconComponent name="UserPlus" className="icon-small mr-2" />
-                Assign Department
-              </Button>
-              <Button 
-                variant="outline" 
                 className="action-button action-destructive"
                 disabled={selectedUsers.length === 0}
                 onClick={handleBulkDeactivate}
               >
                 <IconComponent name="UserX" className="icon-small mr-2" />
-                Deactivate
+                Deactivate/Reactivate
               </Button>
             </CardContent>
           </Card>

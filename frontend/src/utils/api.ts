@@ -149,7 +149,7 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0NjM5Mjc2LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTQ2MzkyNzYsImV4cCI6MTc1NDY0Mjg3NiwiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bN9nHgTrkjR9plzisBkKg0v4pNr-4GocnXuuJI1xBXrOEfeGw37nEmEUjrVy-jYEJU2DjWSdyYkMatgtUfdKe3Ma4AnYHgq6_uFJs8-HNSpSuG-NtmMK67CF96jy0VHCj1JWGG7uVH6GUOVNa8Nm8Ob6hgCATS7m3C8QkHD4DIM08DxTIpoeLbge_lUWfXHkil4CdFCAO-X8bSFeORTFdm9OTUWzUMr1FBUghFHK55pRO0lLf5UPVcQobx9-QEvgoBlY80LKv9Jwn_sMo33V4VVjKNDTkRsMwI1NEFpJK1BHwe35zLuzkieW2Th_iREnl2VcfBnG7ATOzPGKy5mAAA";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU0NjU0NDA3LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTQ2NTQ0MDcsImV4cCI6MTc1NDY1ODAwNywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.nTN-VE_5duO2bhcUnW080WgE2uWGB6QLJsXblv_6nSEGvOywQmwPL-u5e83DtbY1OroprVjsg40QwSxGKTv45o6cfQ6oakjtL7ZX8aVBdzqmHq6zDvpGf5S-UXANZFssOMGCZgiAtuA4PaL_9WOA0u7q80km-K4r25tmDs0lQgxLy2tHUut6ikU9zwidGHFbBLYL4emZxQ4bpTm6AVV82qJUB_TmpFesGV67LU2IAIN57PfuRnLWCSGdhq1qzeMD41E1lh4hrzUXF32-J5UmfSH1tfHayanbaCJ6xRh2omWxIkrv639HmAsfVJcGMTUajYFWjyPzntj5kBW6Nn69RQ";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -207,7 +207,7 @@ const getBaseUrl = () => {
       console.warn('🔧 For development only - do not use in production');
     }
     
-    return 'http://192.168.68.108:8383';
+    return 'http://192.168.68.101:8383';
   }
   
   // In production, use secure connection
@@ -284,6 +284,10 @@ export const ENDPOINTS = {
     ENTERPRISE_DEPARTMENT_TEAM_MEMBERS: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members`,
     ENTERPRISE_DEPARTMENT_TEAM_ADD_MEMBER: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
     ENTERPRISE_DEPARTMENT_TEAM_REMOVE_MEMBER: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
+    
+    // Bulk Operations endpoints
+    BULK_DEACTIVATE: `/bulk-deactivate`,
+    BULK_REACTIVATE: `/bulk-reactivate`,
     
 };
 
