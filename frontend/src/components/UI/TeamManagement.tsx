@@ -52,7 +52,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
   const [teamToDelete, setTeamToDelete] = useState<TeamData | null>(null);
   const [isTeamMemberManagementOpen, setIsTeamMemberManagementOpen] = useState(false);
   const [selectedTeamForMembers, setSelectedTeamForMembers] = useState<TeamData | null>(null);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   // Add employee modal state
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
@@ -98,7 +97,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen && departmentId) {
+    if (isOpen) {
       fetchTeamsAndEmployees();
     }
   }, [isOpen, departmentId]);
@@ -108,14 +107,12 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest('.custom-dropdown')) {
-        setOpenDropdown(null);
+        // Reset dropdown state if needed
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleCreateTeam = () => {
@@ -135,11 +132,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
 
   const handleSubmitTeam = async (teamData: any) => {
     try {
-      const headers = getEnterpriseHeaders();
-      
       if (editingTeam) {
         // Update existing team
         const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams/${editingTeam.id}`);
+        const headers = getEnterpriseHeaders();
+        
         const response = await fetch(url, {
           method: 'PUT',
           headers,
@@ -147,11 +144,15 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
         });
         
         if (!response.ok) {
-          throw new Error(`Failed to update team: ${response.status}`);
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
+        
+        console.log('Team updated successfully');
       } else {
         // Create new team
         const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/teams`);
+        const headers = getEnterpriseHeaders();
+        
         const response = await fetch(url, {
           method: 'POST',
           headers,
@@ -159,16 +160,21 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
         });
         
         if (!response.ok) {
-          throw new Error(`Failed to create team: ${response.status}`);
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
+        
+        console.log('Team created successfully');
       }
-
-      // Refresh the teams list
+      
+      // Refresh data
       await fetchTeamsAndEmployees();
+      
+      // Close modal
       setIsTeamModalOpen(false);
       setEditingTeam(null);
-    } catch (err: any) {
-      throw new Error(err.message || "Failed to save team");
+    } catch (error) {
+      console.error('Error saving team:', error);
+      alert('Failed to save team. Please try again.');
     }
   };
 
@@ -183,18 +189,18 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
         method: 'DELETE',
         headers
       });
-
+      
       if (!response.ok) {
-        throw new Error(`Failed to delete team: ${response.status}`);
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
-      // Remove the team from state
+      
+      // Remove team from state
       setTeams(teams.filter(team => team.id !== teamToDelete.id));
       setDeleteConfirmOpen(false);
       setTeamToDelete(null);
-    } catch (err: any) {
-      setError(err.message || "Failed to delete team");
-      console.error("Error deleting team:", err);
+    } catch (error) {
+      console.error('Error deleting team:', error);
+      alert('Failed to delete team. Please try again.');
     }
   };
 
@@ -205,14 +211,13 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
 
   const handleManageMembers = (team: TeamData) => {
     console.log('handleManageMembers called with team:', team);
-    alert(`Opening team member management for: ${team.name}`);
     setSelectedTeamForMembers(team);
     setIsTeamMemberManagementOpen(true);
-    console.log('State updated - selectedTeamForMembers:', team, 'isTeamMemberManagementOpen: true');
   };
 
   // Add employee to team functionality
   const handleAddEmployeeToTeam = (team: TeamData) => {
+    console.log('Opening employee modal for team:', team);
     setSelectedTeamForEmployee(team);
     setIsEmployeeModalOpen(true);
   };
@@ -398,47 +403,31 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
                         <p className="team-description">{team.description}</p>
                       </div>
                       <div className="team-actions">
-                        <div className="custom-dropdown">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="more-button"
-                            onClick={() => setOpenDropdown(openDropdown === team.id ? null : team.id)}
-                          >
-                            <FaEllipsisV />
-                          </Button>
-                          
-                          <div className={`dropdown-menu ${openDropdown === team.id ? 'show' : ''}`}>
-                            <button 
-                              className="dropdown-item"
-                              onClick={() => handleEditTeam(team)}
-                            >
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="more-button">
+                              <FaEllipsisV />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="dropdown-content">
+                            <DropdownMenuItem onClick={() => handleEditTeam(team)}>
                               <FaEdit className="action-icon" />
                               <span>Edit</span>
-                            </button>
-                            <button 
-                              className="dropdown-item"
-                              onClick={() => handleAddEmployeeToTeam(team)}
-                            >
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleAddEmployeeToTeam(team)}>
                               <FaUserPlus className="action-icon" />
                               <span>Add Employee</span>
-                            </button>
-                            <button 
-                              className="dropdown-item"
-                              onClick={() => handleManageMembers(team)}
-                            >
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleManageMembers(team)}>
                               <FaUsers className="action-icon" />
                               <span>Manage Members</span>
-                            </button>
-                            <button 
-                              className="dropdown-item"
-                              onClick={() => handleDeleteTeam(team)}
-                            >
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteTeam(team)}>
                               <FaTrash className="action-icon" />
                               <span>Delete</span>
-                            </button>
-                          </div>
-                        </div>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     
@@ -508,6 +497,7 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
           }}
           onSubmit={handleAddEmployee}
           departments={[{ value: departmentId, label: departmentName }]}
+          teams={teams.map(team => ({ value: team.id, label: team.name }))}
           prefillTeam={selectedTeamForEmployee}
           isLoading={employeeCreating}
         />

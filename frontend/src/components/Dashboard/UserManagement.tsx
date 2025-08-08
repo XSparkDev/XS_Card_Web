@@ -1091,436 +1091,165 @@ const ViewProfileModal = ({ user, onClose }: { user: User | null; onClose: () =>
   return (
     <>
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#1f2937' }}>
-              Employee Profile - {user.name}
-            </h2>
+        <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+          {/* Modern Header with Gradient */}
+          <div className="profile-header">
+            <div className="profile-avatar">
+              <div className="avatar-circle">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="profile-title">
+              <h2>{user.name}</h2>
+              <p className="profile-subtitle">{user.role} • {user.department}</p>
+            </div>
             <button 
               onClick={onClose}
               className="modal-close"
               style={{
-                background: 'none',
+                background: 'rgba(255, 255, 255, 0.2)',
                 border: 'none',
-                fontSize: '1.5rem',
+                fontSize: '1.25rem',
                 cursor: 'pointer',
-                color: '#6b7280',
-                padding: '0.5rem'
+                color: 'white',
+                padding: '0.5rem',
+                borderRadius: '8px',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
               }}
             >
               ×
             </button>
           </div>
 
-          <div style={{ padding: '1.5rem' }}>
+          <div className="profile-content">
             {loading ? (
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '3rem',
-                color: '#6b7280'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '1rem'
-                }}>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    border: '3px solid #e5e7eb',
-                    borderTop: '3px solid #0ea5e9',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }}></div>
+              <div className="loading-container">
+                <div className="loading-spinner"></div>
                   <span>Loading profile...</span>
-                </div>
               </div>
             ) : error ? (
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: '3rem',
-                color: '#ef4444',
-                textAlign: 'center'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '1rem'
-                }}>
-                  <IconComponent name="AlertTriangle" className="icon-small" style={{ width: '32px', height: '32px' }} />
+              <div className="error-container">
+                <IconComponent name="AlertTriangle" className="error-icon" />
                   <span>{error}</span>
-                </div>
               </div>
             ) : employeeData ? (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.5rem'
-              }}>
-                {/* Employee Information Form */}
-                <div style={{
-                  background: '#f9fafb',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h3 style={{
-                    margin: '0 0 1.5rem 0',
-                    fontSize: '1.125rem',
-                    fontWeight: '600',
-                    color: '#111827'
-                  }}>
-                    Employee Information
-                  </h3>
+              <div className="profile-sections">
+                {/* Employee Information Section */}
+                <div className="profile-section">
+                  <div className="section-header">
+                    <IconComponent name="UserCheck" className="section-icon" />
+                    <h3>Employee Information</h3>
+                  </div>
                   
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1rem'
-                  }}>
-                    {/* Name */}
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Name
-                      </label>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'white',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#111827'
-                      }}>
-                        {employeeData.name || 'N/A'}
-                      </div>
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <label>Name</label>
+                      <div className="info-value">{employeeData.name || 'N/A'}</div>
                     </div>
 
-                    {/* Surname */}
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Surname
-                      </label>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'white',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#111827'
-                      }}>
-                        {employeeData.surname || 'N/A'}
-                      </div>
+                    <div className="info-item">
+                      <label>Surname</label>
+                      <div className="info-value">{employeeData.surname || 'N/A'}</div>
                     </div>
 
-                    {/* Email */}
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Email
-                      </label>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'white',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#111827'
-                      }}>
-                        {employeeData.email || 'N/A'}
-                      </div>
+                    <div className="info-item">
+                      <label>Email</label>
+                      <div className="info-value">{employeeData.email || 'N/A'}</div>
                     </div>
 
-                    {/* Phone */}
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Phone
-                      </label>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'white',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#111827'
-                      }}>
-                        {employeeData.phone || 'N/A'}
-                      </div>
+                    <div className="info-item">
+                      <label>Phone</label>
+                      <div className="info-value">{employeeData.phone || 'N/A'}</div>
                     </div>
 
-                    {/* Role */}
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Role
-                      </label>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'white',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#111827'
-                      }}>
-                        {employeeData.role || 'N/A'}
-                      </div>
+                    <div className="info-item">
+                      <label>Role</label>
+                      <div className="info-value">{employeeData.role || 'N/A'}</div>
                     </div>
 
-                    {/* Position */}
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Position
-                      </label>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'white',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#111827'
-                      }}>
-                        {employeeData.position || 'N/A'}
+                    <div className="info-item">
+                      <label>Position</label>
+                      <div className="info-value">{employeeData.position || 'N/A'}</div>
                       </div>
                     </div>
                   </div>
+
+                {/* Quick Actions Section */}
+                <div className="profile-section">
+                  <div className="section-header">
+                    <IconComponent name="Shield" className="section-icon" />
+                    <h3>Quick Actions</h3>
                 </div>
 
-                {/* Interactive Indicators */}
-                <div style={{
-                  display: 'flex',
-                  gap: '1rem',
-                  flexWrap: 'wrap'
-                }}>
-                  {/* Team Indicator */}
-                  <div style={{
-                    flex: '1',
-                    minWidth: '200px'
-                  }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: '500',
-                      fontSize: '0.875rem',
-                      color: '#374151'
-                    }}>
-                      Team
-                    </label>
+                  <div className="action-cards">
                     <button
                       onClick={handleTeamClick}
                       disabled={!employeeData.teamId || loadingTeam}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: employeeData.teamId ? '#eff6ff' : '#f3f4f6',
-                        border: `1px solid ${employeeData.teamId ? '#3b82f6' : '#d1d5db'}`,
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: employeeData.teamId ? '#1e40af' : '#6b7280',
-                        cursor: employeeData.teamId ? 'pointer' : 'not-allowed',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (employeeData.teamId) {
-                          e.currentTarget.style.background = '#dbeafe';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (employeeData.teamId) {
-                          e.currentTarget.style.background = '#eff6ff';
-                        }
-                      }}
+                      className={`action-card ${employeeData.teamId ? 'action-card-active' : 'action-card-disabled'}`}
                     >
-                      <span>
-                        {employeeData.teamId ? 'View Team Details' : 'No Team Assigned'}
-                      </span>
-                      {employeeData.teamId && (
-                        <IconComponent name="Eye" style={{ width: '16px', height: '16px' }} />
-                      )}
-                    </button>
+                      <div className="action-icon action-icon-team">
+                        <IconComponent name="Eye" style={{ width: '1.25rem', height: '1.25rem' }} />
                   </div>
-
-                  {/* Card Reference Indicator */}
-                  <div style={{
-                    flex: '1',
-                    minWidth: '200px'
-                  }}>
-                    <label style={{
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: '500',
-                      fontSize: '0.875rem',
-                      color: '#374151'
-                    }}>
-                      Business Cards
-                    </label>
+                      <div className="action-content">
+                        <div className="action-title">View Team Details</div>
+                        <div className="action-subtitle">
+                          {employeeData.teamId ? 'Click to see team information' : 'No team assigned'}
+                        </div>
+                      </div>
+                    </button>
+                    
                     <button
                       onClick={handleCardClick}
                       disabled={!employeeData.cardsRefPath && !employeeData.cardsRef || loadingCards}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: (employeeData.cardsRefPath || employeeData.cardsRef) ? '#f0fdf4' : '#f3f4f6',
-                        border: `1px solid ${(employeeData.cardsRefPath || employeeData.cardsRef) ? '#10b981' : '#d1d5db'}`,
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: (employeeData.cardsRefPath || employeeData.cardsRef) ? '#166534' : '#6b7280',
-                        cursor: (employeeData.cardsRefPath || employeeData.cardsRef) ? 'pointer' : 'not-allowed',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (employeeData.cardsRefPath || employeeData.cardsRef) {
-                          e.currentTarget.style.background = '#dcfce7';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (employeeData.cardsRefPath || employeeData.cardsRef) {
-                          e.currentTarget.style.background = '#f0fdf4';
-                        }
-                      }}
+                      className={`action-card ${(employeeData.cardsRefPath || employeeData.cardsRef) ? 'action-card-active' : 'action-card-disabled'}`}
                     >
-                      <span>
-                        {(employeeData.cardsRefPath || employeeData.cardsRef) ? 'View Card Details' : 'No Cards Available'}
-                      </span>
-                      {(employeeData.cardsRefPath || employeeData.cardsRef) && (
-                        <IconComponent name="Eye" style={{ width: '16px', height: '16px' }} />
-                      )}
+                      <div className="action-icon">
+                        <IconComponent name="Eye" style={{ width: '1.25rem', height: '1.25rem' }} />
+                      </div>
+                      <div className="action-content">
+                        <div className="action-title">View Business Cards</div>
+                        <div className="action-subtitle">
+                          {(employeeData.cardsRefPath || employeeData.cardsRef) ? 'Click to see card details' : 'No cards available'}
+                        </div>
+                      </div>
                     </button>
                   </div>
                 </div>
 
-                {/* Status Information */}
-                <div style={{
-                  background: '#f9fafb',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '12px',
-                  padding: '1.5rem'
-                }}>
-                  <h3 style={{
-                    margin: '0 0 1rem 0',
-                    fontSize: '1.125rem',
-                    fontWeight: '600',
-                    color: '#111827'
-                  }}>
-                    Account Status
-                  </h3>
+                {/* Account Status Section */}
+                <div className="profile-section">
+                  <div className="section-header">
+                    <IconComponent name="Clock" className="section-icon" />
+                    <h3>Account Status</h3>
+                  </div>
                   
-                  <div style={{
-                    display: 'flex',
-                    gap: '2rem',
-                    flexWrap: 'wrap'
-                  }}>
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Status
-                      </label>
-                      <div style={{
-                        padding: '0.5rem 1rem',
-                        background: employeeData.isActive ? '#dcfce7' : '#fee2e2',
-                        border: `1px solid ${employeeData.isActive ? '#10b981' : '#ef4444'}`,
-                        borderRadius: '6px',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        color: employeeData.isActive ? '#166534' : '#dc2626',
-                        display: 'inline-block'
-                      }}>
+                  <div className="status-grid">
+                    <div className="status-item">
+                      <label>Status</label>
+                      <div className={`status-badge status-${employeeData.isActive ? 'active' : 'inactive'}`}>
                         {employeeData.isActive ? 'Active' : 'Inactive'}
                       </div>
                     </div>
                     
-                    <div>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: '500',
-                        fontSize: '0.875rem',
-                        color: '#374151'
-                      }}>
-                        Employee ID
-                      </label>
-                      <div style={{
-                        padding: '0.75rem',
-                        background: 'white',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '0.875rem',
-                        color: '#111827'
-                      }}>
-                        {employeeData.employeeId || 'N/A'}
-                      </div>
+                    <div className="status-item">
+                      <label>Employee ID</label>
+                      <div className="info-value">{employeeData.employeeId || 'N/A'}</div>
                     </div>
                   </div>
                 </div>
               </div>
             ) : null}
-          </div>
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            padding: '1.5rem',
-            borderTop: '1px solid #e5e7eb'
-          }}>
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-              style={{
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px'
-              }}
-            >
-              Close
-            </Button>
           </div>
         </div>
       </div>
@@ -2595,16 +2324,6 @@ const UserManagement = () => {
                   {activeFilter !== "all" && ` - ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}`}
                   {selectedDepartment !== "all" && ` - ${selectedDepartment}`}
                 </CardTitle>
-                <div className="card-actions">
-                  <Button variant="outline" size="sm" className="action-button-small">
-                    <IconComponent name="Filter" className="icon-tiny mr-2" />
-                    Filters
-                  </Button>
-                  <Button variant="outline" size="sm" className="action-button-small">
-                    <IconComponent name="Download" className="icon-tiny mr-2" />
-                    Export
-                  </Button>
-                </div>
               </div>
             </CardHeader>
             <CardContent className="card-content">
@@ -2616,34 +2335,52 @@ const UserManagement = () => {
                 <div className="users-table-scrollable">
                   <div className="table-header">
                     <div className="select-all">
-                      <Checkbox 
-                        id="selectAll" 
+                      <label className="custom-checkbox">
+                        <input 
+                          type="checkbox"
                         checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                        onCheckedChange={handleSelectAll}
-                      />
-                      <label htmlFor="selectAll" className="select-label">
+                          onChange={(e) => handleSelectAll(e.target.checked)}
+                          ref={(el) => {
+                            if (el) {
+                              el.indeterminate = selectedUsers.length > 0 && selectedUsers.length < filteredUsers.length;
+                            }
+                          }}
+                        />
+                        <span className="checkmark"></span>
+                      </label>
+                      <label className="select-label">
                         {selectedUsers.length > 0 ? `${selectedUsers.length} selected` : "Select all"}
                       </label>
                     </div>
+                    <div></div> {/* User info column */}
+                    <div>Status</div>
+                    <div>Role & Department</div>
+                    <div></div> {/* Actions column */}
                   </div>
                   
                   <div className="table-body-scrollable">
                     {filteredUsers.map((user, index) => (
                       <div key={`${user.id}-${index}`} className="table-row">
                         <div className="user-info">
-                          <Checkbox 
+                          <label className="custom-checkbox">
+                            <input 
+                              type="checkbox"
                             checked={selectedUsers.includes(user.id)}
-                            onCheckedChange={() => toggleUserSelection(user.id)} 
+                              onChange={() => toggleUserSelection(user.id)}
                           />
+                            <span className="checkmark"></span>
+                          </label>
+                        </div>
+                        
                           <div className="user-details">
                             <div className="user-name">{user.name}</div>
                             <div className="user-email">{user.email}</div>
-                          </div>
                         </div>
                         
-                        <div className="user-meta">
                           <div className="user-status">
-                            <Badge variant={getBadgeVariant(user.status)}>{user.status}</Badge>
+                          <div className={`status-badge status-${user.status.toLowerCase()}`}>
+                            {user.status}
+                          </div>
                             <div className="last-active">
                               <IconComponent name="Clock" className="icon-tiny mr-1" />
                               {user.lastActive}
@@ -2655,6 +2392,7 @@ const UserManagement = () => {
                             <div className="department">{user.department}</div>
                           </div>
                           
+                        <div className="actions-column">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="icon-button">
