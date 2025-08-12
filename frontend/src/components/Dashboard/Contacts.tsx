@@ -296,6 +296,7 @@ const Contacts = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
     // Fetch departments from the API
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -708,14 +709,16 @@ const Contacts = () => {
       
       {/* Search Bar */}
       <div className="contacts-search-bar">
-        <div className="search-input-wrapper">
-            <FaSearch className="search-icon" />
+        <div className={`search-input-wrapper ${isSearchFocused ? '' : 'has-icon'}`}>
+            {!isSearchFocused && <FaSearch className="search-icon" />}
             <Input 
               type="text" 
               placeholder="Search contacts..." 
               className="search-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
             />
           </div>
         </div>
