@@ -20,6 +20,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/UI/dropdown-menu";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "../../components/UI/selectRadix";
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, FIREBASE_TOKEN, API_BASE_URL, DEFAULT_ENTERPRISE_ID, buildUrl } from "../../utils/api";
 import SecurityAlerts from './SecurityAlerts';
 import "../../styles/UserManagement.css";
@@ -1682,8 +1689,8 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
-      // Use the enterprise employees endpoint from our API utils
-      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
+      // Use the enterprise employees endpoint, request a higher limit, and include inactive/unassigned if supported
+      const url = buildEnterpriseUrl(`${ENDPOINTS.ENTERPRISE_EMPLOYEES}?limit=200&includeInactive=true&includeUnassigned=true`);
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, { headers });
@@ -1713,12 +1720,32 @@ const UserManagement = () => {
         departmentId?: string; // Add department ID for API calls
       }
 
-      // Define interface for the API response
+      // Define interface for the API response (support possible pagination fields)
       interface EmployeesResponse {
         employees: EmployeeData[];
+        totalCount?: number;
+        page?: number;
+        limit?: number;
       }
 
-      const processedUsers = (data as EmployeesResponse).employees.map((emp: EmployeeData) => ({
+      // Aggregate employees across pages if pagination is present
+      let allEmployees: EmployeeData[] = (data as EmployeesResponse).employees || [];
+      const totalCount = (data as EmployeesResponse).totalCount || allEmployees.length;
+      const pageSize = (data as EmployeesResponse).limit || 200;
+      let currentPage = (data as EmployeesResponse).page || 1;
+
+      while (allEmployees.length < totalCount) {
+        currentPage += 1;
+        const nextUrl = buildEnterpriseUrl(`${ENDPOINTS.ENTERPRISE_EMPLOYEES}?limit=${pageSize}&page=${currentPage}&includeInactive=true&includeUnassigned=true`);
+        const nextRes = await fetch(nextUrl, { headers });
+        if (!nextRes.ok) break;
+        const nextData: EmployeesResponse = await nextRes.json();
+        const nextEmployees = Array.isArray(nextData.employees) ? nextData.employees : [];
+        if (nextEmployees.length === 0) break;
+        allEmployees = allEmployees.concat(nextEmployees);
+      }
+
+      const processedUsers = allEmployees.map((emp: EmployeeData) => ({
         id: emp.id,
         userId: emp.userId, // Include Firebase user ID
         name: emp.name && emp.surname ? `${emp.name} ${emp.surname}` : `${emp.firstName} ${emp.lastName}`,
@@ -2195,7 +2222,7 @@ const UserManagement = () => {
       );
 
       // Clear selection after successful operation
-      setSelectedUsers([]);
+    setSelectedUsers([]);
 
       // Show success message
       const action = isDeactivating ? 'deactivated' : 'reactivated';
@@ -2281,7 +2308,7 @@ const UserManagement = () => {
                 className={`filter-button ${activeFilter === "employees" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("employees")}
               >
-                Regular Employees ({employeeCount})
+                Employees ({employeeCount})
               </button>
               
               <hr className="divider" />
@@ -2305,7 +2332,7 @@ const UserManagement = () => {
                 className={`filter-button ${activeFilter === "all" ? "filter-active" : ""}`}
                 onClick={() => setActiveFilter("all")}
               >
-                All Users ({users.length})
+                All Users ({departmentFilteredUsers.length})
               </button>
             </CardContent>
           </Card>
@@ -2316,16 +2343,17 @@ const UserManagement = () => {
               <CardTitle className="card-title-small">Departments</CardTitle>
             </CardHeader>
             <CardContent className="card-content-compact">
-              <select 
-                className="department-select"
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-              >
-                <option value="all">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
+              <Select value={selectedDepartment} onValueChange={(value) => setSelectedDepartment(value)}>
+                <SelectTrigger className="department-select">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
           
@@ -2382,7 +2410,7 @@ const UserManagement = () => {
                       <label className="custom-checkbox">
                         <input 
                           type="checkbox"
-                        checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                          checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
                           onChange={(e) => handleSelectAll(e.target.checked)}
                           ref={(el) => {
                             if (el) {
@@ -2392,11 +2420,12 @@ const UserManagement = () => {
                         />
                         <span className="checkmark"></span>
                       </label>
+                    </div>
+                    <div>
                       <label className="select-label">
                         {selectedUsers.length > 0 ? `${selectedUsers.length} selected` : "Select all"}
                       </label>
                     </div>
-                    <div></div> {/* User info column */}
                     <div>Status</div>
                     <div>Role & Department</div>
                     <div></div> {/* Actions column */}
@@ -2425,10 +2454,12 @@ const UserManagement = () => {
                           <div className={`status-badge status-${user.status.toLowerCase()}`}>
                             {user.status}
                           </div>
-                            <div className="last-active">
-                              <IconComponent name="Clock" className="icon-tiny mr-1" />
-                              {user.lastActive}
-                            </div>
+                            {user.lastActive && user.lastActive.toLowerCase() !== 'never' && (
+                              <div className="last-active">
+                                <IconComponent name="Clock" className="icon-tiny mr-1" />
+                                {user.lastActive}
+                              </div>
+                            )}
                           </div>
                           
                           <div className="user-role">

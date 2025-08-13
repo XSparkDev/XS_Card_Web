@@ -3,7 +3,7 @@ import { Input } from "./input";
 import { Button } from "./button";
 import { Select } from "./select";
 import { Label } from "./label";
-import { getAvailableTemplatesForDepartment, Template, fetchAllEmployees, searchEmployees, Employee } from "../../utils/api";
+import { getAvailableTemplatesForDepartment, Template, Employee } from "../../utils/api";
 import "../../styles/EmployeeModal.css";
 
 interface EmployeeModalProps {
@@ -12,6 +12,7 @@ interface EmployeeModalProps {
   onSubmit: (employeeData: EmployeeData) => void;
   departments: { value: string; label: string }[];
   teams: { value: string; label: string }[];
+  employees: Employee[]; // Add employees prop
   prefillTeam?: { id: string; name: string } | null;
   isLoading?: boolean;
 }
@@ -35,6 +36,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   onSubmit,
   departments,
   teams,
+  employees, // Add employees prop
   prefillTeam = null,
   isLoading = false
 }) => {
@@ -54,9 +56,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
   // Employee search states
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Employee[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
 
   const [availableTemplates, setAvailableTemplates] = useState<{
     departmentTemplates: Template[];
@@ -107,7 +107,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
       setSearchTerm("");
       setSearchResults([]);
       setShowSearchResults(false);
-      setSearchError(null);
     }
   }, [isOpen, departments, prefillTeam]);
 
@@ -118,43 +117,32 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     }
   }, [isOpen, employeeData.department, isSelectingEmployee]);
 
-  // Employee search with debouncing
+  // Employee search with client-side filtering
   useEffect(() => {
-    const performSearch = async () => {
-      if (searchTerm.trim().length === 0) {
-        setSearchResults([]);
-        setShowSearchResults(false);
-        return;
-      }
+    if (searchTerm.trim().length === 0) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
 
-      if (searchTerm.trim().length < 2) {
-        return; // Don't search until at least 2 characters
-      }
+    if (searchTerm.trim().length < 2) {
+      return; // Don't search until at least 2 characters
+    }
 
-      setIsSearching(true);
-      setSearchError(null);
+    // Client-side filtering instead of API call
+    const filteredEmployees = employees.filter(employee => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        employee.name?.toLowerCase().includes(searchLower) ||
+        employee.surname?.toLowerCase().includes(searchLower) ||
+        employee.email?.toLowerCase().includes(searchLower) ||
+        employee.employeeNumber?.toLowerCase().includes(searchLower)
+      );
+    });
 
-      try {
-        const response = await searchEmployees(searchTerm);
-        if (response.success) {
-          setSearchResults(response.data.employees);
-          setShowSearchResults(true);
-        } else {
-          setSearchError(response.message || 'Search failed');
-          setSearchResults([]);
-        }
-      } catch (error) {
-        console.error('Error searching employees:', error);
-        setSearchError('Failed to search employees');
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-
-    const timeoutId = setTimeout(performSearch, 300); // 300ms debounce
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+    setSearchResults(filteredEmployees);
+    setShowSearchResults(true);
+  }, [searchTerm, employees]);
 
   const fetchTemplatesForDepartment = async (departmentId: string) => {
     setIsLoadingTemplates(true);
@@ -216,8 +204,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     
     setEmployeeData(prev => ({
       ...prev,
-      firstName: employee.firstName,
-      lastName: employee.lastName,
+      firstName: employee.name,
+      lastName: employee.surname,
       email: employee.email,
       phone: employee.phone || "",
       position: employee.position || "",
@@ -226,7 +214,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     }));
     
     // Set search term with proper handling of undefined values
-    const fullName = [employee.firstName, employee.lastName]
+    const fullName = [employee.name, employee.surname]
       .filter(name => name && name.trim())
       .join(' ');
     setSearchTerm(fullName || '');
@@ -327,16 +315,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 value={searchTerm}
                 onChange={handleSearchChange}
                 placeholder="Search by name or employee number..."
-                disabled={isSearching}
+                disabled={isLoading}
               />
-              {isSearching && (
+              {isLoading && (
                 <div className="search-loading">
                   <span>Searching...</span>
-                </div>
-              )}
-              {searchError && (
-                <div className="search-error">
-                  <span>{searchError}</span>
                 </div>
               )}
               {showSearchResults && searchResults.length > 0 && (
@@ -349,10 +332,10 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     >
                       <div className="employee-info">
                         <span className="employee-name">
-                          {employee.firstName} {employee.lastName}
+                          {employee.name} {employee.surname}
                         </span>
                         <span className="employee-details">
-                          {employee.email} • {employee.employeeNumber || 'No ID'} • {employee.departmentName || 'No Department'}
+                          {employee.email} • {employee.departmentName || 'No Department'}
                         </span>
                       </div>
                     </div>
@@ -494,13 +477,29 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
               )}
               {selectedTemplate && (
                 <div className="template-preview">
-                  <div 
-                    className="template-color-preview"
-                    style={{ backgroundColor: selectedTemplate.colorScheme }}
-                  ></div>
-                  <span className="template-name">{selectedTemplate.name}</span>
-                  {selectedTemplate.description && (
-                    <span className="template-description">{selectedTemplate.description}</span>
+                  <div className="template-preview-content">
+                    <div 
+                      className="template-color-preview"
+                      style={{ backgroundColor: selectedTemplate.colorScheme }}
+                    ></div>
+                    <div className="template-info">
+                      <span className="template-name">{selectedTemplate.name}</span>
+                      {selectedTemplate.description && (
+                        <span className="template-description">{selectedTemplate.description}</span>
+                      )}
+                    </div>
+                  </div>
+                  {selectedTemplate.companyLogo && (
+                    <div className="template-logo-preview">
+                      <img 
+                        src={selectedTemplate.companyLogo} 
+                        alt="Company Logo" 
+                        className="template-logo"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
               )}

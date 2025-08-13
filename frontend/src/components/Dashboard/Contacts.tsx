@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaSearch, FaEnvelope, FaPhone, FaEllipsisV, FaTrash, FaBuilding, FaShare } from "react-icons/fa";
+import { FaEnvelope, FaPhone, FaEllipsisV, FaTrash, FaBuilding, FaShare } from "react-icons/fa";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
 import { Card, CardContent } from "../UI/card";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import "../../styles/Contacts.css";
 import "../../styles/Dashboard.css";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
-import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS, authenticatedFetch, buildUrl } from "../../utils/api";
+import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS, authenticatedFetch } from "../../utils/api";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../UI/dialog";
 
 // Define contact interface based on API response
@@ -76,219 +76,8 @@ interface DepartmentContactsResponse {
   };
 }
 
-const ContactItem = ({ contact, onDelete }: { contact: Contact; onDelete: (contactId: string) => void }) => {
-  const fullName = `${contact.name} ${contact.surname}`;
-  const initials = `${contact.name[0]}${contact.surname[0]}`;
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  const handleEmailClick = (email: string) => {
-    window.location.href = `mailto:${email}`;
-  };
-
-  const handleDeleteClick = () => {
-    setShowDeleteDialog(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    try {
-      setIsDeleting(true);
-      
-      // Try different endpoint patterns to see which one works
-      // Pattern 1: /Contacts/:id (most common)
-      const endpoint = `/Contacts/${contact.ownerInfo.userId}`;
-      console.log('🗑️ Attempting to delete contact:', {
-        contactName: `${contact.name} ${contact.surname}`,
-        userId: contact.ownerInfo.userId,
-        endpoint: endpoint
-      });
-      
-      const response = await authenticatedFetch(endpoint, {
-        method: 'DELETE',
-      });
-
-      console.log('🗑️ Delete response:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🗑️ Delete failed with error:', errorText);
-        
-        // If 404, try alternative endpoint patterns
-        if (response.status === 404) {
-          console.log('🔄 Trying alternative endpoint patterns...');
-          
-          // Pattern 2: Try with contact ID instead of user ID
-          const contactId = contact.email; // Use email as contact ID
-          const altEndpoint = `/Contacts/${contactId}`;
-          console.log('🔄 Trying alternative endpoint:', altEndpoint);
-          
-          const altResponse = await authenticatedFetch(altEndpoint, {
-            method: 'DELETE',
-          });
-          
-          if (altResponse.ok) {
-            console.log('✅ Contact deleted with alternative endpoint');
-            onDelete(contact.ownerInfo.userId);
-            setShowDeleteDialog(false);
-            alert(`✅ Successfully deleted contact: ${fullName}`);
-            return;
-          }
-          
-          // Pattern 3: Try enterprise-specific endpoint
-          const enterpriseEndpoint = `/enterprise/x-spark-test/contacts/${contact.ownerInfo.userId}`;
-          console.log('🔄 Trying enterprise endpoint:', enterpriseEndpoint);
-          
-          const enterpriseResponse = await authenticatedFetch(enterpriseEndpoint, {
-            method: 'DELETE',
-          });
-          
-          if (enterpriseResponse.ok) {
-            console.log('✅ Contact deleted with enterprise endpoint');
-            onDelete(contact.ownerInfo.userId);
-            setShowDeleteDialog(false);
-            alert(`✅ Successfully deleted contact: ${fullName}`);
-            return;
-          }
-        }
-        
-        throw new Error(`Failed to delete contact: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      // Call the parent's onDelete function to update the UI
-      onDelete(contact.ownerInfo.userId);
-      setShowDeleteDialog(false);
-      
-      // Show success message
-      console.log('✅ Contact deleted successfully');
-      alert(`✅ Successfully deleted contact: ${fullName}`);
-    } catch (error) {
-      console.error('Error deleting contact:', error);
-      
-      // Show more specific error messages
-      if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          alert('❌ Unauthorized: You do not have permission to delete this contact.');
-        } else if (error.message.includes('404')) {
-          alert('❌ Contact not found: The contact may have already been deleted or the endpoint is incorrect.');
-        } else if (error.message.includes('403')) {
-          alert('❌ Forbidden: You do not have permission to delete contacts.');
-        } else {
-          alert(`❌ Failed to delete contact: ${error.message}`);
-        }
-      } else {
-        alert('❌ Failed to delete contact. Please try again.');
-      }
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteDialog(false);
-  };
-
-  // Convert Firebase timestamp to date
-  const createdDate = new Date(contact.createdAt._seconds * 1000);
-
-  return (
-    <Card className="contact-card">
-      <CardContent>
-        <div className="contact-header">
-          <div className="contact-info">
-            <div className="avatar">
-              <span className="avatar-text">{initials}</span>
-            </div>
-            <div>
-              <p className="contact-name">{fullName}</p>
-              <p className="contact-title">Met: {contact.howWeMet}</p>
-              {contact.ownerInfo.departmentName && (
-                <p className="contact-department">
-                  <FaBuilding className="department-icon" />
-                  {contact.ownerInfo.departmentName}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="contact-actions">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="action-button">
-                  <FaEllipsisV />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="dropdown-content">
-                <DropdownMenuItem onClick={handleDeleteClick}>
-                  <FaTrash className="action-icon" />
-                  <span>Delete</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        
-        <div className="contact-details">
-          <div className="contact-detail">
-            <FaEnvelope className="contact-icon" />
-            <p className="contact-text">{contact.email}</p>
-          </div>
-          <div className="contact-detail">
-            <FaPhone className="contact-icon" />
-            <p className="contact-text">{contact.phone}</p>
-          </div>
-        </div>
-        
-        <div className="contact-footer">
-          <div className="contact-dates">
-            <p className="date-text">Added: {createdDate.toLocaleDateString()}</p>
-            <p className="date-text separator">•</p>
-            <p className="date-text">Owner: {contact.ownerInfo.email}</p>
-          </div>
-          <div className="contact-actions">
-            <Button 
-              variant="outline" 
-              className="email-button"
-              leftIcon={<FaEnvelope />}
-              onClick={() => handleEmailClick(contact.email)}
-            >
-              Email
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-destructive">⚠️ Delete Contact</DialogTitle>
-            <DialogDescription>
-              <p className="mb-2">Are you sure you want to delete <strong>{fullName}</strong>?</p>
-              <p className="text-sm text-muted-foreground">
-                <strong>Warning:</strong> This action cannot be undone. All contact information, 
-                including email, phone, and meeting history will be permanently removed.
-              </p>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCancelDelete} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
-              {isDeleting ? 'Deleting...' : 'Delete Contact'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
-};
-
 const Contacts = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -296,126 +85,61 @@ const Contacts = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-    // Fetch departments from the API
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
-        const response = await fetch(url, {
-          headers: getEnterpriseHeaders(),
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const apiResponse: EnterpriseContactsResponse = await response.json();
-        
-        // Extract departments from departmentStats
-        const departmentList: Department[] = Object.entries(apiResponse.data.departmentStats).map(([id, stats]) => ({
-          id,
-          name: stats.name,
-          contactCount: stats.contactCount
-        }));
-        
-        setDepartments(departmentList);
-      } catch (err) {
-        console.error("Error fetching departments:", err);
-        // Don't set error here as departments are optional
-      }
-    };
-    
-    fetchDepartments();
-  }, []);
+  
   // Fetch contacts from the API - extracted to be reusable
-    const fetchContacts = async () => {
-      try {
-        setLoading(true);
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
       console.log('🔄 Fetching fresh contacts data from backend...');
-        
-        if (selectedDepartment === "all") {
-        // Get all enterprise contacts with cache busting
-        const baseUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
-        const cacheBuster = `?_t=${Date.now()}`;
-        const url = baseUrl + cacheBuster;
-        console.log('🔄 Fetching from URL with cache buster:', url);
-          const response = await fetch(url, {
-            headers: getEnterpriseHeaders(),
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          
-          const apiResponse: EnterpriseContactsResponse = await response.json();
-        console.log('📊 Fresh API response:', apiResponse);
-        console.log('📊 contactsByDepartment:', apiResponse.data.contactsByDepartment);
-          
-          // Flatten all contacts from all departments
-          const allContacts: Contact[] = [];
-          Object.values(apiResponse.data.contactsByDepartment).forEach(dept => {
-          console.log('📊 Processing department:', dept.departmentName, 'with contacts:', dept.contacts);
-            // Add department name to each contact
-            const contactsWithDept = dept.contacts.map(contact => ({
-              ...contact,
-              ownerInfo: {
-                ...contact.ownerInfo,
-                departmentName: dept.departmentName
-              }
-            }));
-          console.log('📊 Contacts with dept name:', contactsWithDept);
-            allContacts.push(...contactsWithDept);
-          });
-          
-        console.log('✅ Setting fresh contacts data (total:', allContacts.length, '):', allContacts);
-          setContacts(allContacts);
-        } else {
-                  // Get contacts for specific department with cache busting
-        const baseUrl = buildEnterpriseUrl(
-            ENDPOINTS.ENTERPRISE_DEPARTMENT_CONTACTS.replace(':departmentId', selectedDepartment)
-          );
-        const cacheBuster = `?_t=${Date.now()}`;
-        const url = baseUrl + cacheBuster;
-        console.log('🔄 Fetching department contacts with cache buster:', url);
-          
-          const response = await fetch(url, {
-            headers: getEnterpriseHeaders(),
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          
-          const apiResponse: DepartmentContactsResponse = await response.json();
-        console.log('📊 Fresh department API response:', apiResponse);
-          
-          // Add department name to each contact
-          const contactsWithDept = apiResponse.data.contacts.map(contact => ({
-            ...contact,
-            ownerInfo: {
-              ...contact.ownerInfo,
-              departmentName: apiResponse.data.departmentName
-            }
-          }));
-          
-        console.log('✅ Setting fresh department contacts data:', contactsWithDept);
-          setContacts(contactsWithDept);
-        }
-        
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching contacts:", err);
-        setError("Failed to load contacts. Please try again later.");
-      } finally {
-        setLoading(false);
+      
+      // Get all enterprise contacts with cache busting
+      const baseUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CONTACTS);
+      const cacheBuster = `?_t=${Date.now()}`;
+      const url = baseUrl + cacheBuster;
+      console.log('🔄 Fetching from URL with cache buster:', url);
+      
+      const response = await fetch(url, {
+        headers: getEnterpriseHeaders(),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-    };
+      
+      const apiResponse: EnterpriseContactsResponse = await response.json();
+      console.log('📊 Fresh API response:', apiResponse);
+      console.log('📊 contactsByDepartment:', apiResponse.data.contactsByDepartment);
+      
+      // Flatten all contacts from all departments
+      const allContacts: Contact[] = [];
+      Object.values(apiResponse.data.contactsByDepartment).forEach(dept => {
+        console.log('📊 Processing department:', dept.departmentName, 'with contacts:', dept.contacts);
+        // Add department name to each contact
+        const contactsWithDept = dept.contacts.map(contact => ({
+          ...contact,
+          ownerInfo: {
+            ...contact.ownerInfo,
+            departmentName: dept.departmentName
+          }
+        }));
+        console.log('📊 Contacts with dept name:', contactsWithDept);
+        allContacts.push(...contactsWithDept);
+      });
+      
+      console.log('✅ Setting fresh contacts data (total:', allContacts.length, '):', allContacts);
+      setContacts(allContacts);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch contacts");
+      console.error("Error fetching contacts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
     
   // Fetch contacts when component mounts or department changes
   useEffect(() => {
     fetchContacts();
-  }, [selectedDepartment]);    // Filter contacts based on search term
+  }, []);    // Filter contacts based on search term
   const filteredContacts = contacts.filter(contact => {
     const fullName = `${contact.name} ${contact.surname}`.toLowerCase();
     const searchLower = searchTerm.toLowerCase();
@@ -432,14 +156,7 @@ const Contacts = () => {
     .sort((a, b) => b.createdAt._seconds - a.createdAt._seconds)
     .slice(0, 3);
   
-  // For favorites, we'll just show the most recent contacts since the API doesn't have a favorite field
-  const favoriteContacts = recentContacts;
-  
   // Removed handleContactDeleted - we now refetch fresh data instead of manipulating local state
-
-  const handleEmailClick = (email: string) => {
-    window.location.href = `mailto:${email}`;
-  };
 
   const handleShareContact = (contact: Contact) => {
     const contactData = {
@@ -709,16 +426,13 @@ const Contacts = () => {
       
       {/* Search Bar */}
       <div className="contacts-search-bar">
-        <div className={`search-input-wrapper ${isSearchFocused ? '' : 'has-icon'}`}>
-            {!isSearchFocused && <FaSearch className="search-icon" />}
+        <div className="search-input-wrapper">
             <Input 
               type="text" 
               placeholder="Search contacts..." 
               className="search-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
             />
           </div>
         </div>

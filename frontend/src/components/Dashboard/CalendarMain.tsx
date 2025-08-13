@@ -851,6 +851,7 @@ const CalendarPage = () => {
       {!isDateInPast(date || new Date()) && (
         <Button 
           type="button"
+          className="header-button outline-button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -943,7 +944,7 @@ const CalendarPage = () => {
           <p className="calendar-subtitle">Schedule and manage business card related events.</p>
         </div>
         <Button 
-          className="add-event-button" 
+          className="header-button outline-button" 
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -969,6 +970,7 @@ const CalendarPage = () => {
             setIsAddEventOpen(true);
           }}
           disabled={isDateInPast(date || new Date())}
+          type="button"
         >
           <MdAdd className="icon-add" />
           Add Event
@@ -1019,10 +1021,10 @@ const CalendarPage = () => {
               <CardTitle>Event Types</CardTitle>
             </CardHeader>
             <CardContent>
-              <EventTypeIndicator color="#3b82f6" label="Distribution" />
-              <EventTypeIndicator color="#8b5cf6" label="Design Review" />
-              <EventTypeIndicator color="#f59e0b" label="Inventory" />
-              <EventTypeIndicator color="#10b981" label="Presentation" />
+              <EventTypeIndicator color="#2563eb" label="Distribution" />
+              <EventTypeIndicator color="#7c3aed" label="Design Review" />
+              <EventTypeIndicator color="#d97706" label="Inventory" />
+              <EventTypeIndicator color="#059669" label="Presentation" />
             </CardContent>
           </Card>
           

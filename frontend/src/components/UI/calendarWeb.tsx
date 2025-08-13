@@ -48,6 +48,14 @@ export function Calendar({
   const getFirstDayOfMonth = (year: number, month: number) => {
     return new Date(year, month, 1).getDay();
   };
+
+  const isDatePast = (date: Date) => {
+    const d = new Date(date);
+    const today = new Date();
+    d.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    return d < today;
+  };
   
   // Generate calendar days
   const generateCalendarDays = () => {
@@ -58,24 +66,26 @@ export function Calendar({
     const firstDayOfMonth = getFirstDayOfMonth(year, month);
     
     // Previous month days to show
-    const prevMonthDays = [];
+    const prevMonthDays: any[] = [];
     if (firstDayOfMonth > 0) {
       const prevMonth = month === 0 ? 11 : month - 1;
       const prevMonthYear = month === 0 ? year - 1 : year;
       const daysInPrevMonth = getDaysInMonth(prevMonthYear, prevMonth);
       
       for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+        const date = new Date(prevMonthYear, prevMonth, daysInPrevMonth - i);
         prevMonthDays.push({
-          date: new Date(prevMonthYear, prevMonth, daysInPrevMonth - i),
+          date,
           isCurrentMonth: false,
           isToday: false,
-          hasEvents: hasEventsOnDate(new Date(prevMonthYear, prevMonth, daysInPrevMonth - i)),
+          hasEvents: hasEventsOnDate(date),
+          isPast: isDatePast(date),
         });
       }
     }
     
     // Current month days
-    const currentMonthDays = [];
+    const currentMonthDays: any[] = [];
     const today = new Date();
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
@@ -87,11 +97,12 @@ export function Calendar({
           date.getMonth() === today.getMonth() &&
           date.getFullYear() === today.getFullYear(),
         hasEvents: hasEventsOnDate(date),
+        isPast: isDatePast(date),
       });
     }
     
     // Next month days to fill the calendar
-    const nextMonthDays = [];
+    const nextMonthDays: any[] = [];
     const totalDaysShown = prevMonthDays.length + currentMonthDays.length;
     const daysToAdd = 42 - totalDaysShown; // 6 rows of 7 days
     
@@ -100,11 +111,13 @@ export function Calendar({
       const nextMonthYear = month === 11 ? year + 1 : year;
       
       for (let i = 1; i <= daysToAdd; i++) {
+        const date = new Date(nextMonthYear, nextMonth, i);
         nextMonthDays.push({
-          date: new Date(nextMonthYear, nextMonth, i),
+          date,
           isCurrentMonth: false,
           isToday: false,
-          hasEvents: hasEventsOnDate(new Date(nextMonthYear, nextMonth, i)),
+          hasEvents: hasEventsOnDate(date),
+          isPast: isDatePast(date),
         });
       }
     }
@@ -217,6 +230,7 @@ export function Calendar({
             day.isToday ? 'calendar-today' : '',
             isSelected ? 'calendar-selected' : '',
             isDisabled ? 'calendar-disabled' : '',
+            day.isCurrentMonth && day.isPast ? 'calendar-past-day' : '',
             day.hasEvents ? 'calendar-day-with-events' : ''
           ].filter(Boolean).join(' ');
           

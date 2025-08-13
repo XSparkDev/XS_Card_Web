@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./button";
-import { FaEllipsisV, FaTrash, FaEdit, FaPlus, FaUsers, FaCrown, FaUserPlus } from "react-icons/fa";
+import { FaEllipsisV, FaTrash, FaEdit, FaUsers, FaCrown } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./dropdown-menu";
 import TeamModal from "./TeamModal";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import TeamMemberManagement from "./TeamMemberManagement";
-import EmployeeModal from "./EmployeeModal";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL, FIREBASE_TOKEN } from "../../utils/api";
+import { buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 import "../../styles/TeamManagement.css";
 
 interface TeamManagementProps {
@@ -62,12 +61,9 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
   const [teamToDelete, setTeamToDelete] = useState<TeamData | null>(null);
   const [isTeamMemberManagementOpen, setIsTeamMemberManagementOpen] = useState(false);
   const [selectedTeamForMembers, setSelectedTeamForMembers] = useState<TeamData | null>(null);
+  const [exportingTeam, setExportingTeam] = useState<string | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
   
-  // Add employee modal state
-  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  const [selectedTeamForEmployee, setSelectedTeamForEmployee] = useState<TeamData | null>(null);
-  const [employeeCreating, setEmployeeCreating] = useState(false);
-
   // Fetch teams and employees for this department
   const fetchTeamsAndEmployees = async () => {
     try {
@@ -201,6 +197,13 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
       });
       
       if (!response.ok) {
+        if (response.status === 409) {
+          // Team has employees - show user-friendly message
+          alert(`Cannot delete team "${teamToDelete.name}" because it has ${teamToDelete.memberCount} employee(s). Please reassign or remove all employees from the team before deleting it.`);
+          setDeleteConfirmOpen(false);
+          setTeamToDelete(null);
+          return;
+        }
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
@@ -225,141 +228,47 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
     setIsTeamMemberManagementOpen(true);
   };
 
-  // Add employee to team functionality
-  const handleAddEmployeeToTeam = (team: TeamData) => {
-    console.log('Opening employee modal for team:', team);
-    setSelectedTeamForEmployee(team);
-    setIsEmployeeModalOpen(true);
+  const getLeaderName = (leaderId: string | null) => {
+    if (!leaderId) return "No leader assigned";
+    const leader = employees.find(emp => emp.id === leaderId);
+    return leader ? `${leader.name} ${leader.surname}` : "Unknown leader";
   };
 
-  // Helper function to fetch effective template for a department
-  const fetchEffectiveTemplate = async (departmentId: string) => {
+  // CSV Export Function for Individual Team
+  const exportTeamCSV = async (team: TeamData) => {
     try {
-      const enterpriseId = localStorage.getItem('enterpriseId') || 'x-spark-test';
-      const templateUrl = `${API_BASE_URL}/api/templates/${enterpriseId}/${departmentId}/effective`;
+      setExportingTeam(team.id);
+      console.log('📊 Exporting individual team CSV:', team.name);
       
-      console.log('Fetching effective template:', templateUrl);
-      
-      const response = await fetch(templateUrl, {
-        headers: {
-          'Authorization': `Bearer ${FIREBASE_TOKEN}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        console.warn('Template fetch failed, using defaults:', response.status);
-        return {
-          colorScheme: '#1B2B5B',
-          companyLogo: null
-        };
-      }
-      
-      const result = await response.json();
-      console.log('Template response:', result);
-      
-      if (result.success && result.data && result.data.template) {
-        return {
-          colorScheme: result.data.template.colorScheme,
-          companyLogo: result.data.template.companyLogo,
-          templateId: result.data.template.id,
-          templateName: result.data.template.name,
-          templateSource: result.data.source
-        };
-      } else if (result.fallback) {
-        return {
-          colorScheme: result.fallback.colorScheme,
-          companyLogo: result.fallback.companyLogo
-        };
-      } else {
-        return {
-          colorScheme: '#1B2B5B',
-          companyLogo: null
-        };
-      }
-    } catch (error) {
-      console.error('Error fetching template:', error);
-      return {
-        colorScheme: '#1B2B5B',
-        companyLogo: null
-      };
-    }
-  };
-
-  const handleAddEmployee = async (employeeData: any) => {
-    try {
-      setEmployeeCreating(true);
-      console.log('Employee modal submitted with data:', employeeData);
-      
-      // Use the selected template from the modal, or fetch the effective template as fallback
-      let templateData;
-      if (employeeData.selectedTemplate) {
-        console.log('🎨 Using selected template:', employeeData.selectedTemplate.name);
-        templateData = {
-          colorScheme: employeeData.selectedTemplate.colorScheme,
-          companyLogo: employeeData.selectedTemplate.companyLogo,
-          templateId: employeeData.selectedTemplate.id,
-          templateName: employeeData.selectedTemplate.name,
-          templateSource: employeeData.selectedTemplate.isEnterprise ? 'enterprise' : 'department'
-        };
-      } else {
-        // Fallback to fetching effective template
-        console.log('🎨 Fetching effective template for department:', departmentId);
-        templateData = await fetchEffectiveTemplate(departmentId);
-        console.log('Template data for employee:', templateData);
-      }
-      
-      // Use the same endpoint as the main department page
-      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/employees`);
+      const apiUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${departmentId}/exports/teams/${team.id}`);
       const headers = getEnterpriseHeaders();
       
-      // Create the employee object to send to the server (matching the backend API format)
-      const employeeToCreate = {
-        firstName: employeeData.firstName,
-        lastName: employeeData.lastName,
-        email: employeeData.email,
-        phone: employeeData.phone,
-        position: employeeData.position || employeeData.title,
-        role: employeeData.role || "employee",
-        teamId: selectedTeamForEmployee?.id, // Add the team ID
-        // Include template data for automatic card creation
-        template: templateData
-      };
-      
-      console.log('Sending employee data with template:', employeeToCreate);
-      
-      // Make the POST request to create an employee
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(employeeToCreate)
-      });
+      const response = await fetch(apiUrl, { headers });
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
-      const newEmployee = await response.json();
-      console.log('New employee created:', newEmployee);
+      // Show downloading state
+      console.log('📥 Downloading CSV file...');
       
-      // Refresh the data
-      await fetchTeamsAndEmployees();
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      const downloadUrl = URL.createObjectURL(blob);
+      link.setAttribute('href', downloadUrl);
+      link.setAttribute('download', `${team.name}_team.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
-      // Close the modal
-      setIsEmployeeModalOpen(false);
-      setSelectedTeamForEmployee(null);
+      console.log('✅ Team CSV exported successfully');
     } catch (error) {
-      console.error('Error creating employee:', error);
-      alert('Failed to create employee. Please try again.');
+      console.error('Error exporting team CSV:', error);
+      alert('Failed to export team CSV. Please try again.');
     } finally {
-      setEmployeeCreating(false);
+      setExportingTeam(null);
     }
-  };
-
-  const getLeaderName = (leaderId: string | null) => {
-    if (!leaderId) return "No leader assigned";
-    const leader = employees.find(emp => emp.id === leaderId);
-    return leader ? `${leader.name} ${leader.surname}` : "Unknown leader";
   };
 
   if (!isOpen) return null;
@@ -379,6 +288,49 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
             >
               <i className="fas fa-plus"></i>
               New Team
+            </button>
+            <button 
+              className="header-button outline-button" 
+              onClick={async () => {
+                try {
+                  setExportingAll(true);
+                  console.log('📊 Exporting enterprise teams CSV');
+                  
+                  const apiUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/exports/teams`);
+                  const headers = getEnterpriseHeaders();
+                  
+                  const response = await fetch(apiUrl, { headers });
+                  
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                  }
+                  
+                  // Show downloading state
+                  console.log('📥 Downloading CSV file...');
+                  
+                  const blob = await response.blob();
+                  const link = document.createElement('a');
+                  const downloadUrl = URL.createObjectURL(blob);
+                  link.setAttribute('href', downloadUrl);
+                  link.setAttribute('download', 'enterprise_teams.csv');
+                  link.style.visibility = 'hidden';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  
+                  console.log('✅ Enterprise teams CSV exported successfully');
+                } catch (error) {
+                  console.error('Error exporting enterprise CSV:', error);
+                  alert('Failed to export enterprise CSV. Please try again.');
+                } finally {
+                  setExportingAll(false);
+                }
+              }}
+              disabled={exportingAll}
+              title="Export all enterprise teams to CSV"
+            >
+              <i className="fas fa-download"></i>
+              {exportingAll ? 'Exporting...' : 'Export All'}
             </button>
             <button className="close-button" onClick={onClose}>
               ×
@@ -430,10 +382,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
                               <FaEdit className="action-icon" />
                               <span>Edit</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleAddEmployeeToTeam(team)}>
-                              <FaUserPlus className="action-icon" />
-                              <span>Add Employee</span>
-                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleManageMembers(team)}>
                               <FaUsers className="action-icon" />
                               <span>Manage Members</span>
@@ -462,6 +410,15 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
                       <span className="team-created">
                         Created {new Date(team.createdAt?.toDate?.() || team.createdAt).toLocaleDateString()}
                       </span>
+                      <button 
+                        className="team-export-button"
+                        onClick={() => exportTeamCSV(team)}
+                        disabled={exportingTeam === team.id}
+                        title="Export team data to CSV"
+                      >
+                        <i className="fas fa-download"></i>
+                        {exportingTeam === team.id ? 'Exporting...' : 'Export'}
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -502,20 +459,6 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
           teamName={selectedTeamForMembers?.name || ""}
           departmentId={departmentId}
           departmentName={departmentName}
-        />
-
-        {/* Add Employee Modal */}
-        <EmployeeModal 
-          isOpen={isEmployeeModalOpen}
-          onClose={() => {
-            setIsEmployeeModalOpen(false);
-            setSelectedTeamForEmployee(null);
-          }}
-          onSubmit={handleAddEmployee}
-          departments={[{ value: departmentId, label: departmentName }]}
-          teams={teams.map(team => ({ value: team.id, label: team.name }))}
-          prefillTeam={selectedTeamForEmployee}
-          isLoading={employeeCreating}
         />
       </div>
     </div>

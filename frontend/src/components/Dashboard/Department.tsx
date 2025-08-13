@@ -52,12 +52,16 @@ const DepartmentCard = ({
   department, 
   onEdit, 
   onDelete, 
-  onTeamClick 
+  onTeamClick,
+  onExport,
+  isExporting
 }: { 
   department: DepartmentData, 
   onEdit: (department: DepartmentData) => void, 
   onDelete: (department: DepartmentData) => void,
-  onTeamClick: (department: DepartmentData) => void 
+  onTeamClick: (department: DepartmentData) => void,
+  onExport: (department: DepartmentData) => void,
+  isExporting: boolean
 }) => {
   return (
     <div className="department-card">
@@ -130,11 +134,12 @@ const DepartmentCard = ({
             className="footer-button"
             onClick={() => {
               console.log('🔘 Export button clicked for department:', department.name);
-              exportDepartmentCSV(department);
+              onExport(department);
             }}
+            disabled={isExporting}
           >
             <i className="fas fa-chart-bar"></i>
-            Export Report
+            {isExporting ? 'Exporting...' : 'Export Report'}
           </button>
         </div>
       </div>
@@ -143,7 +148,7 @@ const DepartmentCard = ({
 };
 
 // Organization Summary Card
-const DepartmentsSummaryCard = ({ departments }) => {
+const DepartmentsSummaryCard = ({ departments, onExport, isExporting }: { departments: DepartmentData[], onExport: (departments: DepartmentData[]) => void, isExporting: boolean }) => {
   const totalEmployees = departments.reduce((acc, dept) => acc + dept.employeeCount, 0);
   const totalCards = departments.reduce((acc, dept) => acc + dept.cardCount, 0);
   const totalScans = departments.reduce((acc, dept) => acc + dept.scanCount, 0);
@@ -182,10 +187,10 @@ const DepartmentsSummaryCard = ({ departments }) => {
         <div className="summary-footer">
           <button className="summary-button" onClick={() => {
             console.log('🔘 Summary export button clicked');
-            exportDepartmentsCSV(departments);
-          }}>
+            onExport(departments);
+          }} disabled={isExporting}>
             <i className="fas fa-file-download"></i>
-            Export Report
+            {isExporting ? 'Exporting...' : 'Export Report'}
           </button>
         </div>
       </div>
@@ -213,6 +218,8 @@ const Department: FC = () => {
   const [employeeCreating, setEmployeeCreating] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [exportingDepartment, setExportingDepartment] = useState<string | null>(null);
+  const [exportingAll, setExportingAll] = useState(false);
   
   // Check for animation flag from UserManagement
   useEffect(() => {
@@ -387,10 +394,10 @@ const Department: FC = () => {
     fetchDepartments();
   }, []);
 
-  // Fetch employees when component mounts
+  // Fetch employees when component mounts and after department list updates to keep counts in sync
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [departments.length]);
 
   // Fetch teams when departments are loaded
   useEffect(() => {
@@ -710,73 +717,76 @@ const Department: FC = () => {
   };
 
   // CSV Export Functions
-  const exportDepartmentCSV = (department: DepartmentData) => {
-    console.log('📊 Exporting department CSV:', department.name);
-    
-    // Simple test to see if function is called
-    alert(`Exporting ${department.name} department data...`);
-    
-    const csvData = [
-      ['Department Name', 'Description', 'Employees', 'Cards Issued', 'Total Scans', 'Card Coverage (%)', 'Growth Rate (%)'],
-      [
-        department.name,
-        department.description,
-        department.employeeCount.toString(),
-        department.cardCount.toString(),
-        department.scanCount.toString(),
-        department.progress.toString(),
-        department.growthRate.toString()
-      ]
-    ];
-    
-    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${department.name}_report.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log('✅ Department CSV exported successfully');
+  const exportDepartmentCSV = async (department: DepartmentData) => {
+    try {
+      setExportingDepartment(department.id);
+      console.log('📊 Exporting department teams CSV:', department.name);
+      
+      const apiUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/departments/${department.id}/exports/teams`);
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(apiUrl, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      // Show downloading state
+      console.log('📥 Downloading CSV file...');
+      
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      const downloadUrl = URL.createObjectURL(blob);
+      link.setAttribute('href', downloadUrl);
+      link.setAttribute('download', `${department.name}_teams.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('✅ Department teams CSV exported successfully');
+    } catch (error) {
+      console.error('Error exporting department CSV:', error);
+      alert('Failed to export department CSV. Please try again.');
+    } finally {
+      setExportingDepartment(null);
+    }
   };
 
-  const exportDepartmentsCSV = (departments: DepartmentData[]) => {
-    console.log('📊 Exporting all departments CSV:', departments.length, 'departments');
-    
-    // Simple test to see if function is called
-    alert(`Exporting all ${departments.length} departments data...`);
-    
-    const csvData = [
-      ['Department Name', 'Description', 'Employees', 'Cards Issued', 'Total Scans', 'Card Coverage (%)', 'Growth Rate (%)']
-    ];
-    
-    departments.forEach(department => {
-      csvData.push([
-        department.name,
-        department.description,
-        department.employeeCount.toString(),
-        department.cardCount.toString(),
-        department.scanCount.toString(),
-        department.progress.toString(),
-        department.growthRate.toString()
-      ]);
-    });
-    
-    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'departments_report.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log('✅ All departments CSV exported successfully');
+  const exportDepartmentsCSV = async (departments: DepartmentData[]) => {
+    try {
+      setExportingAll(true);
+      console.log('📊 Exporting enterprise teams CSV');
+      
+      const apiUrl = buildEnterpriseUrl(`/enterprise/:enterpriseId/exports/teams`);
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(apiUrl, { headers });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      // Show downloading state
+      console.log('📥 Downloading CSV file...');
+      
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      const downloadUrl = URL.createObjectURL(blob);
+      link.setAttribute('href', downloadUrl);
+      link.setAttribute('download', 'enterprise_teams.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('✅ Enterprise teams CSV exported successfully');
+    } catch (error) {
+      console.error('Error exporting enterprise CSV:', error);
+      alert('Failed to export enterprise CSV. Please try again.');
+    } finally {
+      setExportingAll(false);
+    }
   };
 
   return (
@@ -810,7 +820,7 @@ const Department: FC = () => {
         <div className="error-state">{error}</div>
       ) : (
         <>
-          <DepartmentsSummaryCard departments={departments} />
+          <DepartmentsSummaryCard departments={departments} onExport={exportDepartmentsCSV} isExporting={exportingAll} />
           
           <div className="search-container">
             <i className="fas fa-search search-icon"></i>
@@ -831,6 +841,8 @@ const Department: FC = () => {
                 onEdit={handleEditDepartment}
                 onDelete={handleDeleteDepartment}
                 onTeamClick={handleTeamClick}
+                onExport={exportDepartmentCSV}
+                isExporting={exportingDepartment === department.id}
               />
             ))}
           </div>
@@ -849,6 +861,7 @@ const Department: FC = () => {
           value: team.id,
           label: team.name
         }))}
+        employees={employees} // Pass employees for client-side search
         isLoading={employeeCreating}
       />
       

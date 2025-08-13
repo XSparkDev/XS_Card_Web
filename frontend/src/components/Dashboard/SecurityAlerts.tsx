@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../UI/button';
 import { Badge } from '../UI/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '../UI/selectRadix';
 import { buildEnterpriseUrl, getEnterpriseHeaders } from '../../utils/api';
 
 // Types
@@ -707,86 +714,82 @@ const SecurityAlerts = () => {
   };
 
   return (
-    <div className="alerts-container" style={{ backgroundColor: '#F8F8F8', padding: '1rem', borderRadius: '8px' }}>
-      {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+    <div className="alerts-container" style={{ backgroundColor: '#F8F8F8', padding: '0.25rem', borderRadius: '8px' }}>
+      {/* Stats Cards (compact, severity-colored) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '0.5rem' }}>
+        {/* Critical */}
         <Card className="sidebar-card">
-          <CardContent className="card-content-compact">
+          <CardContent className="card-content-compact" style={{ padding: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>Critical</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.criticalCount}</div>
+                <div style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: 700 }}>Critical</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#DC2626' }}>{stats.criticalCount}</div>
+              </div>
+              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#DC2626' }} />
+            </div>
+          </CardContent>
+        </Card>
+        {/* High */}
+        <Card className="sidebar-card">
+          <CardContent className="card-content-compact" style={{ padding: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: 700 }}>High</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#D97706' }}>{stats.highCount || 0}</div>
               </div>
               <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
             </div>
           </CardContent>
         </Card>
-        
+        {/* Medium (kept as-is tone) */}
         <Card className="sidebar-card">
-          <CardContent className="card-content-compact">
+          <CardContent className="card-content-compact" style={{ padding: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>High</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.highCount || 0}</div>
+                <div style={{ fontSize: '0.75rem', color: '#CA8A04', fontWeight: 700 }}>Medium</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#CA8A04' }}>{stats.mediumCount || 0}</div>
               </div>
-              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
+              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#CA8A04' }} />
             </div>
           </CardContent>
         </Card>
-        
+        {/* Low */}
         <Card className="sidebar-card">
-          <CardContent className="card-content-compact">
+          <CardContent className="card-content-compact" style={{ padding: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>Medium</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.mediumCount || 0}</div>
+                <div style={{ fontSize: '0.75rem', color: '#2563EB', fontWeight: 700 }}>Low</div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#2563EB' }}>{stats.lowCount || 0}</div>
               </div>
-              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="sidebar-card">
-          <CardContent className="card-content-compact">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '500' }}>Low</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#D97706' }}>{stats.lowCount || 0}</div>
-              </div>
-              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#D97706' }} />
+              <IconComponent name="AlertTriangle" className="icon-small" style={{ color: '#2563EB' }} />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters (compact, no icon) */}
       <Card className="sidebar-card">
-        <CardHeader className="card-header-compact">
-          <CardTitle className="card-title-small">
-            <IconComponent name="Filter" className="icon-small mr-2" />
-            Filters
-          </CardTitle>
+        <CardHeader className="card-header-compact" style={{ padding: '0.5rem 0.75rem' }}>
+          <CardTitle className="card-title-small">Filters</CardTitle>
         </CardHeader>
-        <CardContent className="card-content-compact">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <CardContent className="card-content-compact" style={{ padding: '0.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
             <div>
               <label className="form-label">Severity</label>
-              <select 
-                value={filters.severity}
-                onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value }))}
-                className="select-input"
-              >
-                <option value="all">All Severities</option>
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
+              <Select value={filters.severity} onValueChange={(value) => setFilters(prev => ({ ...prev, severity: value as any }))}>
+                <SelectTrigger className="select-input">
+                  <SelectValue placeholder="All Severities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Severities</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
-            <div>
-              {/* Empty space to maintain layout balance */}
-            </div>
+            <div></div>
           </div>
         </CardContent>
       </Card>

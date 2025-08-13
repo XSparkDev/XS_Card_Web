@@ -45,6 +45,7 @@ export interface TeamsResponse {
   success: boolean;
   teams: Team[];
   count: number;
+  message?: string;
 }
 
 export interface EmployeeSearchResponse {
@@ -149,16 +150,16 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1MDM3MzcxLCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NTUwMzczNzEsImV4cCI6MTc1NTA0MDk3MSwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.peC79x-OpleOMszgWmW_N9TZ8IoSj9_6GQYUwRVWhvoHFFxW8EU0UXXlUZpJuebZdKkBz4M77Kw_TRBmrjjqbdrok0HVe_E6CzUrlLLn699Qlv6-e_iOscvcQJjnZo9e4h9gBoETRhLmHUzzTx7CP7nyACm7mD_zri6gfkMywfIFHH6kiR_L-tVWLR7L58dnYZ_oK0yoCFOlq5_-W0KiRsvWuH7CgqVt6AUAso-2tkbj477EXuSBBl-jSRDS5NdSM_pVAekmYQ-osfwtuZnc2L4zOkBJsXHi4738YP2NZtCkhmdcLpg7FjwmDwb4evWLhd5HhxiipVH5xExVdDHQOA";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1MTA2MTQxLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTUxMDYxNDEsImV4cCI6MTc1NTEwOTc0MSwiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.HnrJL6CU8glnS1F7uTU67C0r65VpBFRsQPdMsndbJtxnWCulOHOWzILKu8jrlIFDFRTjEQjnJJXQv9rzfnPh_bK_08mx66WHIgMxbod1I0R3X7w9wzwOCnkZaFlr9JqntE08YcIorAsrB5ax87kNNKpzFHy9wcJ-AZ-ilYwSzRWGujEdn5835wpoQby--nYHPxWLPaNHfCa1cxBTeGCrQCgqZdRzkykcrRDCNx-CMK4IffCvAJqJ4a257sDUoBK56qVkb61JmB0ogqeI5Ne1enQnmBTHxY5PHOyH3shgVxup0ts7NiBRvEsbgQPiccVz9rfxmkSRyJnQABqc09QWEw";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 
 // Default user ID specifically for meetings and user-specific features
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
-export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
+//export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
 //export const DEFAULT_USER_ID = "RP6lMeJ2G1emh8WXMpPVXY7qSpD2"; // admin
-//export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // manager
+export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // manager
 
 // Example payment method ID for testing
 export const EXAMPLE_PAYMENT_METHOD_ID = "C1qy82bmgPwZdqjfqBQ8";
@@ -945,7 +946,8 @@ export const fetchTeamsForDepartment = async (
       return {
         success: false,
         teams: [],
-        count: 0
+        count: 0,
+        message: `HTTP ${response.status}: ${errorText}`
       };
     }
     

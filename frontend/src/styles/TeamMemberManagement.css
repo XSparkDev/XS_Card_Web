@@ -157,6 +157,32 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  max-height: 400px; /* Approximately 10 items * 40px height each */
+  overflow-y: auto;
+  padding-right: 0.5rem; /* Add some padding for the scrollbar */
+}
+
+/* Custom scrollbar styling for better appearance */
+.team-members-list::-webkit-scrollbar,
+.available-employees-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.team-members-list::-webkit-scrollbar-track,
+.available-employees-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.team-members-list::-webkit-scrollbar-thumb,
+.available-employees-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.team-members-list::-webkit-scrollbar-thumb:hover,
+.available-employees-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .team-member-item,
@@ -278,19 +304,6 @@
   justify-content: flex-end;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
-}
-
-.changes-indicator {
-  text-align: center;
-  font-size: 0.875rem;
-  color: #f59e0b;
-  font-weight: 500;
-}
-
-.changes-indicator span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
 }
 
 /* Pending Change Indicators */

@@ -377,7 +377,27 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
       .map(change => change.employeeId);
     
     // Filter out employees that are pending addition
-    return unassignedEmployees.filter(employee => !pendingAdditions.includes(employee.id));
+    let availableEmployees = unassignedEmployees.filter(employee => !pendingAdditions.includes(employee.id));
+    
+    // Add back employees that are pending removal from the team
+    const pendingRemovedEmployees = teamMembers.filter(member => pendingRemovals.includes(member.id));
+    const pendingRemovedUnassigned = pendingRemovedEmployees.map(member => ({
+      id: member.id,
+      userId: member.mainEmployeeId || member.id,
+      name: member.firstName,
+      surname: member.lastName,
+      email: member.email,
+      phone: '', // We don't have phone in TeamMemberData
+      role: '', // We don't have role in TeamMemberData
+      position: member.position,
+      profileImage: '', // We don't have profileImage in TeamMemberData
+      employeeId: member.mainEmployeeId || member.id,
+      isActive: true,
+      createdAt: new Date().toISOString(), // We don't have createdAt in TeamMemberData
+      updatedAt: new Date().toISOString() // We don't have updatedAt in TeamMemberData
+    }));
+    
+    return [...availableEmployees, ...pendingRemovedUnassigned];
   };
 
   const getEffectiveTeamMembers = () => {
@@ -425,7 +445,7 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
             <p className="team-member-management-subtitle">Manage team members in {departmentName}</p>
             {hasUnsavedChanges && (
               <div className="backend-notice">
-                <span>⚠️ You have unsaved changes. Click "Save Changes" to apply them.</span>
+                <span>⚠️ You have {pendingChanges.length} unsaved change{pendingChanges.length !== 1 ? 's' : ''}. Click "Save Changes" to apply them.</span>
               </div>
             )}
           </div>
@@ -540,6 +560,7 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
                               {pendingChange && (
                                 <span className="pending-indicator">
                                   {pendingChange.type === 'add' && ' (Will be added)'}
+                                  {pendingChange.type === 'remove' && ' (Will be removed from team)'}
                                 </span>
                               )}
                             </div>
@@ -561,7 +582,7 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
                               className="header-button outline-button"
                               onClick={() => {
                                 setPendingChanges(prev => prev.filter(change => 
-                                  !(change.employeeId === employee.id && change.type === 'add')
+                                  !(change.employeeId === employee.id)
                                 ));
                               }}
                             >
@@ -601,9 +622,6 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
                       </>
                     )}
                   </button>
-                </div>
-                <div className="changes-indicator">
-                  <span>📝 {pendingChanges.length} change{pendingChanges.length !== 1 ? 's' : ''} pending</span>
                 </div>
               </div>
             )}
