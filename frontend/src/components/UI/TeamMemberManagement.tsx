@@ -480,40 +480,34 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
                           </div>
                           <div className="member-actions">
                             {!member.isLeader && !pendingChange && (
-                              <Button
-                                size="sm"
-                                variant="outline"
+                              <button
+                                className="header-button outline-button"
                                 onClick={() => handleAssignLeader(member.id)}
-                                className="assign-leader-button"
                               >
-                                <FaCrown />
+                                <i className="fas fa-crown"></i>
                                 Make Leader
-                              </Button>
+                              </button>
                             )}
                             {!pendingChange && (
-                              <Button
-                                size="sm"
-                                variant="outline"
+                              <button
+                                className="header-button outline-button"
                                 onClick={() => handleRemoveEmployee(member.id)}
-                                className="remove-member-button"
                               >
-                                <FaTimes />
+                                <i className="fas fa-times"></i>
                                 Remove
-                              </Button>
+                              </button>
                             )}
                             {pendingChange && (
-                              <Button
-                                size="sm"
-                                variant="outline"
+                              <button
+                                className="header-button outline-button"
                                 onClick={() => {
                                   setPendingChanges(prev => prev.filter(change => 
                                     !(change.employeeId === member.id && change.type === pendingChange.type)
                                   ));
                                 }}
-                                className="cancel-change-button"
                               >
                                 Cancel
-                              </Button>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -555,27 +549,24 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
                             </div>
                           </div>
                           {!pendingChange ? (
-                            <Button
-                              size="sm"
+                            <button
+                              className="header-button outline-button"
                               onClick={() => handleAssignEmployee(employee.id)}
-                              className="assign-employee-button"
                             >
-                              <FaPlus />
+                              <i className="fas fa-plus"></i>
                               Add to Team
-                            </Button>
+                            </button>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
+                            <button
+                              className="header-button outline-button"
                               onClick={() => {
                                 setPendingChanges(prev => prev.filter(change => 
                                   !(change.employeeId === employee.id && change.type === 'add')
                                 ));
                               }}
-                              className="cancel-change-button"
                             >
                               Cancel
-                            </Button>
+                            </button>
                           )}
                         </div>
                       );
@@ -589,27 +580,27 @@ const TeamMemberManagement: React.FC<TeamMemberManagementProps> = ({
             {hasUnsavedChanges && (
               <div className="team-member-actions">
                 <div className="action-buttons">
-                  <Button
-                    variant="outline"
+                  <button
+                    className="header-button outline-button"
                     onClick={handleDiscardChanges}
                     disabled={saving}
                   >
                     Discard Changes
-                  </Button>
-                  <Button
+                  </button>
+                  <button
+                    className="header-button primary-button"
                     onClick={handleSaveChanges}
                     disabled={saving}
-                    className="save-button"
                   >
                     {saving ? (
                       "Saving..."
                     ) : (
                       <>
-                        <FaSave />
+                        <i className="fas fa-save"></i>
                         Save Changes ({pendingChanges.length})
                       </>
                     )}
-                  </Button>
+                  </button>
                 </div>
                 <div className="changes-indicator">
                   <span>📝 {pendingChanges.length} change{pendingChanges.length !== 1 ? 's' : ''} pending</span>

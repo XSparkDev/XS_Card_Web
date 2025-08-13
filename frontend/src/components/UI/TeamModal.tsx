@@ -181,28 +181,28 @@ const TeamModal: React.FC<TeamModalProps> = ({
           </div>
 
           <div className="team-modal-actions">
-            <Button
+            <button
               type="button"
-              variant="outline"
+              className="header-button outline-button"
               onClick={handleClose}
               disabled={loading}
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
+              className="header-button primary-button"
               disabled={loading}
-              className="save-button"
             >
               {loading ? (
                 "Saving..."
               ) : (
                 <>
-                  <FaSave />
+                  <i className="fas fa-save"></i>
                   {team ? "Update Team" : "Create Team"}
                 </>
               )}
-            </Button>
+            </button>
           </div>
         </form>
       </div>

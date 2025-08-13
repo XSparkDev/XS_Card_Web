@@ -11,8 +11,8 @@ export interface PasscreatorResponse {
 // Employee Types
 export interface Employee {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  surname: string;
   email: string;
   phone?: string;
   position?: string;
@@ -149,16 +149,16 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1MDEwMDk0LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTUwMTAwOTQsImV4cCI6MTc1NTAxMzY5NCwiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.kXdjYOZHFBdt67vtfeKp1ywKaypjHn0LYnmg3lhYcc2YVDUQDusSHxsYm8PNmQpX4tOqEiLtCbU_EPREqYn_NlO68czsw04LomB5sfUrgHG5Tfo8-yzU-7KX0W-OKPiLZ3t7YcqM4sOzhYemffwGRdAPgCXhSW6DYp5cyNCdwln1ck1q6lqzDsYBRA6IKpnY7yHhLA8_wFa60FGuSmM-EiHoHYH7Kt_RkX8-Spam4uZV62Lx0iK7napQwqU03_sTQq64Ca_tyS1erH53e287GTT2FoA-0OoSy50-jcMQOBBUqESiirPfOksArPYK0SNlglCXmnFK9ynYwYQcIHPkTQ";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1MDM3MzcxLCJ1c2VyX2lkIjoiRWNjeU1Ddjd1aVMxZVlIQjNaTXU2elJSMURHMiIsInN1YiI6IkVjY3lNQ3Y3dWlTMWVZSEIzWk11NnpSUjFERzIiLCJpYXQiOjE3NTUwMzczNzEsImV4cCI6MTc1NTA0MDk3MSwiZW1haWwiOiJ0ZXN0ZWhha2tlQGd1ZnVtLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbInRlc3RlaGFra2VAZ3VmdW0uY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.peC79x-OpleOMszgWmW_N9TZ8IoSj9_6GQYUwRVWhvoHFFxW8EU0UXXlUZpJuebZdKkBz4M77Kw_TRBmrjjqbdrok0HVe_E6CzUrlLLn699Qlv6-e_iOscvcQJjnZo9e4h9gBoETRhLmHUzzTx7CP7nyACm7mD_zri6gfkMywfIFHH6kiR_L-tVWLR7L58dnYZ_oK0yoCFOlq5_-W0KiRsvWuH7CgqVt6AUAso-2tkbj477EXuSBBl-jSRDS5NdSM_pVAekmYQ-osfwtuZnc2L4zOkBJsXHi4738YP2NZtCkhmdcLpg7FjwmDwb4evWLhd5HhxiipVH5xExVdDHQOA";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 
 // Default user ID specifically for meetings and user-specific features
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
-//export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
+export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
 //export const DEFAULT_USER_ID = "RP6lMeJ2G1emh8WXMpPVXY7qSpD2"; // admin
-export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // manager
+//export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // manager
 
 // Example payment method ID for testing
 export const EXAMPLE_PAYMENT_METHOD_ID = "C1qy82bmgPwZdqjfqBQ8";
@@ -207,7 +207,7 @@ const getBaseUrl = () => {
       console.warn('🔧 For development only - do not use in production');
     }
     
-    return 'http://192.168.68.101:8383';
+    return 'http://localhost:8383';
   }
   
   // In production, use secure connection

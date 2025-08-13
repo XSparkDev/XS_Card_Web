@@ -10,7 +10,7 @@ interface DepartmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (departmentData: DepartmentData) => void;
-  managers: { value: string; label: string }[];
+  managers: { value: string; label: string; key?: string }[];
   department?: DepartmentData | null;
   onChange?: () => void;
 }
@@ -167,7 +167,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
               className="managers-select"
             >
               {managers.map(manager => (
-                <option key={manager.value} value={manager.value}>
+                <option key={manager.key || manager.value} value={manager.value}>
                   {manager.label}
                 </option>
               ))}

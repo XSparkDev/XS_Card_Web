@@ -8,7 +8,7 @@ import TeamManagement from '../UI/TeamManagement';
 import { FaEllipsisV, FaTrash, FaEdit } from "react-icons/fa";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
 import { Button } from "../UI/button";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL, FIREBASE_TOKEN, fetchTeamsForDepartment, Team } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, API_BASE_URL, FIREBASE_TOKEN, fetchTeamsForDepartment, Team, fetchAllEmployees, Employee } from "../../utils/api";
 
 // Interface for the department data
 interface DepartmentData {
@@ -211,6 +211,8 @@ const Department: FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [employeeCreating, setEmployeeCreating] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
   
   // Check for animation flag from UserManagement
   useEffect(() => {
@@ -254,15 +256,19 @@ const Department: FC = () => {
       if (cardsData.cards && Array.isArray(cardsData.cards)) {
         setCards(cardsData.cards);
       }
-      // Calculate card counts for each department
+      // Calculate card counts and scan counts for each department
       const cardsByDepartment = {};
+      const scansByDepartment = {};
       deptData.departments.forEach(dept => {
         cardsByDepartment[dept.id] = 0;
+        scansByDepartment[dept.id] = 0;
       });
       if (cardsData.cards && Array.isArray(cardsData.cards)) {
         cardsData.cards.forEach(card => {
           if (card.departmentId && cardsByDepartment[card.departmentId] !== undefined) {
             cardsByDepartment[card.departmentId]++;
+            // Add scan count for this card to the department total
+            scansByDepartment[card.departmentId] += card.scanCount || 0;
           }
         });
       }
@@ -280,7 +286,7 @@ const Department: FC = () => {
           updatedAt: dept.updatedAt,
           cardCount: cardsByDepartment[dept.id] || 0,
           progress: progress,
-          scanCount: 0,
+          scanCount: scansByDepartment[dept.id] || 0,
           growthRate: 0
         };
       });
@@ -324,10 +330,66 @@ const Department: FC = () => {
       setTeamsLoading(false);
     }
   };
+
+  // Add fetchEmployees as a helper function
+  const fetchEmployees = async () => {
+    try {
+      setEmployeesLoading(true);
+      console.log('Fetching all employees for managers list...');
+      
+      const employeesResponse = await fetchAllEmployees();
+      console.log('Employees response:', employeesResponse);
+      
+      if (employeesResponse.success) {
+        // Filter out duplicate employees based on ID
+        const uniqueEmployees = employeesResponse.data.employees.filter((employee, index, self) => 
+          index === self.findIndex(e => e.id === employee.id)
+        );
+        
+        console.log(`Fetched ${employeesResponse.data.employees.length} employees, filtered to ${uniqueEmployees.length} unique employees`);
+        
+        // Debug: Log any duplicates found
+        const duplicateIds = employeesResponse.data.employees
+          .map(e => e.id)
+          .filter((id, index, self) => self.indexOf(id) !== index);
+        
+        if (duplicateIds.length > 0) {
+          console.warn('Found duplicate employee IDs:', duplicateIds);
+        }
+        
+        // Filter to only include managers and admins
+        const managersAndAdmins = uniqueEmployees.filter(employee => {
+          const role = employee.role?.toLowerCase();
+          return role === 'manager' || role === 'admin';
+        });
+        
+        console.log(`Filtered to ${managersAndAdmins.length} managers and admins out of ${uniqueEmployees.length} total employees`);
+        
+        // Debug: Log the roles found
+        const rolesFound = [...new Set(uniqueEmployees.map(e => e.role?.toLowerCase()).filter(Boolean))];
+        console.log('Roles found in employee data:', rolesFound);
+        
+        setEmployees(managersAndAdmins);
+      } else {
+        console.warn('Failed to fetch employees:', employeesResponse.message);
+        setEmployees([]);
+      }
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+      setEmployees([]);
+    } finally {
+      setEmployeesLoading(false);
+    }
+  };
   
   // In useEffect, replace fetchData with fetchDepartments
   useEffect(() => {
     fetchDepartments();
+  }, []);
+
+  // Fetch employees when component mounts
+  useEffect(() => {
+    fetchEmployees();
   }, []);
 
   // Fetch teams when departments are loaded
@@ -796,11 +858,11 @@ const Department: FC = () => {
         onSubmit={handleSubmitDepartment}
         department={editingDepartment}
         onChange={handleDepartmentFormChange}
-        managers={[
-          { value: "u0euC7YU5cYFli4dotSIui33cY43", label: "John Doe" },
-          { value: "tpNykUrXytMDFWrv8PxY3TBfr1k2", label: "Jane Smith" },
-          { value: "wKcv3H270HVLV2FADqM473AZ3L02", label: "Robert Johnson" }
-        ]}
+        managers={employees.map((employee, index) => ({
+          value: employee.id,
+          label: `${employee.name} ${employee.surname}`,
+          key: `${employee.id}-${index}` // Ensure unique key
+        }))}
       />
       
       <DeleteConfirmationModal

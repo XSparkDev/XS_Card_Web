@@ -373,10 +373,13 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
             <p className="team-management-subtitle">Manage teams and assign employees</p>
           </div>
           <div className="team-management-actions">
-            <Button onClick={handleCreateTeam} className="create-team-button">
-              <FaPlus />
+            <button 
+              className="header-button outline-button" 
+              onClick={handleCreateTeam}
+            >
+              <i className="fas fa-plus"></i>
               New Team
-            </Button>
+            </button>
             <button className="close-button" onClick={onClose}>
               ×
             </button>
@@ -398,10 +401,13 @@ const TeamManagement: React.FC<TeamManagementProps> = ({
                 <FaUsers className="empty-icon" />
                 <h3>No teams yet</h3>
                 <p>Create your first team to get started</p>
-                <Button onClick={handleCreateTeam}>
-                  <FaPlus />
+                <button 
+                  className="header-button outline-button" 
+                  onClick={handleCreateTeam}
+                >
+                  <i className="fas fa-plus"></i>
                   Create Team
-                </Button>
+                </button>
               </div>
             ) : (
               <div className="teams-grid">
