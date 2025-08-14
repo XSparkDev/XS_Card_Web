@@ -150,7 +150,7 @@ export interface BillingAPIResponse<T> {
 }
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1MTA2MTQxLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTUxMDYxNDEsImV4cCI6MTc1NTEwOTc0MSwiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.HnrJL6CU8glnS1F7uTU67C0r65VpBFRsQPdMsndbJtxnWCulOHOWzILKu8jrlIFDFRTjEQjnJJXQv9rzfnPh_bK_08mx66WHIgMxbod1I0R3X7w9wzwOCnkZaFlr9JqntE08YcIorAsrB5ax87kNNKpzFHy9wcJ-AZ-ilYwSzRWGujEdn5835wpoQby--nYHPxWLPaNHfCa1cxBTeGCrQCgqZdRzkykcrRDCNx-CMK4IffCvAJqJ4a257sDUoBK56qVkb61JmB0ogqeI5Ne1enQnmBTHxY5PHOyH3shgVxup0ts7NiBRvEsbgQPiccVz9rfxmkSRyJnQABqc09QWEw";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1MTIzNjgzLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTUxMjM2ODMsImV4cCI6MTc1NTEyNzI4MywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.gdKMHV0PsUxCMN6NqeM7_h5jVrdPUUCbhbr0BhhhoObWF1kwCqraM7_3Sr1E-Ij8iRf9NuReA3GQwqCRNGks76jqNidJXzqOkS-Xk_PC2D7zKnZ_HoJymv4u7ZEa8YboEI_PVg6rzI6y-8L2l04baivMMRes_2tR5S0IVH5OIeeMs-IOgIe6XLGthQFAQvkloTicQypIDGmoOX20ryJKYa_H2eAE3EAExKW1GgB2toviMvyjJ3xBjD_eGhSO9oXE4tz_9mtSuHk-ZmcGh6hEEk-mtfYF8dCAOjYuQnIrYKfOqQRgL_zALsxstE1Jy9Ulu8dEQNAKd8vuz-JHdJeaHA";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -244,7 +244,9 @@ export const ENDPOINTS = {
     UPGRADE_USER: '/Users/:id/upgrade',    
     SUBSCRIPTION_STATUS: '/subscription/status',
     CANCEL_SUBSCRIPTION: '/subscription/cancel',
-    UPLOAD_IMAGE: '/upload-image',    
+    UPLOAD_IMAGE: '/upload-image',
+    DEACTIVATE_USER: '/deactivate',
+    REACTIVATE_USER: '/reactivate',
     
     // Billing endpoints (Premium/Free plans) - These map to existing backend routes
     BILLING_SUBSCRIPTION_STATUS: '/subscription/status',  // ✅ EXISTS

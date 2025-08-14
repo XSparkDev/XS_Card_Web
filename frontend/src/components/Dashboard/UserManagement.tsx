@@ -1948,7 +1948,7 @@ const UserManagement = () => {
       });
       
       // Deactivate or reactivate based on current status
-      const endpoint = isCurrentlyActive ? '/deactivate' : '/reactivate';
+      const endpoint = isCurrentlyActive ? ENDPOINTS.DEACTIVATE_USER : ENDPOINTS.REACTIVATE_USER;
       const url = `${API_BASE_URL}${endpoint}`;
 
       const payload = { 
