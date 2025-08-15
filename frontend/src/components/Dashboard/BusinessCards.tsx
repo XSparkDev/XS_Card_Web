@@ -367,6 +367,10 @@ const BusinessCardItem = ({
                 className="action-button" 
                 title="QR Code"
                 onClick={() => !isPreview && onQRClick?.()}
+                style={{ 
+                  opacity: onQRClick ? 1 : 0.5,
+                  cursor: onQRClick ? 'pointer' : 'not-allowed'
+                }}
               >
                 <FaQrcode />
               </button>
@@ -374,6 +378,10 @@ const BusinessCardItem = ({
                 className="action-button" 
                 title="Share"
                 onClick={() => !isPreview && onShareClick?.()}
+                style={{ 
+                  opacity: onShareClick ? 1 : 0.5,
+                  cursor: onShareClick ? 'pointer' : 'not-allowed'
+                }}
               >
                 <FaShare />
               </button>
@@ -381,6 +389,10 @@ const BusinessCardItem = ({
                 className="action-button" 
                 title="Edit"
                 onClick={() => !isPreview && onEditClick?.()}
+                style={{ 
+                  opacity: onEditClick ? 1 : 0.5,
+                  cursor: onEditClick ? 'pointer' : 'not-allowed'
+                }}
               >
                 <FaEdit />
               </button>
@@ -404,12 +416,22 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const { hasPermission } = useUser();
 
   useEffect(() => {
     if (isOpen) {
+      // Phase 3: Enhanced permission validation for QR generation
+      if (!hasPermission('generateQRCodes')) {
+        setPermissionError('You do not have permission to generate QR codes');
+        setLoading(false);
+        return;
+      }
+
       const fetchQRCode = async () => {
         setLoading(true);
         setError(null);
+        setPermissionError(null);
         try {
           const endpoint = `${API_BASE_URL}/generateQR/${userId}/${cardIndex}`;
           const response = await fetch(endpoint, {
@@ -418,13 +440,21 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
             }
           });
           if (!response.ok) {
-            throw new Error(`${response.status} ${response.statusText}`);
+            // Enhanced error handling for permission-related failures
+            if (response.status === 403) {
+              throw new Error('Permission denied: You do not have access to generate QR codes for this card');
+            } else if (response.status === 401) {
+              throw new Error('Authentication failed: Please log in again');
+            } else {
+              throw new Error(`${response.status} ${response.statusText}`);
+            }
           }
           const blob = await response.blob();
           const blobUrl = URL.createObjectURL(blob);
           setQrCodeUrl(blobUrl);
         } catch (err) {
-          setError('Failed to generate QR code');
+          const errorMessage = err instanceof Error ? err.message : 'Failed to generate QR code';
+          setError(errorMessage);
           console.error('QR Code generation error:', err);
         } finally {
           setLoading(false);
@@ -432,8 +462,14 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
       };
 
       fetchQRCode();
+    } else {
+      // Reset states when modal closes
+      setQrCodeUrl(null);
+      setError(null);
+      setPermissionError(null);
+      setCopied(false);
     }
-  }, [isOpen, userId, cardIndex]);
+  }, [isOpen, userId, cardIndex, hasPermission]);
 
   const handleCopyLink = async () => {
     try {
@@ -486,7 +522,16 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
 
         <div className="qr-modal-body">
           <div className="qr-code-container">
-            {loading ? (
+            {permissionError ? (
+              <div className="qr-placeholder qr-error">
+                <div style={{ fontSize: '3rem', color: '#dc2626', marginBottom: '1rem' }}>🚫</div>
+                <h3 style={{ color: '#dc2626', marginBottom: '1rem' }}>Permission Denied</h3>
+                <p style={{ color: '#7f1d1d', marginBottom: '1rem', textAlign: 'center' }}>{permissionError}</p>
+                <div style={{ fontSize: '0.875rem', color: '#991b1b', backgroundColor: '#fecaca', padding: '0.75rem', borderRadius: '0.375rem', display: 'inline-block' }}>
+                  <strong>Required Permission:</strong> Generate QR Codes
+                </div>
+              </div>
+            ) : loading ? (
               <div className="qr-placeholder">
                 <div className="qr-loading-spinner"></div>
                 <p>Generating QR Code...</p>
@@ -516,14 +561,16 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
             <button 
               className={`qr-action-button ${copied ? 'copied' : ''}`}
               onClick={handleCopyLink}
-              disabled={!qrCodeUrl}
+              disabled={!qrCodeUrl || permissionError !== null}
+              title={permissionError ? 'QR generation permission required' : !qrCodeUrl ? 'QR code not available' : 'Copy link to share this card'}
             >
               {copied ? '✓ Copied' : 'Copy Link'}
             </button>
             <button 
               className="qr-action-button"
               onClick={handleDownload}
-              disabled={!qrCodeUrl}
+              disabled={!qrCodeUrl || permissionError !== null}
+              title={permissionError ? 'QR generation permission required' : !qrCodeUrl ? 'QR code not available' : 'Download QR code as PNG'}
             >
               Download PNG
             </button>
@@ -535,8 +582,7 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
 };
 
 // Create Card Modal Component
-const CreateCardModal = ({ userContext, isOpen, onClose, onSave }: { 
-  userContext: any;
+const CreateCardModal = ({ isOpen, onClose, onSave }: { 
   isOpen: boolean; 
   onClose: () => void; 
   onSave: (newCard: CardData) => void;
@@ -1877,6 +1923,15 @@ const BusinessCards = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
+  
+  // Permission-aware QR modal opener
+  const openQRModal = () => {
+    if (!hasPermission('generateQRCodes')) {
+      alert('You do not have permission to generate QR codes.');
+      return;
+    }
+    setShowQRModal(true);
+  };
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -1890,6 +1945,12 @@ const BusinessCards = () => {
     const fetchCards = async () => {
       // Wait for user context to be determined
       if (userContext.isLoading) {
+        return;
+      }
+      
+      // Phase 3: Don't fetch cards if user doesn't have view permission
+      if (!hasPermission('viewBusinessCards')) {
+        setLoading(false);
         return;
       }
       
@@ -1910,7 +1971,18 @@ const BusinessCards = () => {
         
         console.log('Processed cards data:', cardsData);
       } catch (err) {
-        setError("Failed to fetch business cards. Please try again later.");
+        // Enhanced error handling for permission-related failures
+        if (err instanceof Error) {
+          if (err.message.includes('403')) {
+            setError("Access denied: You do not have permission to view business cards.");
+          } else if (err.message.includes('401')) {
+            setError("Authentication required: Please log in to access your business cards.");
+          } else {
+            setError("Failed to fetch business cards. Please try again later.");
+          }
+        } else {
+          setError("Failed to fetch business cards. Please try again later.");
+        }
         console.error("Error fetching cards:", err);
       } finally {
         setLoading(false);
@@ -1918,10 +1990,24 @@ const BusinessCards = () => {
     };
     
     fetchCards();
-  }, [userContext.isLoading, userContext.isEnterprise, userContext.enterpriseId, userContext.userId]);
+  }, [userContext.isLoading, userContext.isEnterprise, userContext.enterpriseId, userContext.userId, hasPermission]);
+
+  // Check for enterprise users without permissions on component mount
+  useEffect(() => {
+    if (!userContext.isLoading && user && user.plan === 'enterprise' && user.isEmployee) {
+      // Trigger permission check which will show popup if user has no permissions
+      hasPermission('viewBusinessCards');
+    }
+  }, [user, userContext.isLoading, hasPermission]);
   
   // Share functionality
   const handleShare = async (card: CardData) => {
+    // Check permission to share cards
+    if (!hasPermission('shareBusinessCards')) {
+      alert('You do not have permission to share business cards.');
+      return;
+    }
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -1950,6 +2036,12 @@ const BusinessCards = () => {
   // Delete card functionality
   const handleDeleteCard = async () => {
     if (!selectedCard) return;
+
+    // Check permission to delete cards
+    if (!hasPermission('deleteBusinessCards')) {
+      alert('You do not have permission to delete business cards.');
+      return;
+    }
 
     const cardIndex = cards.findIndex(c => c.id === selectedCard.id);
     
@@ -2006,6 +2098,44 @@ const BusinessCards = () => {
       </div>
     );
   }
+
+  // Phase 3: Page-level view access control
+  if (!hasPermission('viewBusinessCards')) {
+    return (
+      <div className="page-container">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Business Cards</h1>
+            <p className="page-description">Access to business cards management</p>
+          </div>
+        </div>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '4rem 2rem',
+          backgroundColor: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '0.5rem',
+          margin: '2rem 0'
+        }}>
+          <div style={{ fontSize: '3rem', color: '#dc2626', marginBottom: '1rem' }}>🚫</div>
+          <h2 style={{ color: '#dc2626', marginBottom: '1rem' }}>Access Denied</h2>
+          <p style={{ color: '#7f1d1d', marginBottom: '1rem', maxWidth: '32rem', margin: '0 auto 1rem' }}>
+            You do not have permission to view business cards. Please contact your administrator to request access to this feature.
+          </p>
+          <div style={{ fontSize: '0.875rem', color: '#991b1b', backgroundColor: '#fecaca', padding: '0.75rem', borderRadius: '0.375rem', display: 'inline-block' }}>
+            <strong>Required Permission:</strong> View Business Cards
+          </div>
+          {user && (
+            <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+              <p><strong>User:</strong> {user.email}</p>
+              <p><strong>Role:</strong> {user.role}</p>
+              {user.plan === 'enterprise' && <p><strong>Plan:</strong> Enterprise</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="page-container">
@@ -2047,14 +2177,14 @@ const BusinessCards = () => {
               backgroundColor: hasPermission('createBusinessCards') ? undefined : '#f5f5f5',
               cursor: hasPermission('createBusinessCards') ? 'pointer' : 'not-allowed'
             }}
-            title={!hasPermission('createBusinessCards') ? 'Employees cannot create new cards' : 'Create a new business card'}
+            title={!hasPermission('createBusinessCards') ? 'You do not have permission to create cards' : 'Create a new business card'}
           >
             <FaQrcode className="mr-2" />
             Create Card
           </Button>
           
-          {/* Template Creation Button - Only for Managers and Admins */}
-          {(hasPermission('createBusinessCards') && (user?.role === 'Manager' || user?.role === 'Lead' || user?.role === 'Administrator' || user?.role === 'Admin')) && (
+          {/* Template Creation Button */}
+          {hasPermission('createTemplates') && (
             <Button 
               variant="outline"
               onClick={() => setShowTemplateModal(true)}
@@ -2070,11 +2200,14 @@ const BusinessCards = () => {
             <Button 
               variant="outline" 
               onClick={() => setShowDeleteModal(true)}
-              disabled={cards.findIndex(c => c.id === selectedCard.id) === 0}
+              disabled={cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')}
               style={{ 
-                opacity: cards.findIndex(c => c.id === selectedCard.id) === 0 ? 0.5 : 1,
-                backgroundColor: cards.findIndex(c => c.id === selectedCard.id) === 0 ? '#f5f5f5' : undefined
+                opacity: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')) ? 0.5 : 1,
+                backgroundColor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')) ? '#f5f5f5' : undefined,
+                cursor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')) ? 'not-allowed' : 'pointer'
               }}
+              title={!hasPermission('deleteBusinessCards') ? 'You do not have permission to delete cards' : 
+                     cards.findIndex(c => c.id === selectedCard.id) === 0 ? 'Default card cannot be deleted' : 'Delete this card'}
             >
               <FaTimes className="mr-2" />
               {cards.findIndex(c => c.id === selectedCard.id) === 0 ? 'Default Card' : 'Delete Card'}
@@ -2086,7 +2219,14 @@ const BusinessCards = () => {
       {loading ? (
         <div className="loading-state">Loading business cards...</div>
       ) : error ? (
-        <div className="error-state">{error}</div>
+        <div className="error-state">
+          {error}
+          {error.includes('permission') && (
+            <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+              <p>If you believe this is an error, please contact your administrator.</p>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="cards-layout">
           {/* Card List Sidebar */}
@@ -2126,6 +2266,11 @@ const BusinessCards = () => {
                 <div className="empty-cards-list">
                   <p>No cards found</p>
                   {searchTerm && <p>Try adjusting your search</p>}
+                  {!hasPermission('createBusinessCards') && (
+                    <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic' }}>
+                      <p>You need "Create Business Cards" permission to add new cards.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2137,20 +2282,77 @@ const BusinessCards = () => {
               <div className="selected-card-container">
                 <BusinessCardItem 
                   card={selectedCard}
-                  onQRClick={() => setShowQRModal(true)}
-                  onShareClick={() => handleShare(selectedCard)}
-                  onEditClick={() => setShowEditModal(true)}
+                  onQRClick={hasPermission('generateQRCodes') ? openQRModal : undefined}
+                  onShareClick={hasPermission('shareBusinessCards') ? () => handleShare(selectedCard) : undefined}
+                  onEditClick={hasPermission('editBusinessCards') ? () => setShowEditModal(true) : undefined}
                 />
+                {/* Debug info - remove this after fixing */}
+                <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                  <strong>Debug Info:</strong><br/>
+                  User Role: {user?.role}<br/>
+                  User Plan: {user?.plan}<br/>
+                  Is Employee: {user?.isEmployee?.toString()}<br/>
+                  Edit Permission: {hasPermission('editBusinessCards').toString()}<br/>
+                  Create Permission: {hasPermission('createBusinessCards').toString()}<br/>
+                  Share Permission: {hasPermission('shareBusinessCards').toString()}<br/>
+                  <br/>
+                  <strong>Test User Roles:</strong><br/>
+                  <button onClick={() => {
+                    const testUser = { id: 'test', name: 'Test Admin', email: 'admin@test.com', role: 'Administrator', plan: 'enterprise', isEmployee: true };
+                    localStorage.setItem('userData', JSON.stringify(testUser));
+                    window.location.reload();
+                  }} style={{ marginRight: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Admin</button>
+                  <button onClick={() => {
+                    const testUser = { id: 'test', name: 'Test Manager', email: 'manager@test.com', role: 'Manager', plan: 'enterprise', isEmployee: true };
+                    localStorage.setItem('userData', JSON.stringify(testUser));
+                    window.location.reload();
+                  }} style={{ marginRight: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Manager</button>
+                  <button onClick={() => {
+                    const testUser = { id: 'test', name: 'Test Employee', email: 'employee@test.com', role: 'Employee', plan: 'enterprise', isEmployee: true };
+                    localStorage.setItem('userData', JSON.stringify(testUser));
+                    window.location.reload();
+                  }} style={{ marginRight: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Employee</button>
+                  <button onClick={() => {
+                    localStorage.removeItem('userData');
+                    window.location.reload();
+                  }} style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Reset</button>
+                </div>
                 <div className="card-actions-panel">
-                  <Button onClick={() => setShowQRModal(true)}>
+                  <Button 
+                    onClick={openQRModal}
+                    disabled={!hasPermission('generateQRCodes')}
+                    style={{ 
+                      opacity: hasPermission('generateQRCodes') ? 1 : 0.5,
+                      cursor: hasPermission('generateQRCodes') ? 'pointer' : 'not-allowed'
+                    }}
+                    title={!hasPermission('generateQRCodes') ? 'You do not have permission to generate QR codes' : 'Generate QR code for this card'}
+                  >
                     <FaQrcode className="mr-2" />
                     QR Code
                   </Button>
-                  <Button variant="outline" onClick={() => handleShare(selectedCard)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleShare(selectedCard)}
+                    disabled={!hasPermission('shareBusinessCards')}
+                    style={{ 
+                      opacity: hasPermission('shareBusinessCards') ? 1 : 0.5,
+                      cursor: hasPermission('shareBusinessCards') ? 'pointer' : 'not-allowed'
+                    }}
+                    title={!hasPermission('shareBusinessCards') ? 'You do not have permission to share cards' : 'Share this card'}
+                  >
                     <FaShare className="mr-2" />
                     Share Card
                   </Button>
-                  <Button variant="outline" onClick={() => setShowEditModal(true)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowEditModal(true)}
+                    disabled={!hasPermission('editBusinessCards')}
+                    style={{ 
+                      opacity: hasPermission('editBusinessCards') ? 1 : 0.5,
+                      cursor: hasPermission('editBusinessCards') ? 'pointer' : 'not-allowed'
+                    }}
+                    title={!hasPermission('editBusinessCards') ? 'You do not have permission to edit cards' : 'Edit this card'}
+                  >
                     <FaEdit className="mr-2" />
                     Edit Card
                   </Button>
@@ -2172,7 +2374,7 @@ const BusinessCards = () => {
             card={selectedCard}
             cardIndex={cards.findIndex(c => c.id === selectedCard.id)}
             userId={userContext.userId || ''}
-            isOpen={showQRModal} 
+            isOpen={showQRModal && hasPermission('generateQRCodes')} 
             onClose={() => setShowQRModal(false)} 
           />
           <EditCardModal 
@@ -2191,7 +2393,6 @@ const BusinessCards = () => {
       
       {/* Create Card Modal */}
       <CreateCardModal 
-        userContext={userContext}
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)}
         onSave={(newCard) => {
@@ -2223,9 +2424,19 @@ const BusinessCards = () => {
               </button>
             </div>
             <div className="modal-body">
-              <p>Are you sure you want to delete this card?</p>
-              <p><strong>{selectedCard.name} {selectedCard.surname}</strong></p>
-              <p>This action cannot be undone.</p>
+              {!hasPermission('deleteBusinessCards') ? (
+                <div style={{ color: '#dc2626', textAlign: 'center', padding: '1rem' }}>
+                  <p><strong>Permission Denied</strong></p>
+                  <p>You do not have permission to delete business cards.</p>
+                  <p>Please contact your administrator to request this permission.</p>
+                </div>
+              ) : (
+                <>
+                  <p>Are you sure you want to delete this card?</p>
+                  <p><strong>{selectedCard.name} {selectedCard.surname}</strong></p>
+                  <p>This action cannot be undone.</p>
+                </>
+              )}
             </div>
             <div className="modal-actions">
               <Button 
@@ -2236,7 +2447,13 @@ const BusinessCards = () => {
               </Button>
               <Button 
                 onClick={handleDeleteCard}
-                style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
+                disabled={!hasPermission('deleteBusinessCards')}
+                style={{ 
+                  backgroundColor: hasPermission('deleteBusinessCards') ? '#dc2626' : '#f5f5f5', 
+                  borderColor: hasPermission('deleteBusinessCards') ? '#dc2626' : '#d1d5db',
+                  color: hasPermission('deleteBusinessCards') ? 'white' : '#9ca3af',
+                  cursor: hasPermission('deleteBusinessCards') ? 'pointer' : 'not-allowed'
+                }}
               >
                 Delete Card
               </Button>

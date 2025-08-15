@@ -158,7 +158,7 @@ export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 // Default user ID specifically for meetings and user-specific features
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
-//export const DEFAULT_USER_ID = "RP6lMeJ2G1emh8WXMpPVXY7qSpD2"; // admin
+//export const DEFAULT_USER_ID = "jbtu0MfGddPJLWnrHmHKCvFhm1j2"; // admin
 export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // manager
 
 // Example payment method ID for testing

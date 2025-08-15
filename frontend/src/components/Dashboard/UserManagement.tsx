@@ -1913,10 +1913,8 @@ const UserManagement = () => {
     }
   };
 
-  const navigateToDepartmentAddEmployee = () => {
-    // Navigate to Department page and store info about the button to animate
-    localStorage.setItem('animateAddEmployeeButton', 'true');
-    navigate('/department');
+  const openAddEmployeeModal = () => {
+    setIsAddUserOpen(true);
   };
 
   // Handle deactivate/reactivate account
@@ -2266,7 +2264,7 @@ const UserManagement = () => {
             <IconComponent name="Mail" className="icon-small mr-2" />
             Email Logs
           </Button>
-          <Button onClick={navigateToDepartmentAddEmployee} className="header-button outline-button">
+          <Button onClick={openAddEmployeeModal} className="header-button outline-button">
             <IconComponent name="UserPlus" className="icon-small mr-2" />
             Add Employee
           </Button>
@@ -2349,9 +2347,9 @@ const UserManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((dept) => (
+                {departments.map((dept) => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
+                ))}
                 </SelectContent>
               </Select>
             </CardContent>
@@ -2410,7 +2408,7 @@ const UserManagement = () => {
                       <label className="custom-checkbox">
                         <input 
                           type="checkbox"
-                          checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                        checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
                           onChange={(e) => handleSelectAll(e.target.checked)}
                           ref={(el) => {
                             if (el) {
@@ -2455,10 +2453,10 @@ const UserManagement = () => {
                             {user.status}
                           </div>
                             {user.lastActive && user.lastActive.toLowerCase() !== 'never' && (
-                              <div className="last-active">
-                                <IconComponent name="Clock" className="icon-tiny mr-1" />
-                                {user.lastActive}
-                              </div>
+                            <div className="last-active">
+                              <IconComponent name="Clock" className="icon-tiny mr-1" />
+                              {user.lastActive}
+                            </div>
                             )}
                           </div>
                           
@@ -2535,9 +2533,9 @@ const UserManagement = () => {
       <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
+            <DialogTitle>Add New Employee</DialogTitle>
             <DialogDescription>
-              Create a new user account for XSCard system.
+              Create a new employee account for your organization.
             </DialogDescription>
           </DialogHeader>
           <div className="dialog-content">
@@ -2581,7 +2579,7 @@ const UserManagement = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>Cancel</Button>
-            <Button onClick={() => setIsAddUserOpen(false)}>Add User</Button>
+            <Button onClick={() => setIsAddUserOpen(false)}>Add Employee</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

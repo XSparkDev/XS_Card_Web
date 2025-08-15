@@ -1,4 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { 
+  BUSINESS_CARD_PERMISSIONS, 
+  ROLE_PERMISSIONS, 
+  hasBusinessCardPermission, 
+  showPermissionPopup,
+  type BusinessCardPermission,
+  type UserWithPermissions,
+  type IndividualPermissions 
+} from '../utils/permissions';
 
 // Define user roles
 export type UserRole = 'Employee' | 'Manager' | 'Administrator' | 'Admin' | 'Lead' | 'Staff';
@@ -9,6 +18,10 @@ export interface UserPermissions {
   createBusinessCards: boolean;
   editBusinessCards: boolean;
   deleteBusinessCards: boolean;
+  shareBusinessCards: boolean;
+  generateQRCodes: boolean;
+  createTemplates: boolean;
+  manageAllCards: boolean;
   viewContacts: boolean;
   manageContacts: boolean;
   viewCalendar: boolean;
@@ -26,13 +39,18 @@ export interface UserPermissions {
   manageSettings: boolean;
 }
 
-// Define user interface
+// Enhanced user interface with individual permissions support
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   permissions: UserPermissions;
+  // New fields for individual permission support
+  plan?: string;
+  isEmployee?: boolean;
+  individualPermissions?: IndividualPermissions | null;
+  [key: string]: any;
 }
 
 // Context type
@@ -40,6 +58,7 @@ interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   hasPermission: (permission: keyof UserPermissions) => boolean;
+  hasBusinessCardPermission: (permission: BusinessCardPermission) => boolean;
   isRole: (role: UserRole | UserRole[]) => boolean;
   loading: boolean;
 }
@@ -58,6 +77,10 @@ const getPermissionsByRole = (role: UserRole): UserPermissions => {
       createBusinessCards: true,
       editBusinessCards: true,
       deleteBusinessCards: true,
+      shareBusinessCards: true,
+      generateQRCodes: true,
+      createTemplates: true,
+      manageAllCards: true,
       viewContacts: true,
       manageContacts: true,
       viewCalendar: true,
@@ -83,6 +106,10 @@ const getPermissionsByRole = (role: UserRole): UserPermissions => {
       createBusinessCards: true,
       editBusinessCards: true,
       deleteBusinessCards: false,
+      shareBusinessCards: true,
+      generateQRCodes: true,
+      createTemplates: true,
+      manageAllCards: false,
       viewContacts: true,
       manageContacts: true,
       viewCalendar: true,
@@ -107,6 +134,10 @@ const getPermissionsByRole = (role: UserRole): UserPermissions => {
     createBusinessCards: false,
     editBusinessCards: false,
     deleteBusinessCards: false,
+    shareBusinessCards: true,
+    generateQRCodes: true,
+    createTemplates: false,
+    manageAllCards: false,
     viewContacts: true,
     manageContacts: false,
     viewCalendar: true,
@@ -144,35 +175,44 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (userData) {
         const parsedUser = JSON.parse(userData);
         const permissions = getPermissionsByRole(parsedUser.role || 'Employee');
+        // Ensure enterprise properties are set
+        const userPlan = parsedUser.plan || 'enterprise';
+        const isEmployee = parsedUser.isEmployee !== undefined ? parsedUser.isEmployee : true;
         
         setUserState({
           id: parsedUser.id || 'temp-user-id',
           name: parsedUser.name || 'Current User',
           email: parsedUser.email || 'user@company.com',
           role: parsedUser.role || 'Employee',
-          permissions
+          permissions,
+          plan: userPlan,
+          isEmployee: isEmployee
         });
       } else {
-        // Default to Employee role if no user data found
-        const permissions = getPermissionsByRole('Employee');
+        // Default to Administrator role if no user data found (for testing)
+        const permissions = getPermissionsByRole('Administrator');
         setUserState({
           id: 'temp-user-id',
-          name: 'Demo Employee',
-          email: 'employee@company.com',
-          role: 'Employee',
-          permissions
+          name: 'Demo Administrator',
+          email: 'admin@company.com',
+          role: 'Administrator',
+          permissions,
+          plan: 'enterprise',
+          isEmployee: true
         });
       }
     } catch (error) {
       console.error('Failed to load user data:', error);
-      // Fallback to Employee role
-      const permissions = getPermissionsByRole('Employee');
+      // Fallback to Administrator role (for testing)
+      const permissions = getPermissionsByRole('Administrator');
       setUserState({
         id: 'temp-user-id',
-        name: 'Demo Employee',
-        email: 'employee@company.com',
-        role: 'Employee',
-        permissions
+        name: 'Demo Administrator',
+        email: 'admin@company.com',
+        role: 'Administrator',
+        permissions,
+        plan: 'enterprise',
+        isEmployee: true
       });
     } finally {
       setLoading(false);
@@ -186,7 +226,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
+        plan: newUser.plan || 'enterprise',
+        isEmployee: newUser.isEmployee !== undefined ? newUser.isEmployee : true
       }));
     } else {
       localStorage.removeItem('userData');
@@ -194,7 +236,26 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const hasPermission = (permission: keyof UserPermissions): boolean => {
+    if (!user) return false;
+    
+    // For business card permissions, use the enhanced permission check with individual overrides
+    const businessCardPermissions = [
+      'viewBusinessCards', 'createBusinessCards', 'editBusinessCards', 
+      'deleteBusinessCards', 'shareBusinessCards', 'generateQRCodes', 
+      'createTemplates', 'manageAllCards'
+    ];
+    
+    if (businessCardPermissions.includes(permission)) {
+      return hasBusinessCardPermission(user as UserWithPermissions, permission as BusinessCardPermission);
+    }
+    
+    // For other permissions, use the existing logic
     return user?.permissions[permission] || false;
+  };
+
+  const hasBusinessCardPermissionDirect = (permission: BusinessCardPermission): boolean => {
+    if (!user) return false;
+    return hasBusinessCardPermission(user as UserWithPermissions, permission);
   };
 
   const isRole = (role: UserRole | UserRole[]): boolean => {
@@ -211,6 +272,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     setUser,
     hasPermission,
+    hasBusinessCardPermission: hasBusinessCardPermissionDirect,
     isRole,
     loading
   };

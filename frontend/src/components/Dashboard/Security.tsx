@@ -7,6 +7,8 @@ import { Badge } from "../UI/badge";
 import "../../styles/Security.css";
 
 import ManageRolesModal from "./ManageRolesModal";
+import UserPermissionsModal from "./UserPermissionsModal";
+import RoleUsersModal from "./RoleUsersModal";
 // import { useSessionTimeoutContext } from "../../providers/SessionTimeoutProvider";
 import { sessionService } from "../../services/sessionService";
 // import { rolesService, Role } from "../../services/rolesService";
@@ -14,7 +16,19 @@ import ActivityLogs from "./ActivityLogs";
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
 
 // Import icons
-import { FaShieldAlt, FaUserPlus } from "react-icons/fa";
+import { FaShieldAlt, FaUserPlus, FaUser, FaEdit, FaExclamationTriangle } from "react-icons/fa";
+
+// Define interface for permissions
+interface Permissions {
+  viewCards: boolean;
+  createCards: boolean;
+  editCards: boolean;
+  deleteCards: boolean;
+  manageUsers: boolean;
+  viewReports: boolean;
+  systemSettings: boolean;
+  auditLogs: boolean;
+}
 
 // Define interface for employee data from API
 interface EmployeeData {
@@ -28,6 +42,8 @@ interface EmployeeData {
   departmentName?: string;
   status?: string;
   lastActive?: string;
+  individualPermissions?: Partial<Permissions>; // Individual permission overrides
+  effectivePermissions?: Permissions; // Calculated final permissions
 }
 
 // Define interface for API response
@@ -40,16 +56,8 @@ interface RoleSummary {
   name: string;
   description: string;
   userCount: number;
-  permissions: {
-    viewCards: boolean;
-    createCards: boolean;
-    editCards: boolean;
-    deleteCards: boolean;
-    manageUsers: boolean;
-    viewReports: boolean;
-    systemSettings: boolean;
-    auditLogs: boolean;
-  };
+  users: EmployeeData[]; // Add users array to role summary
+  permissions: Permissions;
 }
 
 const Security = () => {
@@ -67,6 +75,11 @@ const Security = () => {
   const [isForceLogoutLoading, setIsForceLogoutLoading] = useState(false);
   const [roles, setRoles] = useState<RoleSummary[]>([]);
   const [isLoadingRoles, setIsLoadingRoles] = useState(false);
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<EmployeeData | null>(null);
+  const [savingPermissions, setSavingPermissions] = useState(false);
+  const [usersModalOpen, setUsersModalOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<RoleSummary | null>(null);
   
   // const { updateSessionTimeout } = useSessionTimeoutContext();
 
@@ -151,13 +164,17 @@ const Security = () => {
         roleCounts[role] = (roleCounts[role] || 0) + 1;
       });
       
-      // Create role summaries
-      const roleSummaries: RoleSummary[] = Object.entries(roleCounts).map(([roleName, count]) => ({
-        name: roleName,
-        description: roleDescriptions[roleName] || 'Custom role with specific permissions',
-        userCount: count,
-        permissions: getDefaultPermissions(roleName)
-      }));
+      // Create role summaries with users
+      const roleSummaries: RoleSummary[] = Object.entries(roleCounts).map(([roleName, count]) => {
+        const roleUsers = employees.filter((emp: EmployeeData) => (emp.role || 'Employee') === roleName);
+        return {
+          name: roleName,
+          description: roleDescriptions[roleName] || 'Custom role with specific permissions',
+          userCount: count,
+          users: roleUsers,
+          permissions: getDefaultPermissions(roleName)
+        };
+      });
       
       // Sort roles by user count (descending)
       roleSummaries.sort((a, b) => b.userCount - a.userCount);
@@ -172,18 +189,21 @@ const Security = () => {
           name: 'Administrator',
           description: 'Full system access and permissions',
           userCount: 0,
+          users: [],
           permissions: getDefaultPermissions('Administrator')
         },
         {
           name: 'Manager',
           description: 'Can manage cards and departments',
           userCount: 0,
+          users: [],
           permissions: getDefaultPermissions('Manager')
         },
         {
           name: 'Employee',
           description: 'View only their own cards',
           userCount: 0,
+          users: [],
           permissions: getDefaultPermissions('Employee')
         }
       ]);
@@ -292,6 +312,84 @@ const Security = () => {
     }
   };
 
+  // Open users modal for a role
+  const openUsersModal = (role: RoleSummary) => {
+    setSelectedRole(role);
+    setUsersModalOpen(true);
+  };
+
+  // Close users modal
+  const closeUsersModal = () => {
+    setUsersModalOpen(false);
+    setSelectedRole(null);
+  };
+
+  // Format user display name
+  const formatUserName = (user: EmployeeData) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.name && user.surname) {
+      return `${user.name} ${user.surname}`;
+    }
+    return user.email.split('@')[0]; // Fallback to email username
+  };
+
+  // Open permissions modal for a user
+  const openPermissionsModal = (user: EmployeeData) => {
+    setSelectedUser(user);
+    setPermissionsModalOpen(true);
+  };
+
+  // Close permissions modal
+  const closePermissionsModal = () => {
+    setPermissionsModalOpen(false);
+    setSelectedUser(null);
+  };
+
+  // Save user permissions
+  const saveUserPermissions = async (userId: number, permissions: Partial<Permissions>) => {
+    setSavingPermissions(true);
+    try {
+      const url = buildEnterpriseUrl('/enterprise/:enterpriseId/users/:userId/permissions'.replace(':userId', userId.toString()));
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          individualPermissions: permissions,
+          updatedBy: 'current-user-id', // TODO: Get from auth context
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        // Update the user in roles state
+        setRoles(prevRoles => 
+          prevRoles.map(role => ({
+            ...role,
+            users: role.users.map(user => 
+              user.id === userId 
+                ? { ...user, individualPermissions: permissions }
+                : user
+            )
+          }))
+        );
+        alert('User permissions updated successfully');
+      } else {
+        throw new Error('Failed to save permissions');
+      }
+    } catch (error) {
+      console.error('Error saving user permissions:', error);
+      alert('Failed to save permissions. Please try again.');
+    } finally {
+      setSavingPermissions(false);
+    }
+  };
+
+
+
   return (
     <div className="security-container">
       <div className="security-header">
@@ -336,6 +434,14 @@ const Security = () => {
                       <div className="role-users">
                         <FaUserPlus className="role-icon" />
                         <span>{role.userCount} Users Assigned</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openUsersModal(role)}
+                          className="role-expand-button"
+                        >
+                          View Users
+                        </Button>
                       </div>
                     </div>
                   ))
@@ -636,6 +742,24 @@ const Security = () => {
       <ManageRolesModal 
         isOpen={showManageRolesModal} 
         onClose={() => setShowManageRolesModal(false)} 
+      />
+
+      {/* User Permissions Modal */}
+      <UserPermissionsModal
+        isOpen={permissionsModalOpen}
+        onClose={closePermissionsModal}
+        user={selectedUser}
+        rolePermissions={selectedUser ? roles.find(role => role.name === selectedUser.role)?.permissions || {} as Permissions : {} as Permissions}
+        onSave={saveUserPermissions}
+        saving={savingPermissions}
+      />
+
+      {/* Role Users Modal */}
+      <RoleUsersModal
+        isOpen={usersModalOpen}
+        onClose={closeUsersModal}
+        role={selectedRole}
+        onEditUserPermissions={openPermissionsModal}
       />
     </div>
   );
