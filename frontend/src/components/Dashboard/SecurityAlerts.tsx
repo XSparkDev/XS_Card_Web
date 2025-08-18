@@ -9,7 +9,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '../UI/selectRadix';
-import { buildEnterpriseUrl, getEnterpriseHeaders } from '../../utils/api';
+import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS } from '../../utils/api';
 
 // Types
 interface SecurityAlert {
@@ -356,7 +356,7 @@ const SecurityAlerts = () => {
     // Fetch alerts from backend
   const fetchAlerts = async () => {
     try {
-      const url = buildEnterpriseUrl('/enterprise/:enterpriseId/security/alerts');
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_SECURITY_ALERTS);
       const headers = getEnterpriseHeaders();
       
       console.log('Fetching alerts from:', url);
@@ -527,7 +527,7 @@ const SecurityAlerts = () => {
       
       // Stats updated automatically when alerts state changes
       
-      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/acknowledge`);
+      const url = buildEnterpriseUrl(`/api/enterprise/:enterpriseId/security/alerts/${alertId}/acknowledge`);
       const headers = getEnterpriseHeaders();
       
       const requestBody = {
@@ -605,7 +605,7 @@ const SecurityAlerts = () => {
       
       // Stats updated automatically when alerts state changes
       
-      const url = buildEnterpriseUrl(`/enterprise/:enterpriseId/security/alerts/${alertId}/resolve`);
+      const url = buildEnterpriseUrl(`/api/enterprise/:enterpriseId/security/alerts/${alertId}/resolve`);
       const headers = getEnterpriseHeaders();
       
       const requestBody = {

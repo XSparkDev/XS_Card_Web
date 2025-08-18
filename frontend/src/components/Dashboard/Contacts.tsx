@@ -291,7 +291,7 @@ const Contacts = () => {
       // Clear backend cache first to ensure fresh data
       try {
         console.log('🧹 Clearing backend cache before fetching fresh data...');
-        await authenticatedFetch('/cache/clear', { method: 'DELETE' });
+        await authenticatedFetch('/api/cache/clear', { method: 'DELETE' });
         console.log('✅ Backend cache cleared successfully');
       } catch (cacheError) {
         console.warn('⚠️ Failed to clear backend cache:', cacheError);
@@ -383,7 +383,7 @@ const Contacts = () => {
     // Clear backend cache first to ensure fresh data
     try {
       console.log('🧹 Clearing backend cache before manual refresh...');
-      await authenticatedFetch('/cache/clear', { method: 'DELETE' });
+      await authenticatedFetch('/api/cache/clear', { method: 'DELETE' });
       console.log('✅ Backend cache cleared successfully');
     } catch (cacheError) {
       console.warn('⚠️ Failed to clear backend cache:', cacheError);

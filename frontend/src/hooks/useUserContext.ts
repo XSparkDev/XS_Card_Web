@@ -38,14 +38,9 @@ export const useUserContext = () => {
     const checkEnterpriseUser = async (userId: string) => {
       try {
         // Try to get enterprise info - enterprise users are in enterprises collection
-        const enterpriseUrl = buildUrl(`/enterprises/${userId}`);
-        
-        // Use the Firebase token directly for authentication
-        const token = FIREBASE_TOKEN;
-        const headers = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        };
+        // Use the enterprise employees endpoint to check if user is enterprise
+        const enterpriseUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
+        const headers = getEnterpriseHeaders();
         
         console.log('Checking if enterprise user with URL:', enterpriseUrl); // Debug log
         
@@ -55,15 +50,13 @@ export const useUserContext = () => {
         
         if (response.ok) {
           const enterpriseData = await response.json();
-          const enterprise = enterpriseData.data || enterpriseData;
-          
-          console.log('Enterprise data from API:', enterprise); // Debug log
+          console.log('Enterprise data from API:', enterpriseData); // Debug log
           
           // This is an enterprise user
           setUserContext({
             isEnterprise: true,
             userId,
-            enterpriseId: userId, // Enterprise ID is the same as user ID for enterprise users
+            enterpriseId: 'x-spark-test', // Use the default enterprise ID
             isLoading: false
           });
         } else {

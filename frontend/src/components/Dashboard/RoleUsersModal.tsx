@@ -5,19 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "../UI/card";
 import { FaUser, FaEdit, FaExclamationTriangle, FaSearch } from "react-icons/fa";
 import "../../styles/Security.css";
 import "../../styles/DepartmentModal.css";
+import { type BusinessCardPermission, type IndividualPermissions } from "../../utils/permissions";
 
 // Types
-interface Permissions {
-  viewCards: boolean;
-  createCards: boolean;
-  editCards: boolean;
-  deleteCards: boolean;
-  manageUsers: boolean;
-  viewReports: boolean;
-  systemSettings: boolean;
-  auditLogs: boolean;
-}
-
 interface EmployeeData {
   id: number;
   firstName: string;
@@ -29,8 +19,8 @@ interface EmployeeData {
   departmentName?: string;
   status?: string;
   lastActive?: string;
-  individualPermissions?: Partial<Permissions>;
-  effectivePermissions?: Permissions;
+  individualPermissions?: IndividualPermissions;
+  effectivePermissions?: BusinessCardPermission[];
 }
 
 interface RoleSummary {
@@ -38,7 +28,7 @@ interface RoleSummary {
   description: string;
   userCount: number;
   users: EmployeeData[];
-  permissions: Permissions;
+  permissions: BusinessCardPermission[];
 }
 
 interface RoleUsersModalProps {
@@ -67,6 +57,32 @@ const RoleUsersModal: React.FC<RoleUsersModalProps> = ({
       return `${user.name} ${user.surname}`;
     }
     return user.email.split('@')[0];
+  };
+
+  // Check if user has individual permission overrides
+  const hasPermissionOverrides = (user: EmployeeData): boolean => {
+    const individualPermissions = user.individualPermissions;
+    return !!(individualPermissions && 
+      ((individualPermissions.removed && individualPermissions.removed.length > 0) ||
+       (individualPermissions.added && individualPermissions.added.length > 0)));
+  };
+
+  // Get override summary for display
+  const getOverrideSummary = (user: EmployeeData): string => {
+    const individualPermissions = user.individualPermissions;
+    if (!individualPermissions) return '';
+
+    const removedCount = individualPermissions.removed?.length || 0;
+    const addedCount = individualPermissions.added?.length || 0;
+
+    if (removedCount > 0 && addedCount > 0) {
+      return `+${addedCount}, -${removedCount}`;
+    } else if (addedCount > 0) {
+      return `+${addedCount}`;
+    } else if (removedCount > 0) {
+      return `-${removedCount}`;
+    }
+    return '';
   };
 
   // Filter users based on search term
@@ -189,7 +205,8 @@ const RoleUsersModal: React.FC<RoleUsersModalProps> = ({
 
                 <div className="users-list">
                   {currentUsers.map((user) => {
-                  const hasOverrides = user.individualPermissions && Object.keys(user.individualPermissions).length > 0;
+                  const hasOverrides = hasPermissionOverrides(user);
+                  const overrideSummary = getOverrideSummary(user);
                   
                   return (
                     <div key={user.id} className="user-card">
@@ -203,7 +220,7 @@ const RoleUsersModal: React.FC<RoleUsersModalProps> = ({
                             {hasOverrides && (
                               <span className="user-override-indicator">
                                 <FaExclamationTriangle className="override-icon" />
-                                Custom Permissions
+                                {overrideSummary}
                               </span>
                             )}
                           </div>

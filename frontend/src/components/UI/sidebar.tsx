@@ -208,7 +208,7 @@ const Sidebar: React.FC = () => {
         )}
         
         {/* Business Cards - All users can view */}
-        {hasPermission('viewBusinessCards') && (
+        {hasPermission('viewCards') && (
           <SidebarMenuItem
             icon={<i className="fas fa-id-card"></i>}
             label="Business Cards"

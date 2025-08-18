@@ -1,27 +1,27 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
-  BUSINESS_CARD_PERMISSIONS, 
-  ROLE_PERMISSIONS, 
-  hasBusinessCardPermission, 
-  showPermissionPopup,
+  hasBusinessCardPermission,
   type BusinessCardPermission,
   type UserWithPermissions,
   type IndividualPermissions 
 } from '../utils/permissions';
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, DEFAULT_USER_ID } from '../utils/api';
 
 // Define user roles
 export type UserRole = 'Employee' | 'Manager' | 'Administrator' | 'Admin' | 'Lead' | 'Staff';
 
-// Define permissions
+// Define permissions - Using backend permission names
 export interface UserPermissions {
-  viewBusinessCards: boolean;
-  createBusinessCards: boolean;
-  editBusinessCards: boolean;
-  deleteBusinessCards: boolean;
-  shareBusinessCards: boolean;
+  viewCards: boolean;
+  createCards: boolean;
+  editCards: boolean;
+  deleteCards: boolean;
+  shareCards: boolean;
+  manageAllCards: boolean;
+  exportCards: boolean;
+  // Legacy permissions for other features
   generateQRCodes: boolean;
   createTemplates: boolean;
-  manageAllCards: boolean;
   viewContacts: boolean;
   manageContacts: boolean;
   viewCalendar: boolean;
@@ -73,14 +73,15 @@ const getPermissionsByRole = (role: UserRole): UserPermissions => {
   // Administrator/Admin permissions
   if (normalizedRole.includes('admin')) {
     return {
-      viewBusinessCards: true,
-      createBusinessCards: true,
-      editBusinessCards: true,
-      deleteBusinessCards: true,
-      shareBusinessCards: true,
+      viewCards: true,
+      createCards: true,
+      editCards: true,
+      deleteCards: true,
+      shareCards: true,
+      manageAllCards: true,
+      exportCards: true,
       generateQRCodes: true,
       createTemplates: true,
-      manageAllCards: true,
       viewContacts: true,
       manageContacts: true,
       viewCalendar: true,
@@ -102,14 +103,15 @@ const getPermissionsByRole = (role: UserRole): UserPermissions => {
   // Manager/Lead permissions
   if (normalizedRole.includes('manager') || normalizedRole.includes('lead')) {
     return {
-      viewBusinessCards: true,
-      createBusinessCards: true,
-      editBusinessCards: true,
-      deleteBusinessCards: false,
-      shareBusinessCards: true,
+      viewCards: true,
+      createCards: true,
+      editCards: true,
+      deleteCards: true, // Updated: Managers/Leads can delete cards
+      shareCards: true,
+      manageAllCards: false,
+      exportCards: true,
       generateQRCodes: true,
       createTemplates: true,
-      manageAllCards: false,
       viewContacts: true,
       manageContacts: true,
       viewCalendar: true,
@@ -130,14 +132,15 @@ const getPermissionsByRole = (role: UserRole): UserPermissions => {
   
   // Employee/Staff permissions (restricted access)
   return {
-    viewBusinessCards: true,
-    createBusinessCards: false,
-    editBusinessCards: false,
-    deleteBusinessCards: false,
-    shareBusinessCards: true,
+    viewCards: true,
+    createCards: false,
+    editCards: true, // Updated: Employees can edit cards
+    deleteCards: false,
+    shareCards: true,
+    manageAllCards: false,
+    exportCards: false,
     generateQRCodes: true,
     createTemplates: false,
-    manageAllCards: false,
     viewContacts: true,
     manageContacts: false,
     viewCalendar: true,
@@ -168,38 +171,21 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const loadUserData = async () => {
     try {
-      // For now, we'll simulate getting user data from localStorage or API
-      // In a real app, this would fetch from your authentication system
+      console.log('🔍 UserContext: Loading user data...');
+      
+      // First, try to load from localStorage
       const userData = localStorage.getItem('userData');
       
       if (userData) {
         const parsedUser = JSON.parse(userData);
-        const permissions = getPermissionsByRole(parsedUser.role || 'Employee');
-        // Ensure enterprise properties are set
-        const userPlan = parsedUser.plan || 'enterprise';
-        const isEmployee = parsedUser.isEmployee !== undefined ? parsedUser.isEmployee : true;
+        console.log('📋 UserContext: Loaded user from localStorage:', parsedUser);
         
-        setUserState({
-          id: parsedUser.id || 'temp-user-id',
-          name: parsedUser.name || 'Current User',
-          email: parsedUser.email || 'user@company.com',
-          role: parsedUser.role || 'Employee',
-          permissions,
-          plan: userPlan,
-          isEmployee: isEmployee
-        });
+        // Try to refresh user data from enterprise API to get latest individual permissions
+        await tryRefreshFromEnterpriseAPI(parsedUser);
       } else {
-        // Default to Administrator role if no user data found (for testing)
-        const permissions = getPermissionsByRole('Administrator');
-        setUserState({
-          id: 'temp-user-id',
-          name: 'Demo Administrator',
-          email: 'admin@company.com',
-          role: 'Administrator',
-          permissions,
-          plan: 'enterprise',
-          isEmployee: true
-        });
+        console.log('⚠️ UserContext: No localStorage data, trying to load from enterprise API');
+        // Try to load from enterprise API
+        await tryLoadFromEnterpriseAPI();
       }
     } catch (error) {
       console.error('Failed to load user data:', error);
@@ -212,11 +198,180 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         role: 'Administrator',
         permissions,
         plan: 'enterprise',
-        isEmployee: true
+        isEmployee: true,
+        individualPermissions: null
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const tryRefreshFromEnterpriseAPI = async (localUser: any) => {
+    try {
+      console.log('🔄 UserContext: Attempting to refresh user data from enterprise API...');
+      
+      // Load enterprise employees to get updated individual permissions
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const employees = data.employees || [];
+        
+        // Find current user in the enterprise employees list
+        const currentUserId = DEFAULT_USER_ID;
+        const enterpriseUser = employees.find((emp: any) => 
+          emp.id === currentUserId || 
+          emp.email === localUser.email ||
+          emp.email === 'higenaw972@fursee.com' || // Fallback for test user
+          emp.email === 'xenacoh740@percyfx.com' // Fallback for admin user
+        );
+        
+        console.log('🔍 UserContext: Looking for user in enterprise data:', {
+          currentUserId,
+          localUserEmail: localUser.email,
+          foundUser: enterpriseUser ? enterpriseUser.email : 'NOT FOUND',
+          totalEmployees: employees.length,
+          sampleEmails: employees.slice(0, 5).map((emp: any) => emp.email)
+        });
+        
+        if (enterpriseUser) {
+          console.log('✅ UserContext: Found user in enterprise data:', enterpriseUser);
+          
+          const permissions = getPermissionsByRole(enterpriseUser.role || 'Employee');
+          const finalUser = {
+            id: enterpriseUser.id || localUser.id,
+            name: `${enterpriseUser.firstName || ''} ${enterpriseUser.lastName || ''}`.trim() || localUser.name,
+            email: enterpriseUser.email || localUser.email,
+            role: enterpriseUser.role || localUser.role || 'Employee',
+            permissions,
+            plan: 'enterprise',
+            isEmployee: true,
+            // Use individual permissions from enterprise data
+            individualPermissions: enterpriseUser.individualPermissions || null
+          };
+          
+          console.log('👤 UserContext: Updated user with enterprise data:', finalUser);
+          console.log('🔐 UserContext: Individual permissions from API:', finalUser.individualPermissions);
+          
+          setUserState(finalUser);
+          
+          // Save updated data to localStorage
+          localStorage.setItem('userData', JSON.stringify(finalUser));
+          
+          return;
+        }
+      }
+      
+      console.log('⚠️ UserContext: Could not refresh from API, using local data');
+      // Fall back to local data
+      await useLocalUserData(localUser);
+      
+    } catch (error) {
+      console.warn('UserContext: Failed to refresh from enterprise API:', error);
+      // Fall back to local data
+      await useLocalUserData(localUser);
+    }
+  };
+
+  const tryLoadFromEnterpriseAPI = async () => {
+    try {
+      console.log('🔄 UserContext: Attempting to load user data from enterprise API...');
+      
+      // Load enterprise employees
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES);
+      const headers = getEnterpriseHeaders();
+      
+      const response = await fetch(url, { headers });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const employees = data.employees || [];
+        
+        // Find current user - use test user email for now
+        const enterpriseUser = employees.find((emp: any) => 
+          emp.email === 'higenaw972@fursee.com' ||
+          emp.email === 'xenacoh740@percyfx.com'
+        );
+        
+        console.log('🔍 UserContext: Looking for user in enterprise data (no localStorage):', {
+          foundUser: enterpriseUser ? enterpriseUser.email : 'NOT FOUND',
+          totalEmployees: employees.length,
+          sampleEmails: employees.slice(0, 5).map((emp: any) => emp.email)
+        });
+        
+        if (enterpriseUser) {
+          console.log('✅ UserContext: Found user in enterprise data:', enterpriseUser);
+          
+          const permissions = getPermissionsByRole(enterpriseUser.role || 'Employee');
+          const finalUser = {
+            id: enterpriseUser.id,
+            name: `${enterpriseUser.firstName || ''} ${enterpriseUser.lastName || ''}`.trim(),
+            email: enterpriseUser.email,
+            role: enterpriseUser.role || 'Employee',
+            permissions,
+            plan: 'enterprise',
+            isEmployee: true,
+            individualPermissions: enterpriseUser.individualPermissions || null
+          };
+          
+          console.log('👤 UserContext: Loaded user from enterprise API:', finalUser);
+          console.log('🔐 UserContext: Individual permissions from API:', finalUser.individualPermissions);
+          
+          setUserState(finalUser);
+          
+          // Save to localStorage
+          localStorage.setItem('userData', JSON.stringify(finalUser));
+          
+          return;
+        }
+      }
+      
+      console.log('⚠️ UserContext: Could not load from API, using default');
+      // Fall back to default
+      await useDefaultUser();
+      
+    } catch (error) {
+      console.warn('UserContext: Failed to load from enterprise API:', error);
+      await useDefaultUser();
+    }
+  };
+
+  const useLocalUserData = async (parsedUser: any) => {
+    const permissions = getPermissionsByRole(parsedUser.role || 'Employee');
+    const userPlan = parsedUser.plan || 'enterprise';
+    const isEmployee = parsedUser.isEmployee !== undefined ? parsedUser.isEmployee : true;
+    
+    const finalUser = {
+      id: parsedUser.id || 'temp-user-id',
+      name: parsedUser.name || 'Current User',
+      email: parsedUser.email || 'user@company.com',
+      role: parsedUser.role || 'Employee',
+      permissions,
+      plan: userPlan,
+      isEmployee: isEmployee,
+      individualPermissions: parsedUser.individualPermissions || null
+    };
+    
+    console.log('👤 UserContext: Using local user data:', finalUser);
+    setUserState(finalUser);
+  };
+
+  const useDefaultUser = async () => {
+    console.log('⚠️ UserContext: Using default Administrator user');
+    const permissions = getPermissionsByRole('Administrator');
+    setUserState({
+      id: 'temp-user-id',
+      name: 'Demo Administrator',
+      email: 'admin@company.com',
+      role: 'Administrator',
+      permissions,
+      plan: 'enterprise',
+      isEmployee: true,
+      individualPermissions: null
+    });
   };
 
   const setUser = (newUser: User | null) => {
@@ -228,7 +383,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         email: newUser.email,
         role: newUser.role,
         plan: newUser.plan || 'enterprise',
-        isEmployee: newUser.isEmployee !== undefined ? newUser.isEmployee : true
+        isEmployee: newUser.isEmployee !== undefined ? newUser.isEmployee : true,
+        individualPermissions: newUser.individualPermissions || null
       }));
     } else {
       localStorage.removeItem('userData');
@@ -236,21 +392,31 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const hasPermission = (permission: keyof UserPermissions): boolean => {
-    if (!user) return false;
+    if (!user) {
+      console.log('❌ hasPermission: No user found');
+      return false;
+    }
     
     // For business card permissions, use the enhanced permission check with individual overrides
     const businessCardPermissions = [
-      'viewBusinessCards', 'createBusinessCards', 'editBusinessCards', 
-      'deleteBusinessCards', 'shareBusinessCards', 'generateQRCodes', 
-      'createTemplates', 'manageAllCards'
+      'viewCards', 'createCards', 'editCards', 
+      'deleteCards', 'shareCards', 'manageAllCards', 'exportCards'
     ];
     
     if (businessCardPermissions.includes(permission)) {
-      return hasBusinessCardPermission(user as UserWithPermissions, permission as BusinessCardPermission);
+      const result = hasBusinessCardPermission(user as UserWithPermissions, permission as BusinessCardPermission);
+      console.log(`🔐 hasPermission: Business card permission '${permission}' = ${result} for user:`, {
+        email: user.email,
+        role: user.role,
+        individualPermissions: user.individualPermissions
+      });
+      return result;
     }
     
     // For other permissions, use the existing logic
-    return user?.permissions[permission] || false;
+    const result = user?.permissions[permission] || false;
+    console.log(`🔐 hasPermission: Regular permission '${permission}' = ${result}`);
+    return result;
   };
 
   const hasBusinessCardPermissionDirect = (permission: BusinessCardPermission): boolean => {
@@ -292,7 +458,13 @@ export const useUser = (): UserContextType => {
 // Utility function to create a user with proper permissions
 export const createUser = (userData: Omit<User, 'permissions'>): User => {
   return {
-    ...userData,
+    id: userData.id,
+    name: userData.name,
+    email: userData.email,
+    role: userData.role,
+    plan: userData.plan,
+    isEmployee: userData.isEmployee,
+    individualPermissions: userData.individualPermissions,
     permissions: getPermissionsByRole(userData.role)
   };
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../UI/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
-import { buildEnterpriseUrl, getEnterpriseHeaders } from '../../utils/api';
+import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS } from '../../utils/api';
 
 // Types
 interface SecurityLog {
@@ -112,7 +112,7 @@ const SecurityLogs = () => {
   // Fetch logs from backend
   const fetchLogs = async () => {
     try {
-      const url = buildEnterpriseUrl('/enterprise/:enterpriseId/security/logs');
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_SECURITY_LOGS);
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, { headers });
@@ -134,7 +134,7 @@ const SecurityLogs = () => {
   // Export logs
   const handleExport = async () => {
     try {
-      const url = buildEnterpriseUrl('/enterprise/:enterpriseId/security/logs/export');
+      const url = buildEnterpriseUrl('/api/enterprise/:enterpriseId/security/logs/export');
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, { headers });

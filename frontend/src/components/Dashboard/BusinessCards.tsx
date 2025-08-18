@@ -242,7 +242,7 @@ const BusinessCardItem = ({
   onEditClick?: () => void;
 }) => {
   return (
-    <div key={card.id} className={`business-card ${isPreview ? 'preview-card' : ''}`}>
+    <div key={card.id} className={`business-card ${isPreview ? 'preview-card' : ''} ${card.companyLogo && card.profileImage ? 'has-profile-overlay' : ''}`}>
       <div className="business-card-content">
         <div className={`business-card-left ${!card.companyLogo && !card.profileImage ? 'no-images' : ''}`} 
              style={{ backgroundColor: !card.companyLogo && !card.profileImage ? getCardColor(card.colorScheme) : 'transparent' }}>
@@ -1088,6 +1088,8 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
   const [customColor, setCustomColor] = useState('#4361ee');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [activeSocialModal, setActiveSocialModal] = useState<string | null>(null);
+  const [showImageDeleteModal, setShowImageDeleteModal] = useState(false);
+  const [imageToDelete, setImageToDelete] = useState<{ field: 'profileImage' | 'companyLogo'; type: string } | null>(null);
   const profileImageRef = useRef<HTMLInputElement>(null);
   const companyLogoRef = useRef<HTMLInputElement>(null);
 
@@ -1146,6 +1148,93 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
       setEditedCard(prev => ({ ...prev, [field]: result }));
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = (field: 'profileImage' | 'companyLogo') => {
+    const imageType = field === 'profileImage' ? 'profile picture' : 'company logo';
+    setImageToDelete({ field, type: imageType });
+    setShowImageDeleteModal(true);
+  };
+
+  const confirmRemoveImage = async () => {
+    if (!imageToDelete) return;
+    
+    const { field } = imageToDelete;
+    
+    try {
+      // Update local state immediately for UI responsiveness
+      setEditedCard(prev => ({ ...prev, [field]: null }));
+      
+      // Get the card index from the cards array
+      const cardIndex = cards.findIndex(c => c.id === card.id);
+      if (cardIndex === -1) {
+        throw new Error('Card not found');
+      }
+
+      // Create updated card data with the image removed
+      const updatedCardData = {
+        ...editedCard,
+        [field]: null
+      };
+
+      // Call the same PATCH endpoint used for editing cards
+      const endpoint = `${API_BASE_URL}/Cards/${userContext.userId}?cardIndex=${cardIndex}`;
+      console.log(`🗑️ Removing ${field} with endpoint:`, endpoint);
+      console.log('🗑️ Updated card data:', updatedCardData);
+
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+        },
+        body: JSON.stringify(updatedCardData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🗑️ Remove image failed:', response.status, response.statusText, errorText);
+        throw new Error(`Failed to remove image: ${response.status} ${response.statusText}`);
+      }
+
+      const savedCard = await response.json();
+      console.log('✅ Image removed successfully:', savedCard);
+      
+      // Close modal and show success message
+      setShowImageDeleteModal(false);
+      setImageToDelete(null);
+      alert(`✅ ${imageToDelete.type} removed successfully!`);
+      
+    } catch (error) {
+      console.error('Error removing image:', error);
+      
+      // Revert local state on error
+      setEditedCard(prev => ({ ...prev, [field]: card[field] }));
+      
+      // Close modal
+      setShowImageDeleteModal(false);
+      setImageToDelete(null);
+      
+      // Show specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          alert('❌ Unauthorized: You do not have permission to update this card.');
+        } else if (error.message.includes('404')) {
+          alert('❌ Card not found: The card may have been deleted or moved.');
+        } else if (error.message.includes('400')) {
+          alert('❌ Invalid data: Please check your card information.');
+        } else {
+          alert(`❌ Failed to remove image: ${error.message}`);
+        }
+      } else {
+        alert('❌ Failed to remove image. Please try again.');
+      }
+    }
+  };
+
+  const cancelRemoveImage = () => {
+    setShowImageDeleteModal(false);
+    setImageToDelete(null);
   };
 
   const handleSave = async () => {
@@ -1270,6 +1359,15 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
                       if (file) handleImageUpload('profileImage', file);
                     }}
                   />
+                   {editedCard.profileImage && (
+                     <button 
+                       className="remove-image-btn"
+                       onClick={() => handleRemoveImage('profileImage')}
+                       title="Remove profile picture"
+                     >
+                       ✕
+                     </button>
+                   )}
                 </div>
 
                 <div className="image-upload-item">
@@ -1296,6 +1394,15 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
                       if (file) handleImageUpload('companyLogo', file);
                     }}
                   />
+                   {editedCard.companyLogo && (
+                     <button 
+                       className="remove-image-btn"
+                       onClick={() => handleRemoveImage('companyLogo')}
+                       title="Remove company logo"
+                     >
+                       ✕
+                     </button>
+                   )}
                 </div>
               </div>
             </div>
@@ -1475,6 +1582,45 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
           }}
           currentData={editedCard.socials?.[activeSocialModal]}
         />
+      )}
+
+      {/* Image Delete Confirmation Modal */}
+      {showImageDeleteModal && imageToDelete && (
+        <div className="modal-overlay" style={{ zIndex: 2000 }} onClick={cancelRemoveImage}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Remove {imageToDelete.type}</h2>
+              <button className="modal-close" onClick={cancelRemoveImage}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div style={{ textAlign: 'center', padding: '1rem' }}>
+                <div style={{ fontSize: '3rem', color: '#dc2626', marginBottom: '1rem' }}>🗑️</div>
+                <p>Are you sure you want to remove the <strong>{imageToDelete.type}</strong>?</p>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <Button 
+                variant="outline" 
+                onClick={cancelRemoveImage}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={confirmRemoveImage}
+                style={{ 
+                  backgroundColor: '#dc2626', 
+                  borderColor: '#dc2626',
+                  color: 'white'
+                }}
+              >
+                Remove {imageToDelete.type}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1941,6 +2087,18 @@ const BusinessCards = () => {
   const userContext = useUserContext();
   const { user, hasPermission } = useUser();
   
+  // Debug: Log user info and permissions
+  console.log('🔍 User Debug Info:', {
+    user: user,
+    userContext: userContext,
+    hasEditPermission: hasPermission('editCards'),
+    hasCreatePermission: hasPermission('createCards'),
+    hasTemplatePermission: hasPermission('createTemplates'),
+    userRole: user?.role,
+    userPlan: user?.plan,
+    isEmployee: user?.isEmployee
+  });
+  
   useEffect(() => {
     const fetchCards = async () => {
       // Wait for user context to be determined
@@ -1949,7 +2107,7 @@ const BusinessCards = () => {
       }
       
       // Phase 3: Don't fetch cards if user doesn't have view permission
-      if (!hasPermission('viewBusinessCards')) {
+      if (!hasPermission('viewCards')) {
         setLoading(false);
         return;
       }
@@ -1996,14 +2154,14 @@ const BusinessCards = () => {
   useEffect(() => {
     if (!userContext.isLoading && user && user.plan === 'enterprise' && user.isEmployee) {
       // Trigger permission check which will show popup if user has no permissions
-      hasPermission('viewBusinessCards');
+      hasPermission('viewCards');
     }
   }, [user, userContext.isLoading, hasPermission]);
   
   // Share functionality
   const handleShare = async (card: CardData) => {
     // Check permission to share cards
-    if (!hasPermission('shareBusinessCards')) {
+    if (!hasPermission('shareCards')) {
       alert('You do not have permission to share business cards.');
       return;
     }
@@ -2038,7 +2196,7 @@ const BusinessCards = () => {
     if (!selectedCard) return;
 
     // Check permission to delete cards
-    if (!hasPermission('deleteBusinessCards')) {
+    if (!hasPermission('deleteCards')) {
       alert('You do not have permission to delete business cards.');
       return;
     }
@@ -2100,7 +2258,7 @@ const BusinessCards = () => {
   }
 
   // Phase 3: Page-level view access control
-  if (!hasPermission('viewBusinessCards')) {
+      if (!hasPermission('viewCards')) {
     return (
       <div className="page-container">
         <div className="page-header">
@@ -2170,14 +2328,14 @@ const BusinessCards = () => {
         </div>
         <div className="page-actions">
           <Button 
-            onClick={() => hasPermission('createBusinessCards') && setShowCreateModal(true)}
-            disabled={!hasPermission('createBusinessCards')}
-            style={{ 
-              opacity: hasPermission('createBusinessCards') ? 1 : 0.5,
-              backgroundColor: hasPermission('createBusinessCards') ? undefined : '#f5f5f5',
-              cursor: hasPermission('createBusinessCards') ? 'pointer' : 'not-allowed'
-            }}
-            title={!hasPermission('createBusinessCards') ? 'You do not have permission to create cards' : 'Create a new business card'}
+                    onClick={() => hasPermission('createCards') && setShowCreateModal(true)}
+        disabled={!hasPermission('createCards')}
+        style={{
+          opacity: hasPermission('createCards') ? 1 : 0.5,
+          backgroundColor: hasPermission('createCards') ? undefined : '#f5f5f5',
+          cursor: hasPermission('createCards') ? 'pointer' : 'not-allowed'
+        }}
+        title={!hasPermission('createCards') ? 'You do not have permission to create cards' : 'Create a new business card'}
           >
             <FaQrcode className="mr-2" />
             Create Card
@@ -2200,13 +2358,13 @@ const BusinessCards = () => {
             <Button 
               variant="outline" 
               onClick={() => setShowDeleteModal(true)}
-              disabled={cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')}
-              style={{ 
-                opacity: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')) ? 0.5 : 1,
-                backgroundColor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')) ? '#f5f5f5' : undefined,
-                cursor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteBusinessCards')) ? 'not-allowed' : 'pointer'
-              }}
-              title={!hasPermission('deleteBusinessCards') ? 'You do not have permission to delete cards' : 
+                      disabled={cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')}
+        style={{
+          opacity: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')) ? 0.5 : 1,
+          backgroundColor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')) ? '#f5f5f5' : undefined,
+          cursor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')) ? 'not-allowed' : 'pointer'
+        }}
+        title={!hasPermission('deleteCards') ? 'You do not have permission to delete cards' : 
                      cards.findIndex(c => c.id === selectedCard.id) === 0 ? 'Default card cannot be deleted' : 'Delete this card'}
             >
               <FaTimes className="mr-2" />
@@ -2266,7 +2424,7 @@ const BusinessCards = () => {
                 <div className="empty-cards-list">
                   <p>No cards found</p>
                   {searchTerm && <p>Try adjusting your search</p>}
-                  {!hasPermission('createBusinessCards') && (
+                  {!hasPermission('createCards') && (
                     <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280', fontStyle: 'italic' }}>
                       <p>You need "Create Business Cards" permission to add new cards.</p>
                     </div>
@@ -2283,40 +2441,10 @@ const BusinessCards = () => {
                 <BusinessCardItem 
                   card={selectedCard}
                   onQRClick={hasPermission('generateQRCodes') ? openQRModal : undefined}
-                  onShareClick={hasPermission('shareBusinessCards') ? () => handleShare(selectedCard) : undefined}
-                  onEditClick={hasPermission('editBusinessCards') ? () => setShowEditModal(true) : undefined}
+                  onShareClick={hasPermission('shareCards') ? () => handleShare(selectedCard) : undefined}
+                  onEditClick={hasPermission('editCards') ? () => setShowEditModal(true) : undefined}
                 />
-                {/* Debug info - remove this after fixing */}
-                <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', padding: '0.5rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                  <strong>Debug Info:</strong><br/>
-                  User Role: {user?.role}<br/>
-                  User Plan: {user?.plan}<br/>
-                  Is Employee: {user?.isEmployee?.toString()}<br/>
-                  Edit Permission: {hasPermission('editBusinessCards').toString()}<br/>
-                  Create Permission: {hasPermission('createBusinessCards').toString()}<br/>
-                  Share Permission: {hasPermission('shareBusinessCards').toString()}<br/>
-                  <br/>
-                  <strong>Test User Roles:</strong><br/>
-                  <button onClick={() => {
-                    const testUser = { id: 'test', name: 'Test Admin', email: 'admin@test.com', role: 'Administrator', plan: 'enterprise', isEmployee: true };
-                    localStorage.setItem('userData', JSON.stringify(testUser));
-                    window.location.reload();
-                  }} style={{ marginRight: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Admin</button>
-                  <button onClick={() => {
-                    const testUser = { id: 'test', name: 'Test Manager', email: 'manager@test.com', role: 'Manager', plan: 'enterprise', isEmployee: true };
-                    localStorage.setItem('userData', JSON.stringify(testUser));
-                    window.location.reload();
-                  }} style={{ marginRight: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Manager</button>
-                  <button onClick={() => {
-                    const testUser = { id: 'test', name: 'Test Employee', email: 'employee@test.com', role: 'Employee', plan: 'enterprise', isEmployee: true };
-                    localStorage.setItem('userData', JSON.stringify(testUser));
-                    window.location.reload();
-                  }} style={{ marginRight: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Employee</button>
-                  <button onClick={() => {
-                    localStorage.removeItem('userData');
-                    window.location.reload();
-                  }} style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem' }}>Reset</button>
-                </div>
+
                 <div className="card-actions-panel">
                   <Button 
                     onClick={openQRModal}
@@ -2333,12 +2461,12 @@ const BusinessCards = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => handleShare(selectedCard)}
-                    disabled={!hasPermission('shareBusinessCards')}
-                    style={{ 
-                      opacity: hasPermission('shareBusinessCards') ? 1 : 0.5,
-                      cursor: hasPermission('shareBusinessCards') ? 'pointer' : 'not-allowed'
+                                        disabled={!hasPermission('shareCards')}
+                    style={{
+                      opacity: hasPermission('shareCards') ? 1 : 0.5,
+                      cursor: hasPermission('shareCards') ? 'pointer' : 'not-allowed'
                     }}
-                    title={!hasPermission('shareBusinessCards') ? 'You do not have permission to share cards' : 'Share this card'}
+                    title={!hasPermission('shareCards') ? 'You do not have permission to share cards' : 'Share this card'}
                   >
                     <FaShare className="mr-2" />
                     Share Card
@@ -2346,12 +2474,12 @@ const BusinessCards = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => setShowEditModal(true)}
-                    disabled={!hasPermission('editBusinessCards')}
-                    style={{ 
-                      opacity: hasPermission('editBusinessCards') ? 1 : 0.5,
-                      cursor: hasPermission('editBusinessCards') ? 'pointer' : 'not-allowed'
+                                        disabled={!hasPermission('editCards')}
+                    style={{
+                      opacity: hasPermission('editCards') ? 1 : 0.5,
+                      cursor: hasPermission('editCards') ? 'pointer' : 'not-allowed'
                     }}
-                    title={!hasPermission('editBusinessCards') ? 'You do not have permission to edit cards' : 'Edit this card'}
+                    title={!hasPermission('editCards') ? 'You do not have permission to edit cards' : 'Edit this card'}
                   >
                     <FaEdit className="mr-2" />
                     Edit Card
@@ -2424,7 +2552,7 @@ const BusinessCards = () => {
               </button>
             </div>
             <div className="modal-body">
-              {!hasPermission('deleteBusinessCards') ? (
+              {!hasPermission('deleteCards') ? (
                 <div style={{ color: '#dc2626', textAlign: 'center', padding: '1rem' }}>
                   <p><strong>Permission Denied</strong></p>
                   <p>You do not have permission to delete business cards.</p>
@@ -2447,12 +2575,12 @@ const BusinessCards = () => {
               </Button>
               <Button 
                 onClick={handleDeleteCard}
-                disabled={!hasPermission('deleteBusinessCards')}
-                style={{ 
-                  backgroundColor: hasPermission('deleteBusinessCards') ? '#dc2626' : '#f5f5f5', 
-                  borderColor: hasPermission('deleteBusinessCards') ? '#dc2626' : '#d1d5db',
-                  color: hasPermission('deleteBusinessCards') ? 'white' : '#9ca3af',
-                  cursor: hasPermission('deleteBusinessCards') ? 'pointer' : 'not-allowed'
+                                disabled={!hasPermission('deleteCards')}
+                style={{
+                  backgroundColor: hasPermission('deleteCards') ? '#dc2626' : '#f5f5f5',
+                  borderColor: hasPermission('deleteCards') ? '#dc2626' : '#d1d5db',
+                  color: hasPermission('deleteCards') ? 'white' : '#9ca3af',
+                  cursor: hasPermission('deleteCards') ? 'pointer' : 'not-allowed'
                 }}
               >
                 Delete Card
@@ -2461,6 +2589,8 @@ const BusinessCards = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

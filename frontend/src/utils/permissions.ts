@@ -10,58 +10,78 @@ export const BUSINESS_CARD_PERMISSIONS = {
   MANAGE_ALL_CARDS: 'manageAllCards'
 } as const;
 
-// Role to Permission Mapping
+// Valid permissions according to backend documentation
+export const VALID_BACKEND_PERMISSIONS = [
+  'viewCards',      // Can view business cards
+  'createCards',    // Can create new business cards
+  'editCards',      // Can edit existing business cards
+  'deleteCards',    // Can delete business cards
+  'manageAllCards', // Can manage all cards in enterprise
+  'exportCards',    // Can export business card data
+  'shareCards'      // Can share business cards
+] as const;
+
+// Permission display names
+export const PERMISSION_DISPLAY_NAMES = {
+  'viewCards': 'View Business Cards',
+  'createCards': 'Create Business Cards',
+  'editCards': 'Edit Business Cards',
+  'deleteCards': 'Delete Business Cards',
+  'manageAllCards': 'Manage All Cards',
+  'exportCards': 'Export Card Data',
+  'shareCards': 'Share Business Cards'
+} as const;
+
+// Role to Permission Mapping - Using backend permission names
 export const ROLE_PERMISSIONS = {
   'Administrator': [
-    'createBusinessCards',
-    'editBusinessCards', 
-    'deleteBusinessCards',
-    'viewBusinessCards',
-    'shareBusinessCards',
-    'generateQRCodes',
-    'createTemplates',
-    'manageAllCards'
+    'viewCards',
+    'createCards',
+    'editCards',
+    'deleteCards',
+    'shareCards',
+    'manageAllCards',
+    'exportCards'
   ],
   'Admin': [
-    'createBusinessCards',
-    'editBusinessCards', 
-    'deleteBusinessCards',
-    'viewBusinessCards',
-    'shareBusinessCards',
-    'generateQRCodes',
-    'createTemplates',
-    'manageAllCards'
+    'viewCards',
+    'createCards',
+    'editCards',
+    'deleteCards',
+    'shareCards',
+    'manageAllCards',
+    'exportCards'
   ],
   'Manager': [
-    'createBusinessCards',
-    'editBusinessCards',
-    'viewBusinessCards',
-    'shareBusinessCards',
-    'generateQRCodes',
-    'createTemplates'
+    'viewCards',
+    'createCards',
+    'editCards',
+    'deleteCards',
+    'shareCards',
+    'exportCards'
   ],
   'Lead': [
-    'createBusinessCards',
-    'editBusinessCards',
-    'viewBusinessCards',
-    'shareBusinessCards',
-    'generateQRCodes',
-    'createTemplates'
+    'viewCards',
+    'createCards',
+    'editCards',
+    'deleteCards',
+    'shareCards',
+    'exportCards'
   ],
   'Employee': [
-    'viewBusinessCards',
-    'shareBusinessCards',
-    'generateQRCodes'
+    'viewCards',
+    'editCards',
+    'shareCards'
   ],
   'Staff': [
-    'viewBusinessCards',
-    'shareBusinessCards',
-    'generateQRCodes'
+    'viewCards',
+    'editCards',
+    'shareCards'
   ]
 } as const;
 
 // Type definitions
-export type BusinessCardPermission = typeof BUSINESS_CARD_PERMISSIONS[keyof typeof BUSINESS_CARD_PERMISSIONS];
+export type BusinessCardPermission = typeof VALID_BACKEND_PERMISSIONS[number];
 export type UserRole = keyof typeof ROLE_PERMISSIONS;
 
 export interface IndividualPermissions {
@@ -79,16 +99,40 @@ export interface UserWithPermissions {
   [key: string]: any;
 }
 
+// Helper function to normalize role names
+const normalizeRole = (role: string): UserRole => {
+  const normalizedRole = role?.toLowerCase() || 'employee';
+  
+  if (normalizedRole.includes('admin') || normalizedRole.includes('administrator')) {
+    return 'Administrator';
+  } else if (normalizedRole.includes('manager') || normalizedRole.includes('lead')) {
+    return 'Manager';
+  } else if (normalizedRole.includes('employee') || normalizedRole.includes('staff') || normalizedRole.includes('user')) {
+    return 'Employee';
+  } else {
+    return 'Employee'; // Default fallback
+  }
+};
+
 // Permission checker function
 export const calculateUserPermissions = (user: UserWithPermissions): BusinessCardPermission[] => {
   // For non-enterprise users, allow basic permissions
   if (user?.plan !== 'enterprise') {
-    return ['viewBusinessCards', 'shareBusinessCards', 'generateQRCodes'] as BusinessCardPermission[];
+    return ['viewCards', 'shareCards'] as BusinessCardPermission[];
   }
   
   // For enterprise users, start with role-based permissions
-  const userRole = user?.role as UserRole;
-  const basePermissions = ROLE_PERMISSIONS[userRole] || [];
+  const userRole = user?.role;
+  const normalizedRole = normalizeRole(userRole || 'Employee');
+  const basePermissions = ROLE_PERMISSIONS[normalizedRole] || [];
+  
+  console.log('🔍 calculateUserPermissions debug:', {
+    userEmail: user?.email,
+    originalRole: userRole,
+    normalizedRole,
+    basePermissions,
+    individualPermissions: user?.individualPermissions
+  });
   
   let finalPermissions: BusinessCardPermission[] = [...basePermissions];
   
@@ -106,6 +150,8 @@ export const calculateUserPermissions = (user: UserWithPermissions): BusinessCar
     }
   }
   
+  console.log('🔍 Final calculated permissions:', finalPermissions);
+  
   return finalPermissions;
 };
 
@@ -118,18 +164,59 @@ export const showPermissionPopup = (user: UserWithPermissions): void => {
 export const hasBusinessCardPermission = (user: UserWithPermissions, permission: BusinessCardPermission): boolean => {
   // For non-enterprise users, allow basic access
   if (user?.plan !== 'enterprise') {
-    const basicPermissions = ['viewBusinessCards', 'shareBusinessCards', 'generateQRCodes'];
+    const basicPermissions = ['viewCards', 'shareCards'];
     return basicPermissions.includes(permission);
   }
   
   // For enterprise users
   const userPermissions = calculateUserPermissions(user);
   
-  // If enterprise user has no permissions at all, show popup
+  // Debug logging to understand what's happening
+  console.log('🔍 hasBusinessCardPermission debug:', {
+    userEmail: user?.email,
+    userRole: user?.role,
+    plan: user?.plan,
+    isEmployee: user?.isEmployee,
+    individualPermissions: user?.individualPermissions,
+    basePermissions: ROLE_PERMISSIONS[user?.role as UserRole] || [],
+    calculatedPermissions: userPermissions,
+    requestedPermission: permission,
+    hasPermission: userPermissions.includes(permission)
+  });
+  
+  // Only show popup if user truly has no permissions (this should rarely happen)
+  // Most users should inherit role permissions even without individual overrides
   if (user?.plan === 'enterprise' && user?.isEmployee && userPermissions.length === 0) {
+    console.warn('⚠️ User has no permissions at all - this might indicate a configuration issue:', user?.email);
     showPermissionPopup(user);
     return false;
   }
   
   return userPermissions.includes(permission);
+};
+
+// Validate permission names against backend's valid list
+export const validatePermission = (permission: string): boolean => {
+  return VALID_BACKEND_PERMISSIONS.includes(permission as any);
+};
+
+// Validate an array of permissions
+export const validatePermissions = (permissions: string[]): { valid: string[], invalid: string[] } => {
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  
+  permissions.forEach(permission => {
+    if (validatePermission(permission)) {
+      valid.push(permission);
+    } else {
+      invalid.push(permission);
+    }
+  });
+  
+  return { valid, invalid };
+};
+
+// Get permission display name
+export const getPermissionDisplayName = (permission: string): string => {
+  return PERMISSION_DISPLAY_NAMES[permission as keyof typeof PERMISSION_DISPLAY_NAMES] || permission;
 };

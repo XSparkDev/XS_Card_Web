@@ -58,7 +58,7 @@ const App = () => {
               <Route 
                 path="/business-cards" 
                 element={
-                  <ProtectedRoute requiredPermission="viewBusinessCards">
+                  <ProtectedRoute requiredPermission="viewCards">
                     <BusinessCards />
                   </ProtectedRoute>
                 } 
@@ -66,7 +66,7 @@ const App = () => {
               <Route 
                 path="/business-cards/create" 
                 element={
-                  <ProtectedRoute requiredPermission="createBusinessCards">
+                  <ProtectedRoute requiredPermission="createCards">
                     <CreateCard />
                   </ProtectedRoute>
                 } 
@@ -74,7 +74,7 @@ const App = () => {
               <Route 
                 path="/business-cards/archived" 
                 element={
-                  <ProtectedRoute requiredPermission="viewBusinessCards">
+                  <ProtectedRoute requiredPermission="viewCards">
                     <div>Archived Cards</div>
                   </ProtectedRoute>
                 } 

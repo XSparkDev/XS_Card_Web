@@ -71,7 +71,7 @@ const SecurityActions = () => {
     setMessage(null);
 
     try {
-      const url = buildEnterpriseUrl('/enterprise/:enterpriseId/security/actions');
+      const url = buildEnterpriseUrl('/api/enterprise/:enterpriseId/security/actions');
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, {

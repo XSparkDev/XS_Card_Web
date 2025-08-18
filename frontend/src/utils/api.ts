@@ -149,8 +149,9 @@ export interface BillingAPIResponse<T> {
   error?: string;
 }
 
+
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiN2JhZmIyZjEwY2FlMmIxZjA3ZjM4MTZjNTQyMmJlY2NhNWMyMjMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1MTIzNjgzLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTUxMjM2ODMsImV4cCI6MTc1NTEyNzI4MywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.gdKMHV0PsUxCMN6NqeM7_h5jVrdPUUCbhbr0BhhhoObWF1kwCqraM7_3Sr1E-Ij8iRf9NuReA3GQwqCRNGks76jqNidJXzqOkS-Xk_PC2D7zKnZ_HoJymv4u7ZEa8YboEI_PVg6rzI6y-8L2l04baivMMRes_2tR5S0IVH5OIeeMs-IOgIe6XLGthQFAQvkloTicQypIDGmoOX20ryJKYa_H2eAE3EAExKW1GgB2toviMvyjJ3xBjD_eGhSO9oXE4tz_9mtSuHk-ZmcGh6hEEk-mtfYF8dCAOjYuQnIrYKfOqQRgL_zALsxstE1Jy9Ulu8dEQNAKd8vuz-JHdJeaHA";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NDgwOTM1LCJ1c2VyX2lkIjoieXk5cHJuVThzTVdzam9RVmFIaVpTUXJ3S0ZKMiIsInN1YiI6Inl5OXByblU4c01Xc2pvUVZhSGlaU1Fyd0tGSjIiLCJpYXQiOjE3NTU0ODA5MzUsImV4cCI6MTc1NTQ4NDUzNSwiZW1haWwiOiJoaWdlbmF3OTcyQGZ1cnNlZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJoaWdlbmF3OTcyQGZ1cnNlZS5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.Yq43Hz6UJey-0to3UhJY4fE1IEBAx7T-VaBR0yURUcAbSEQpavU6SCfRySTmKNmYJIn7WHTIsaoGBt6-HmEQRHB4dLrHSvFFEiU4BKzpFpZC0i6C65lwUBgRpDEPg-STZqlYZtrof0GNQZ6JUKc3ILNBnUa2kT-epDBi4uKBuv3l47GczlMTBogipEVclB_26Uvg0IQAvTx42SppX_GhAOGNQFDSwVKgC7kuCRzi3T4BZzIWb87L_rO5vzce5G7Ka6agr5OstsuWWjZMteknKbWX7-Qtu86qhvvqUrlkGr29Cn1XooM9kXaW_8VI0CjgtH8-MD9I1FQ8WKj_QNk2LA";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -159,7 +160,10 @@ export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
 //export const DEFAULT_USER_ID = "jbtu0MfGddPJLWnrHmHKCvFhm1j2"; // admin
-export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // manager
+export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // manager
+
+
+
 
 // Example payment method ID for testing
 export const EXAMPLE_PAYMENT_METHOD_ID = "C1qy82bmgPwZdqjfqBQ8";
@@ -261,7 +265,7 @@ export const ENDPOINTS = {
     BILLING_INVOICE_BY_ID: '/billing/invoices/:id', // NEW: Individual invoice operations
     BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
 
-    // Enterprise-related endpoints
+    // Enterprise-related endpoints (management routes - no /api prefix)
     ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,
     ENTERPRISE_DEPARTMENTS: `/enterprise/:enterpriseId/departments`,
     ENTERPRISE_EMPLOYEES: `/enterprise/:enterpriseId/employees`,
@@ -270,18 +274,22 @@ export const ENDPOINTS = {
     ENTERPRISE_UPDATE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
     GET_ENTERPRISE: `/enterprise/:enterpriseId`,
     UPDATE_ENTERPRISE: `/enterprise/:enterpriseId`,   
-    ENTERPRISE_CONTACTS: `/enterprise/:enterpriseId/contacts/details`,
-    ENTERPRISE_DEPARTMENT_CONTACTS: `/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
-    ENTERPRISE_CONTACTS_SUMMARY: `/enterprise/:enterpriseId/contacts/summary`,
+    // API routes (with /api prefix)
+    ENTERPRISE_CONTACTS: `/api/enterprise/:enterpriseId/contacts/details`,
+    ENTERPRISE_DEPARTMENT_CONTACTS: `/api/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
+    ENTERPRISE_CONTACTS_SUMMARY: `/api/enterprise/:enterpriseId/contacts/summary`,
     ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
     ENTERPRISE_DEMO_REQUEST: '/enterprise/demo',
     ENTERPRISE_SALES_CONTACT: '/enterprise/contact-sales',
     
     // Security and Activity Logs endpoints
-    ENTERPRISE_SECURITY_LOGS: `/enterprise/:enterpriseId/security/logs`,
-    ENTERPRISE_SECURITY_ALERTS: `/enterprise/:enterpriseId/security/alerts`,
+    ENTERPRISE_SECURITY_LOGS: `/api/enterprise/:enterpriseId/security/logs`,
+    ENTERPRISE_SECURITY_ALERTS: `/api/enterprise/:enterpriseId/security/alerts`,
     
-    // Team Management endpoints
+    // Individual Permissions endpoints
+    ENTERPRISE_USER_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/permissions`,
+    
+    // Team Management endpoints (management routes - no /api prefix)
     ENTERPRISE_DEPARTMENT_TEAMS: `/enterprise/:enterpriseId/departments/:departmentId/teams`,
     ENTERPRISE_DEPARTMENT_TEAM_BY_ID: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId`,
     ENTERPRISE_DEPARTMENT_TEAM_MEMBERS: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members`,
@@ -291,6 +299,14 @@ export const ENDPOINTS = {
     // Bulk Operations endpoints
     BULK_DEACTIVATE: `/bulk-deactivate`,
     BULK_REACTIVATE: `/bulk-reactivate`,
+    
+    // Cache Management endpoints
+    CACHE_STATS: `/api/cache/stats`,
+    CACHE_CLEAR: `/api/cache/clear`,
+    CACHE_DEPARTMENTS_CLEAR: `/api/cache/departments/clear`,
+    CACHE_WARM: `/api/cache/warm`,
+    CACHE_CONFIG: `/api/cache/config`,
+    CACHE_ANALYTICS: `/api/cache/analytics`,
     
 };
 
@@ -924,6 +940,52 @@ export const searchEmployees = async (
         employees: [],
         total: 0
       },
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// Individual Permissions Functions
+export const updateUserIndividualPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_USER_PERMISSIONS.replace(':userId', userId), enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🌐 API Call - updateUserIndividualPermissions:', {
+      url,
+      userId,
+      individualPermissions,
+      enterpriseId
+    });
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ individualPermissions })
+    });
+    
+    console.log('📡 API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error:', response.status, errorText);
+      return {
+        success: false,
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ API Success:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ API Exception:', error);
+    return {
+      success: false,
       message: error instanceof Error ? error.message : 'Unknown error'
     };
   }

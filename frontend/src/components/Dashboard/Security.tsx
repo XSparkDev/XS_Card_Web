@@ -13,22 +13,13 @@ import RoleUsersModal from "./RoleUsersModal";
 import { sessionService } from "../../services/sessionService";
 // import { rolesService, Role } from "../../services/rolesService";
 import ActivityLogs from "./ActivityLogs";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, updateUserIndividualPermissions } from "../../utils/api";
+import { calculateUserPermissions, ROLE_PERMISSIONS, type UserWithPermissions, type BusinessCardPermission, type IndividualPermissions } from "../../utils/permissions";
 
 // Import icons
-import { FaShieldAlt, FaUserPlus, FaUser, FaEdit, FaExclamationTriangle } from "react-icons/fa";
+import { FaShieldAlt, FaUserPlus } from "react-icons/fa";
 
-// Define interface for permissions
-interface Permissions {
-  viewCards: boolean;
-  createCards: boolean;
-  editCards: boolean;
-  deleteCards: boolean;
-  manageUsers: boolean;
-  viewReports: boolean;
-  systemSettings: boolean;
-  auditLogs: boolean;
-}
+
 
 // Define interface for employee data from API
 interface EmployeeData {
@@ -42,8 +33,8 @@ interface EmployeeData {
   departmentName?: string;
   status?: string;
   lastActive?: string;
-  individualPermissions?: Partial<Permissions>; // Individual permission overrides
-  effectivePermissions?: Permissions; // Calculated final permissions
+  individualPermissions?: IndividualPermissions; // Individual permission overrides from backend
+  effectivePermissions?: BusinessCardPermission[]; // Calculated final permissions
 }
 
 // Define interface for API response
@@ -57,7 +48,7 @@ interface RoleSummary {
   description: string;
   userCount: number;
   users: EmployeeData[]; // Add users array to role summary
-  permissions: Permissions;
+  permissions: BusinessCardPermission[]; // Role-based default permissions
 }
 
 const Security = () => {
@@ -81,6 +72,21 @@ const Security = () => {
   const [usersModalOpen, setUsersModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<RoleSummary | null>(null);
   
+  // Normalize role names to standard values - moved to top for accessibility
+  const normalizeRole = (role: string): string => {
+    const normalizedRole = role?.toLowerCase() || 'employee';
+    
+    if (normalizedRole.includes('admin') || normalizedRole.includes('administrator')) {
+      return 'Administrator';
+    } else if (normalizedRole.includes('manager') || normalizedRole.includes('lead')) {
+      return 'Manager';
+    } else if (normalizedRole.includes('employee') || normalizedRole.includes('staff') || normalizedRole.includes('user')) {
+      return 'Employee';
+    } else {
+      return 'Employee'; // Default fallback
+    }
+  };
+  
   // const { updateSessionTimeout } = useSessionTimeoutContext();
 
   // Load session data on component mount and tab change
@@ -95,6 +101,19 @@ const Security = () => {
   useEffect(() => {
     loadTimeoutSettings();
   }, []);
+
+  // Debug: Monitor roles state changes
+  useEffect(() => {
+    console.log('🔄 Roles state changed:', roles.length, 'roles');
+    roles.forEach(role => {
+      console.log(`  - ${role.name}: ${role.userCount} users`);
+      role.users.forEach(user => {
+        if (user.individualPermissions && (user.individualPermissions.added?.length || user.individualPermissions.removed?.length)) {
+          console.log(`    * ${user.email}: ${user.individualPermissions.added?.length || 0} added, ${user.individualPermissions.removed?.length || 0} removed`);
+        }
+      });
+    });
+  }, [roles]);
 
   const loadSessionData = async () => {
     setIsLoadingSessions(true);
@@ -144,34 +163,54 @@ const Security = () => {
       
       const data = await response.json();
       
+      console.log('📥 Backend response for employees:', data);
+      
       // Process employees to extract role information
       const employees = (data as EmployeesResponse).employees;
+      
+      console.log('👥 Employees with individual permissions:', employees.filter(emp => emp.individualPermissions).map(emp => ({
+        id: emp.id,
+        email: emp.email,
+        role: emp.role,
+        individualPermissions: emp.individualPermissions
+      })));
       
       // Count users by role
       const roleCounts: { [key: string]: number } = {};
       const roleDescriptions: { [key: string]: string } = {
         'Administrator': 'Full system access and permissions',
-        'Admin': 'Full system access and permissions',
         'Manager': 'Can manage cards and departments',
-        'Lead': 'Can manage cards and departments',
-        'Employee': 'View only their own cards',
-        'Staff': 'View only their own cards'
+        'Employee': 'View only their own cards'
       };
       
-      // Count employees by role
+      // Debug: Log original roles from backend
+      console.log('🔍 Original roles from backend:', employees.map(emp => ({ 
+        name: emp.name || emp.firstName, 
+        email: emp.email, 
+        originalRole: emp.role 
+      })));
+      
+      // Count employees by normalized role
       employees.forEach((emp: EmployeeData) => {
-        const role = emp.role || 'Employee';
-        roleCounts[role] = (roleCounts[role] || 0) + 1;
+        const normalizedRole = normalizeRole(emp.role || 'Employee');
+        roleCounts[normalizedRole] = (roleCounts[normalizedRole] || 0) + 1;
       });
       
-      // Create role summaries with users
+      // Create role summaries with users using normalized roles
       const roleSummaries: RoleSummary[] = Object.entries(roleCounts).map(([roleName, count]) => {
-        const roleUsers = employees.filter((emp: EmployeeData) => (emp.role || 'Employee') === roleName);
+        const roleUsers = employees.filter((emp: EmployeeData) => normalizeRole(emp.role || 'Employee') === roleName);
+        
+        // Calculate effective permissions for each user
+        const usersWithEffectivePermissions = roleUsers.map(user => ({
+          ...user,
+          effectivePermissions: calculateEffectivePermissions(user)
+        }));
+        
         return {
           name: roleName,
           description: roleDescriptions[roleName] || 'Custom role with specific permissions',
           userCount: count,
-          users: roleUsers,
+          users: usersWithEffectivePermissions,
           permissions: getDefaultPermissions(roleName)
         };
       });
@@ -179,7 +218,16 @@ const Security = () => {
       // Sort roles by user count (descending)
       roleSummaries.sort((a, b) => b.userCount - a.userCount);
       
+      // Debug: Log normalized roles
+      console.log('✅ Normalized roles:', roleSummaries.map(role => ({
+        name: role.name,
+        userCount: role.userCount,
+        users: role.users.map(u => u.email)
+      })));
+      
+      console.log('🔄 Setting roles state with', roleSummaries.length, 'roles');
       setRoles(roleSummaries);
+      console.log('✅ Roles state updated');
       
     } catch (error) {
       console.error("Failed to load roles:", error);
@@ -212,45 +260,39 @@ const Security = () => {
     }
   };
 
-  // Helper function to get default permissions based on role
-  const getDefaultPermissions = (roleName: string) => {
-    const role = roleName.toLowerCase();
+  // Helper function to calculate effective permissions for a user
+  const calculateEffectivePermissions = (employee: EmployeeData): BusinessCardPermission[] => {
+    const userWithPermissions: UserWithPermissions = {
+      id: employee.id.toString(),
+      email: employee.email,
+      role: employee.role,
+      plan: 'enterprise',
+      isEmployee: true,
+      individualPermissions: employee.individualPermissions
+    };
     
-    if (role.includes('admin') || role.includes('administrator')) {
-      return {
-        viewCards: true,
-        createCards: true,
-        editCards: true,
-        deleteCards: true,
-        manageUsers: true,
-        viewReports: true,
-        systemSettings: true,
-        auditLogs: true,
-      };
-    } else if (role.includes('manager') || role.includes('lead')) {
-      return {
-        viewCards: true,
-        createCards: true,
-        editCards: true,
-        deleteCards: false,
-        manageUsers: false,
-        viewReports: true,
-        systemSettings: false,
-        auditLogs: false,
-      };
-    } else {
-      return {
-        viewCards: true,
-        createCards: false,
-        editCards: false,
-        deleteCards: false,
-        manageUsers: false,
-        viewReports: false,
-        systemSettings: false,
-        auditLogs: false,
-      };
+    const effectivePermissions = calculateUserPermissions(userWithPermissions);
+    
+    // Debug logging for permission calculation
+    if (employee.individualPermissions && (employee.individualPermissions.added?.length || employee.individualPermissions.removed?.length)) {
+      console.log('🔍 Calculating effective permissions for:', employee.email, {
+        role: employee.role,
+        individualPermissions: employee.individualPermissions,
+        effectivePermissions
+      });
     }
+    
+    return effectivePermissions;
   };
+
+  // Helper function to get default permissions based on role (for role display)
+  const getDefaultPermissions = (roleName: string): BusinessCardPermission[] => {
+    const normalizedRole = normalizeRole(roleName);
+    const permissions = ROLE_PERMISSIONS[normalizedRole as keyof typeof ROLE_PERMISSIONS] || [];
+    return [...permissions]; // Convert readonly array to mutable array
+  };
+
+
 
   const handleSessionTimeoutChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -324,16 +366,7 @@ const Security = () => {
     setSelectedRole(null);
   };
 
-  // Format user display name
-  const formatUserName = (user: EmployeeData) => {
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    if (user.name && user.surname) {
-      return `${user.name} ${user.surname}`;
-    }
-    return user.email.split('@')[0]; // Fallback to email username
-  };
+
 
   // Open permissions modal for a user
   const openPermissionsModal = (user: EmployeeData) => {
@@ -348,37 +381,31 @@ const Security = () => {
   };
 
   // Save user permissions
-  const saveUserPermissions = async (userId: number, permissions: Partial<Permissions>) => {
+  const saveUserPermissions = async (userId: number, individualPermissions: { removed: string[]; added: string[] }) => {
     setSavingPermissions(true);
     try {
-      const url = buildEnterpriseUrl('/enterprise/:enterpriseId/users/:userId/permissions'.replace(':userId', userId.toString()));
-      const headers = getEnterpriseHeaders();
+      console.log('🔄 Saving permissions for user:', userId, 'with:', individualPermissions);
       
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          individualPermissions: permissions,
-          updatedBy: 'current-user-id', // TODO: Get from auth context
-          timestamp: new Date().toISOString()
-        })
-      });
+      const result = await updateUserIndividualPermissions(
+        userId.toString(),
+        individualPermissions
+      );
 
-      if (response.ok) {
-        // Update the user in roles state
-        setRoles(prevRoles => 
-          prevRoles.map(role => ({
-            ...role,
-            users: role.users.map(user => 
-              user.id === userId 
-                ? { ...user, individualPermissions: permissions }
-                : user
-            )
-          }))
-        );
+      if (result.success) {
+        console.log('✅ Permissions saved successfully, reloading roles...');
+        // Reload roles to get updated data with recalculated permissions
+        await loadRoles();
+        console.log('✅ Roles reloaded, checking if state updated...');
+        
+        // Force a re-render by updating a state variable
+        setRoles(prevRoles => {
+          console.log('🔄 Updating roles state, current roles:', prevRoles.length);
+          return [...prevRoles];
+        });
+        
         alert('User permissions updated successfully');
       } else {
-        throw new Error('Failed to save permissions');
+        throw new Error(result.message || 'Failed to save permissions');
       }
     } catch (error) {
       console.error('Error saving user permissions:', error);
@@ -397,10 +424,16 @@ const Security = () => {
           <h1 className="security-title">Security Settings</h1>
           <p className="security-description">Manage security settings and user access controls</p>
         </div>
-        <Button variant="outline" className="audit-button">
-          <FaShieldAlt className="mr-2" />
-          Security Audit
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={loadRoles} disabled={isLoadingRoles}>
+            <FaShieldAlt className="mr-2" />
+            Refresh Roles
+          </Button>
+          <Button variant="outline" className="audit-button">
+            <FaShieldAlt className="mr-2" />
+            Security Audit
+          </Button>
+        </div>
       </div>
       
       <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="security-tabs">
@@ -749,7 +782,7 @@ const Security = () => {
         isOpen={permissionsModalOpen}
         onClose={closePermissionsModal}
         user={selectedUser}
-        rolePermissions={selectedUser ? roles.find(role => role.name === selectedUser.role)?.permissions || {} as Permissions : {} as Permissions}
+        rolePermissions={selectedUser ? getDefaultPermissions(selectedUser.role || 'Employee') : []}
         onSave={saveUserPermissions}
         saving={savingPermissions}
       />
