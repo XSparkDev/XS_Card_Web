@@ -3,7 +3,7 @@ import { Button } from '../UI/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
 import { FaUser, FaExclamationTriangle, FaChevronDown, FaChevronRight, FaTimes } from "react-icons/fa";
 import "../../styles/DepartmentModal.css";
-import { VALID_BACKEND_PERMISSIONS, PERMISSION_DISPLAY_NAMES, validatePermissions } from "../../utils/permissions";
+import { VALID_BACKEND_PERMISSIONS, PERMISSION_DISPLAY_NAMES, validatePermissions, PERMISSION_CATEGORIES } from "../../utils/permissions";
 
 // Types
 interface EmployeeData {
@@ -37,6 +37,69 @@ interface UserPermissionsModalProps {
 type PermissionState = 'inherit' | 'add' | 'remove';
 
 
+
+// Permission Category Component
+const PermissionCategory = ({
+  category,
+  permissions,
+  rolePermissions,
+  permissionStates,
+  effectivePermissions,
+  onPermissionChange,
+  expanded,
+  onToggleExpanded,
+  disabled = false
+}: {
+  category: typeof PERMISSION_CATEGORIES[keyof typeof PERMISSION_CATEGORIES];
+  permissions: readonly string[];
+  rolePermissions: string[];
+  permissionStates: Record<string, PermissionState>;
+  effectivePermissions: Record<string, boolean>;
+  onPermissionChange: (permission: string, state: PermissionState) => void;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  disabled?: boolean;
+}) => {
+  return (
+    <div className="permission-category">
+      <div className="permission-category-header" onClick={onToggleExpanded}>
+        <div className="permission-category-title">
+          {expanded ? <FaChevronDown className="chevron-icon" /> : <FaChevronRight className="chevron-icon" />}
+          <span>{category.icon} {category.name}</span>
+        </div>
+        <div className="permission-category-count">
+          {permissions.length} permissions
+        </div>
+      </div>
+      
+      {expanded && (
+        <div className="permission-category-content">
+          <div className="permissions-table">
+            <div className="permissions-table-header">
+              <div>Permission</div>
+              <div>Role Default</div>
+              <div>User Override</div>
+              <div>Effective</div>
+            </div>
+            <div className="permissions-table-body">
+              {permissions.map(permission => (
+                <PermissionRow
+                  key={permission}
+                  permission={permission}
+                  roleHasPermission={rolePermissions.includes(permission)}
+                  currentState={permissionStates[permission] || 'inherit'}
+                  effectiveValue={effectivePermissions[permission] || false}
+                  onChange={(state) => onPermissionChange(permission, state)}
+                  disabled={disabled}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Permission Row Component for Table Layout
 const PermissionRow = ({ 
@@ -107,6 +170,7 @@ const UserPermissionsModal = ({
 }: UserPermissionsModalProps) => {
   const [permissionStates, setPermissionStates] = useState<Record<string, PermissionState>>({});
   const [businessCardsExpanded, setBusinessCardsExpanded] = useState(true);
+  const [contactsExpanded, setContactsExpanded] = useState(true);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -305,44 +369,35 @@ const UserPermissionsModal = ({
               </div>
             )}
             
-            {/* Business Card Permissions */}
-            <div className="permission-category">
-              <div className="permission-category-header" onClick={() => setBusinessCardsExpanded(!businessCardsExpanded)}>
-                <div className="permission-category-title">
-                  {businessCardsExpanded ? <FaChevronDown className="chevron-icon" /> : <FaChevronRight className="chevron-icon" />}
-                  <span>Business Card Permissions</span>
-                </div>
-                <div className="permission-category-count">
-                  {VALID_BACKEND_PERMISSIONS.length} permissions
-                </div>
+            {/* Permission Categories */}
+            <div className="permissions-container">
+              <div className="permissions-categories">
+                {/* Business Card Permissions */}
+                <PermissionCategory
+                  category={PERMISSION_CATEGORIES.BUSINESS_CARDS}
+                  permissions={PERMISSION_CATEGORIES.BUSINESS_CARDS.permissions}
+                  rolePermissions={rolePermissions}
+                  permissionStates={permissionStates}
+                  effectivePermissions={effectivePermissions}
+                  onPermissionChange={updatePermissionState}
+                  expanded={businessCardsExpanded}
+                  onToggleExpanded={() => setBusinessCardsExpanded(!businessCardsExpanded)}
+                  disabled={saving}
+                />
+
+                {/* Contact Permissions */}
+                <PermissionCategory
+                  category={PERMISSION_CATEGORIES.CONTACTS}
+                  permissions={PERMISSION_CATEGORIES.CONTACTS.permissions}
+                  rolePermissions={rolePermissions}
+                  permissionStates={permissionStates}
+                  effectivePermissions={effectivePermissions}
+                  onPermissionChange={updatePermissionState}
+                  expanded={contactsExpanded}
+                  onToggleExpanded={() => setContactsExpanded(!contactsExpanded)}
+                  disabled={saving}
+                />
               </div>
-              
-              {businessCardsExpanded && (
-                <div className="permission-category-content">
-                  <div className="permissions-table">
-                    <div className="permissions-table-header">
-                      <div>Permission</div>
-                      <div>Role Default</div>
-                      <div>User Override</div>
-                      <div>Effective</div>
-                    </div>
-                    
-                    <div className="permissions-table-body">
-                      {VALID_BACKEND_PERMISSIONS.map((permission) => (
-                        <PermissionRow
-                          key={permission}
-                          permission={permission}
-                          roleHasPermission={rolePermissions.includes(permission)}
-                          currentState={permissionStates[permission] || 'inherit'}
-                          effectiveValue={effectivePermissions[permission] || false}
-                          onChange={(state) => updatePermissionState(permission, state)}
-                          disabled={saving}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
             
             <div className="department-modal-actions">

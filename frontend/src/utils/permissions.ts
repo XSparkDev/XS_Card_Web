@@ -10,8 +10,8 @@ export const BUSINESS_CARD_PERMISSIONS = {
   MANAGE_ALL_CARDS: 'manageAllCards'
 } as const;
 
-// Valid permissions according to backend documentation
-export const VALID_BACKEND_PERMISSIONS = [
+// Business Card Permissions
+export const VALID_BUSINESS_CARD_PERMISSIONS = [
   'viewCards',      // Can view business cards
   'createCards',    // Can create new business cards
   'editCards',      // Can edit existing business cards
@@ -21,72 +21,144 @@ export const VALID_BACKEND_PERMISSIONS = [
   'shareCards'      // Can share business cards
 ] as const;
 
+// Contact Permissions
+export const VALID_CONTACT_PERMISSIONS = [
+  'viewContacts',   // Can view contacts
+  'deleteContacts', // Can delete contacts
+  'shareContacts',  // Can share contacts
+  'exportContacts'  // Can export contact data
+] as const;
+
+// All valid permissions (combining both types)
+export const VALID_BACKEND_PERMISSIONS = [
+  ...VALID_BUSINESS_CARD_PERMISSIONS,
+  ...VALID_CONTACT_PERMISSIONS
+] as const;
+
 // Permission display names
 export const PERMISSION_DISPLAY_NAMES = {
+  // Business Card Permissions
   'viewCards': 'View Business Cards',
   'createCards': 'Create Business Cards',
   'editCards': 'Edit Business Cards',
   'deleteCards': 'Delete Business Cards',
   'manageAllCards': 'Manage All Cards',
   'exportCards': 'Export Card Data',
-  'shareCards': 'Share Business Cards'
+  'shareCards': 'Share Business Cards',
+  // Contact Permissions
+  'viewContacts': 'View Contacts',
+  'deleteContacts': 'Delete Contacts',
+  'shareContacts': 'Share Contacts',
+  'exportContacts': 'Export Contact Data'
 } as const;
 
 // Role to Permission Mapping - Using backend permission names
 export const ROLE_PERMISSIONS = {
   'Administrator': [
+    // Business Card Permissions
     'viewCards',
     'createCards',
     'editCards',
     'deleteCards',
     'shareCards',
     'manageAllCards',
-    'exportCards'
+    'exportCards',
+    // Contact Permissions
+    'viewContacts',
+    'deleteContacts',
+    'shareContacts',
+    'exportContacts'
   ],
   'Admin': [
+    // Business Card Permissions
     'viewCards',
     'createCards',
     'editCards',
     'deleteCards',
     'shareCards',
     'manageAllCards',
-    'exportCards'
+    'exportCards',
+    // Contact Permissions
+    'viewContacts',
+    'deleteContacts',
+    'shareContacts',
+    'exportContacts'
   ],
   'Manager': [
+    // Business Card Permissions
     'viewCards',
     'createCards',
     'editCards',
     'deleteCards',
     'shareCards',
-    'exportCards'
+    'exportCards',
+    // Contact Permissions
+    'viewContacts',
+    'deleteContacts',
+    'shareContacts',
+    'exportContacts'
   ],
   'Lead': [
+    // Business Card Permissions
     'viewCards',
     'createCards',
     'editCards',
     'deleteCards',
     'shareCards',
-    'exportCards'
+    'exportCards',
+    // Contact Permissions
+    'viewContacts',
+    'deleteContacts',
+    'shareContacts',
+    'exportContacts'
   ],
   'Employee': [
+    // Business Card Permissions
     'viewCards',
     'editCards',
-    'shareCards'
+    'shareCards',
+    // Contact Permissions
+    'viewContacts',
+    'deleteContacts',
+    'shareContacts'
   ],
   'Staff': [
+    // Business Card Permissions
     'viewCards',
     'editCards',
-    'shareCards'
+    'shareCards',
+    // Contact Permissions
+    'viewContacts',
+    'deleteContacts',
+    'shareContacts'
   ]
 } as const;
 
 // Type definitions
-export type BusinessCardPermission = typeof VALID_BACKEND_PERMISSIONS[number];
+export type BusinessCardPermission = typeof VALID_BUSINESS_CARD_PERMISSIONS[number];
+export type ContactPermission = typeof VALID_CONTACT_PERMISSIONS[number];
+export type AllPermission = typeof VALID_BACKEND_PERMISSIONS[number];
 export type UserRole = keyof typeof ROLE_PERMISSIONS;
 
+// Permission categories for UI organization
+export const PERMISSION_CATEGORIES = {
+  BUSINESS_CARDS: {
+    name: 'Business Cards',
+    description: 'Manage business card creation, editing, and sharing',
+    permissions: VALID_BUSINESS_CARD_PERMISSIONS,
+    icon: '💼'
+  },
+  CONTACTS: {
+    name: 'Contacts',
+    description: 'Manage contact viewing, deletion, and sharing',
+    permissions: VALID_CONTACT_PERMISSIONS,
+    icon: '👥'
+  }
+} as const;
+
 export interface IndividualPermissions {
-  removed?: BusinessCardPermission[];
-  added?: BusinessCardPermission[];
+  removed?: AllPermission[];
+  added?: AllPermission[];
 }
 
 export interface UserWithPermissions {
@@ -115,10 +187,10 @@ const normalizeRole = (role: string): UserRole => {
 };
 
 // Permission checker function
-export const calculateUserPermissions = (user: UserWithPermissions): BusinessCardPermission[] => {
+export const calculateUserPermissions = (user: UserWithPermissions): AllPermission[] => {
   // For non-enterprise users, allow basic permissions
   if (user?.plan !== 'enterprise') {
-    return ['viewCards', 'shareCards'] as BusinessCardPermission[];
+    return ['viewCards', 'shareCards', 'viewContacts', 'shareContacts'] as AllPermission[];
   }
   
   // For enterprise users, start with role-based permissions
@@ -134,7 +206,7 @@ export const calculateUserPermissions = (user: UserWithPermissions): BusinessCar
     individualPermissions: user?.individualPermissions
   });
   
-  let finalPermissions: BusinessCardPermission[] = [...basePermissions];
+  let finalPermissions: AllPermission[] = [...basePermissions];
   
   // Apply individual overrides if they exist
   const individualOverrides = user?.individualPermissions;
@@ -161,10 +233,10 @@ export const showPermissionPopup = (user: UserWithPermissions): void => {
 };
 
 // Main permission check function
-export const hasBusinessCardPermission = (user: UserWithPermissions, permission: BusinessCardPermission): boolean => {
+export const hasBusinessCardPermission = (user: UserWithPermissions, permission: AllPermission): boolean => {
   // For non-enterprise users, allow basic access
   if (user?.plan !== 'enterprise') {
-    const basicPermissions = ['viewCards', 'shareCards'];
+    const basicPermissions = ['viewCards', 'shareCards', 'viewContacts', 'shareContacts'];
     return basicPermissions.includes(permission);
   }
   
@@ -219,4 +291,37 @@ export const validatePermissions = (permissions: string[]): { valid: string[], i
 // Get permission display name
 export const getPermissionDisplayName = (permission: string): string => {
   return PERMISSION_DISPLAY_NAMES[permission as keyof typeof PERMISSION_DISPLAY_NAMES] || permission;
+};
+
+// Helper functions for permission categorization
+export const isBusinessCardPermission = (permission: string): permission is BusinessCardPermission => {
+  return VALID_BUSINESS_CARD_PERMISSIONS.includes(permission as BusinessCardPermission);
+};
+
+export const isContactPermission = (permission: string): permission is ContactPermission => {
+  return VALID_CONTACT_PERMISSIONS.includes(permission as ContactPermission);
+};
+
+export const getPermissionCategory = (permission: string): keyof typeof PERMISSION_CATEGORIES | null => {
+  if (isBusinessCardPermission(permission)) return 'BUSINESS_CARDS';
+  if (isContactPermission(permission)) return 'CONTACTS';
+  return null;
+};
+
+// Get permissions by category
+export const getPermissionsByCategory = (permissions: AllPermission[]) => {
+  const categorized = {
+    BUSINESS_CARDS: [] as BusinessCardPermission[],
+    CONTACTS: [] as ContactPermission[]
+  };
+
+  permissions.forEach(permission => {
+    if (isBusinessCardPermission(permission)) {
+      categorized.BUSINESS_CARDS.push(permission);
+    } else if (isContactPermission(permission)) {
+      categorized.CONTACTS.push(permission);
+    }
+  });
+
+  return categorized;
 };

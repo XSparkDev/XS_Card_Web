@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../UI/card";
 import { FaUser, FaEdit, FaExclamationTriangle, FaSearch } from "react-icons/fa";
 import "../../styles/Security.css";
 import "../../styles/DepartmentModal.css";
-import { type BusinessCardPermission, type IndividualPermissions } from "../../utils/permissions";
+import { type AllPermission, type IndividualPermissions } from "../../utils/permissions";
 
 // Types
 interface EmployeeData {
@@ -20,7 +20,7 @@ interface EmployeeData {
   status?: string;
   lastActive?: string;
   individualPermissions?: IndividualPermissions;
-  effectivePermissions?: BusinessCardPermission[];
+  effectivePermissions?: AllPermission[];
 }
 
 interface RoleSummary {
@@ -28,7 +28,7 @@ interface RoleSummary {
   description: string;
   userCount: number;
   users: EmployeeData[];
-  permissions: BusinessCardPermission[];
+  permissions: AllPermission[];
 }
 
 interface RoleUsersModalProps {

@@ -149,9 +149,40 @@ export interface BillingAPIResponse<T> {
   error?: string;
 }
 
+// Contact Permission Types
+export interface ContactPermissionsResponse {
+  success: boolean;
+  contacts?: ContactWithOwner[];
+  id?: string;
+  contactList?: ContactWithOwner[];
+  totalCount?: number;
+  message?: string;
+  reason?: string;
+}
+
+export interface ContactWithOwner {
+  name: string;
+  surname: string;
+  phone: string;
+  email: string;
+  company?: string;
+  howWeMet?: string;
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+}
+
+export interface ContactDeleteResponse {
+  success: boolean;
+  message: string;
+  deletedContactId?: string;
+  deletedContact?: ContactWithOwner;
+}
+
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NDgwOTM1LCJ1c2VyX2lkIjoieXk5cHJuVThzTVdzam9RVmFIaVpTUXJ3S0ZKMiIsInN1YiI6Inl5OXByblU4c01Xc2pvUVZhSGlaU1Fyd0tGSjIiLCJpYXQiOjE3NTU0ODA5MzUsImV4cCI6MTc1NTQ4NDUzNSwiZW1haWwiOiJoaWdlbmF3OTcyQGZ1cnNlZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJoaWdlbmF3OTcyQGZ1cnNlZS5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.Yq43Hz6UJey-0to3UhJY4fE1IEBAx7T-VaBR0yURUcAbSEQpavU6SCfRySTmKNmYJIn7WHTIsaoGBt6-HmEQRHB4dLrHSvFFEiU4BKzpFpZC0i6C65lwUBgRpDEPg-STZqlYZtrof0GNQZ6JUKc3ILNBnUa2kT-epDBi4uKBuv3l47GczlMTBogipEVclB_26Uvg0IQAvTx42SppX_GhAOGNQFDSwVKgC7kuCRzi3T4BZzIWb87L_rO5vzce5G7Ka6agr5OstsuWWjZMteknKbWX7-Qtu86qhvvqUrlkGr29Cn1XooM9kXaW_8VI0CjgtH8-MD9I1FQ8WKj_QNk2LA";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NTI3ODAzLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTU1Mjc4MDMsImV4cCI6MTc1NTUzMTQwMywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.NQ1JKfDAc7cpsXRAX2DvMQvhQbubbtPuAzEDr9I732Lrl33SGvT-B8Q94Q9fjHvp7M0t25FbQt0GH5STBg7kCn1QJBTI5mmV9Uxxm2D2_gYGTA3SvEQOcs-OGGGN8qRIwwoBVDSkYylM0PQ1eQi0r10RDkbmxbjA3imqgUsnD5rQtrDXXlEP0HZJOTaFv4KXub8hAWesSkejsNGshp2Z3dNH6tu60OiMngVD7GKG4UZcj51sI2hzR9XWBp74SeicDIoLnrDDrNUM2exQXybX1FZw802tQXe-Kx34H0u54z8PpjpBo7koJGtbi7ahoM60K5lAV1ppRu57f_9ooHD0Cg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -160,8 +191,8 @@ export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
 //export const DEFAULT_USER_ID = "jbtu0MfGddPJLWnrHmHKCvFhm1j2"; // admin
-export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // manager
-
+ //export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // user2
+export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // admin
 
 
 
@@ -239,6 +270,9 @@ export const ENDPOINTS = {
     UPDATE_USER_COLOR: '/Users/:id/color', 
     ADD_TO_WALLET: '/Cards/:userId/wallet/:cardIndex',
     DELETE_CONTACT: '/Contacts',
+    DELETE_CONTACT_BY_USER_ID: '/Contacts/:userId',
+    DELETE_SPECIFIC_CONTACT: '/Contacts/:userId/contact/:contactIndex',
+    GET_USER_CONTACTS: '/Contacts/:userId',
     UPDATE_CARD: '/Cards/:id',
     UPDATE_CARD_BY_INDEX: '/Cards/:userId?cardIndex=:cardIndex',
     UPDATE_CARD_COLOR: '/Cards/:id/color',
@@ -288,6 +322,7 @@ export const ENDPOINTS = {
     
     // Individual Permissions endpoints
     ENTERPRISE_USER_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/permissions`,
+    ENTERPRISE_USER_CONTACT_PERMISSIONS: `/enterprise/:enterpriseId/users/:userId/contact-permissions`,
     
     // Team Management endpoints (management routes - no /api prefix)
     ENTERPRISE_DEPARTMENT_TEAMS: `/enterprise/:enterpriseId/departments/:departmentId/teams`,
@@ -991,6 +1026,156 @@ export const updateUserIndividualPermissions = async (
   }
 };
 
+export const updateUserContactPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_USER_CONTACT_PERMISSIONS.replace(':userId', userId), enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🌐 API Call - updateUserContactPermissions:', {
+      url,
+      userId,
+      individualPermissions,
+      enterpriseId
+    });
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ individualPermissions })
+    });
+    
+    console.log('📡 API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error:', response.status, errorText);
+      return {
+        success: false,
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ API Success:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ API Exception:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// 🚀 SCALABLE PERMISSION ROUTING SYSTEM
+// This automatically routes permissions to the correct endpoint based on permission names
+
+// Permission type definitions
+export const PERMISSION_TYPES = {
+  BUSINESS_CARDS: {
+    prefix: 'Cards',
+    permissions: ['viewCards', 'createCards', 'editCards', 'deleteCards', 'manageAllCards', 'exportCards', 'shareCards'],
+    endpoint: 'ENTERPRISE_USER_PERMISSIONS',
+    apiFunction: 'updateUserIndividualPermissions'
+  },
+  CONTACTS: {
+    prefix: 'Contacts', 
+    permissions: ['viewContacts', 'deleteContacts', 'shareContacts', 'exportContacts'],
+    endpoint: 'ENTERPRISE_USER_CONTACT_PERMISSIONS',
+    apiFunction: 'updateUserContactPermissions'
+  },
+  // 🎯 FUTURE PERMISSION TYPES - Just add them here!
+  TEAMS: {
+    prefix: 'Teams',
+    permissions: ['viewTeams', 'createTeams', 'editTeams', 'deleteTeams', 'manageTeamMembers'],
+    endpoint: 'ENTERPRISE_USER_TEAM_PERMISSIONS', // You'll add this endpoint
+    apiFunction: 'updateUserTeamPermissions' // You'll add this function
+  },
+  DEPARTMENTS: {
+    prefix: 'Departments',
+    permissions: ['viewDepartments', 'createDepartments', 'editDepartments', 'deleteDepartments', 'manageDepartmentUsers'],
+    endpoint: 'ENTERPRISE_USER_DEPARTMENT_PERMISSIONS',
+    apiFunction: 'updateUserDepartmentPermissions'
+  },
+  ANALYTICS: {
+    prefix: 'Analytics',
+    permissions: ['viewAnalytics', 'exportAnalytics', 'manageAnalytics'],
+    endpoint: 'ENTERPRISE_USER_ANALYTICS_PERMISSIONS',
+    apiFunction: 'updateUserAnalyticsPermissions'
+  },
+  BILLING: {
+    prefix: 'Billing',
+    permissions: ['viewBilling', 'manageBilling', 'processPayments'],
+    endpoint: 'ENTERPRISE_USER_BILLING_PERMISSIONS',
+    apiFunction: 'updateUserBillingPermissions'
+  }
+} as const;
+
+// Helper function to detect permission type
+export const detectPermissionType = (permissions: string[]): keyof typeof PERMISSION_TYPES | null => {
+  for (const [type, config] of Object.entries(PERMISSION_TYPES)) {
+    if (permissions.some(permission => (config as any).permissions.includes(permission))) {
+      return type as keyof typeof PERMISSION_TYPES;
+    }
+  }
+  return null;
+};
+
+// Universal permission update function
+export const updateUserPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const allPermissions = [...(individualPermissions.removed || []), ...(individualPermissions.added || [])];
+    const permissionType = detectPermissionType(allPermissions);
+    
+    if (!permissionType) {
+      return {
+        success: false,
+        message: 'Unknown permission type. Please check permission names.'
+      };
+    }
+    
+    const config = PERMISSION_TYPES[permissionType];
+    console.log(`🎯 Detected permission type: ${permissionType} (${config.prefix})`);
+    
+    // Route to the appropriate function based on permission type
+    switch (permissionType) {
+      case 'BUSINESS_CARDS':
+        return await updateUserIndividualPermissions(userId, individualPermissions, enterpriseId);
+      case 'CONTACTS':
+        return await updateUserContactPermissions(userId, individualPermissions, enterpriseId);
+      // 🎯 FUTURE CASES - Just add them here!
+      case 'TEAMS':
+        // return await updateUserTeamPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Team permissions not yet implemented' };
+      case 'DEPARTMENTS':
+        // return await updateUserDepartmentPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Department permissions not yet implemented' };
+      case 'ANALYTICS':
+        // return await updateUserAnalyticsPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Analytics permissions not yet implemented' };
+      case 'BILLING':
+        // return await updateUserBillingPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Billing permissions not yet implemented' };
+      default:
+        return { success: false, message: 'Unknown permission type' };
+    }
+  } catch (error) {
+    console.error('❌ Error in updateUserPermissions:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
 // Team Functions
 export const fetchTeamsForDepartment = async (
   departmentId: string,
@@ -1027,6 +1212,148 @@ export const fetchTeamsForDepartment = async (
       success: false,
       teams: [],
       count: 0
+    };
+  }
+};
+
+// Contact Permission Functions
+export const fetchAuthenticatedContacts = async (): Promise<ContactPermissionsResponse> => {
+  try {
+    // Get token from localStorage first, fallback to FIREBASE_TOKEN
+    const localToken = localStorage.getItem('userToken');
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const response = await authenticatedFetch(ENDPOINTS.GET_CONTACTS, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only view your own contacts');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to fetch contacts'
+    };
+  }
+};
+
+export const fetchUserContacts = async (userId: string): Promise<ContactPermissionsResponse> => {
+  try {
+    const localToken = localStorage.getItem('userToken');
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const endpoint = ENDPOINTS.GET_USER_CONTACTS.replace(':userId', userId);
+    const response = await authenticatedFetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only view your own contacts');
+      } else if (response.status === 404) {
+        throw new Error('Contact list not found');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to fetch user contacts'
+    };
+  }
+};
+
+export const deleteContactByIndex = async (userId: string, contactIndex: number): Promise<ContactDeleteResponse> => {
+  try {
+    const localToken = localStorage.getItem('userToken');
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const endpoint = ENDPOINTS.DELETE_SPECIFIC_CONTACT
+      .replace(':userId', userId)
+      .replace(':contactIndex', contactIndex.toString());
+    
+    const response = await authenticatedFetch(endpoint, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only delete your own contacts');
+      } else if (response.status === 404) {
+        throw new Error('Contact not found');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to delete contact'
+    };
+  }
+};
+
+export const deleteUserContactList = async (userId: string): Promise<ContactDeleteResponse> => {
+  try {
+    const localToken = localStorage.getItem('userToken');
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const endpoint = ENDPOINTS.DELETE_CONTACT_BY_USER_ID.replace(':userId', userId);
+    const response = await authenticatedFetch(endpoint, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only delete your own contacts');
+      } else if (response.status === 404) {
+        throw new Error('Contact list not found');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to delete contact list'
     };
   }
 };

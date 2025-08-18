@@ -490,6 +490,67 @@
   width: 60px;
 }
 
+/* Modal Table Specific Styles */
+.contacts-table-container[style*="minWidth"] {
+  overflow-x: auto;
+}
+
+.contacts-table-container[style*="minWidth"] .contacts-table {
+  min-width: 1200px;
+}
+
+.contacts-table-container[style*="minWidth"] .contacts-table th,
+.contacts-table-container[style*="minWidth"] .contacts-table td {
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.contacts-table-container[style*="minWidth"] .contacts-table th:first-child,
+.contacts-table-container[style*="minWidth"] .contacts-table td:first-child {
+  min-width: 200px;
+}
+
+.contacts-table-container[style*="minWidth"] .contacts-table th:last-child,
+.contacts-table-container[style*="minWidth"] .contacts-table td:last-child {
+  min-width: 60px;
+}
+
+/* Responsive Modal Table */
+@media (max-width: 1400px) {
+  .contacts-table-container[style*="minWidth"] .contacts-table th.how-we-met-header,
+  .contacts-table-container[style*="minWidth"] .contacts-table td.how-we-met-header {
+    display: none;
+  }
+}
+
+@media (max-width: 1200px) {
+  .contacts-table-container[style*="minWidth"] .contacts-table th.source-header,
+  .contacts-table-container[style*="minWidth"] .contacts-table td.source-header {
+    display: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .contacts-table-container[style*="minWidth"] .contacts-table th.company-header,
+  .contacts-table-container[style*="minWidth"] .contacts-table td.company-header {
+    display: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .contacts-table-container[style*="minWidth"] .contacts-table th.added-header,
+  .contacts-table-container[style*="minWidth"] .contacts-table td.added-header {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .contacts-table-container[style*="minWidth"] .contacts-table th.email-header,
+  .contacts-table-container[style*="minWidth"] .contacts-table td.email-header {
+    display: none;
+  }
+}
+
 .action-button {
   width: 2rem;
   height: 2rem;
@@ -533,6 +594,24 @@
   padding: 3rem;
   color: #6b7280;
   font-style: italic;
+}
+
+/* Disabled Menu Item Styling */
+.disabled-menu-item {
+  position: relative;
+}
+
+.disabled-menu-item:hover {
+  background-color: #f9fafb !important;
+  cursor: not-allowed !important;
+}
+
+.disabled-menu-item .action-icon {
+  opacity: 0.5;
+}
+
+.disabled-menu-item span {
+  color: #9ca3af !important;
 }
 
 /* Responsive Design */

@@ -13,8 +13,8 @@ import RoleUsersModal from "./RoleUsersModal";
 import { sessionService } from "../../services/sessionService";
 // import { rolesService, Role } from "../../services/rolesService";
 import ActivityLogs from "./ActivityLogs";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, updateUserIndividualPermissions } from "../../utils/api";
-import { calculateUserPermissions, ROLE_PERMISSIONS, type UserWithPermissions, type BusinessCardPermission, type IndividualPermissions } from "../../utils/permissions";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, updateUserPermissions } from "../../utils/api";
+import { calculateUserPermissions, ROLE_PERMISSIONS, type UserWithPermissions, type AllPermission, type IndividualPermissions } from "../../utils/permissions";
 
 // Import icons
 import { FaShieldAlt, FaUserPlus } from "react-icons/fa";
@@ -34,7 +34,7 @@ interface EmployeeData {
   status?: string;
   lastActive?: string;
   individualPermissions?: IndividualPermissions; // Individual permission overrides from backend
-  effectivePermissions?: BusinessCardPermission[]; // Calculated final permissions
+  effectivePermissions?: AllPermission[]; // Calculated final permissions
 }
 
 // Define interface for API response
@@ -48,7 +48,7 @@ interface RoleSummary {
   description: string;
   userCount: number;
   users: EmployeeData[]; // Add users array to role summary
-  permissions: BusinessCardPermission[]; // Role-based default permissions
+  permissions: AllPermission[]; // Role-based default permissions
 }
 
 const Security = () => {
@@ -261,7 +261,7 @@ const Security = () => {
   };
 
   // Helper function to calculate effective permissions for a user
-  const calculateEffectivePermissions = (employee: EmployeeData): BusinessCardPermission[] => {
+  const calculateEffectivePermissions = (employee: EmployeeData): AllPermission[] => {
     const userWithPermissions: UserWithPermissions = {
       id: employee.id.toString(),
       email: employee.email,
@@ -286,7 +286,7 @@ const Security = () => {
   };
 
   // Helper function to get default permissions based on role (for role display)
-  const getDefaultPermissions = (roleName: string): BusinessCardPermission[] => {
+  const getDefaultPermissions = (roleName: string): AllPermission[] => {
     const normalizedRole = normalizeRole(roleName);
     const permissions = ROLE_PERMISSIONS[normalizedRole as keyof typeof ROLE_PERMISSIONS] || [];
     return [...permissions]; // Convert readonly array to mutable array
@@ -386,7 +386,8 @@ const Security = () => {
     try {
       console.log('🔄 Saving permissions for user:', userId, 'with:', individualPermissions);
       
-      const result = await updateUserIndividualPermissions(
+      // Use the universal permission update function that automatically routes to the correct endpoint
+      const result = await updateUserPermissions(
         userId.toString(),
         individualPermissions
       );
