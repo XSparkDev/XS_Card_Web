@@ -16,7 +16,8 @@ import {
   MdCheckCircle
 } from "react-icons/md";
 import '../../styles/Calendar.css';
-import { ENDPOINTS, buildUrl, DEFAULT_USER_ID, getEnterpriseHeaders } from "../../utils/api";
+import { ENDPOINTS, buildUrl, DEFAULT_USER_ID, getEnterpriseHeaders, updateUserPermissions, fetchUserPermissions } from "../../utils/api";
+import { calculateUserPermissions, type UserWithPermissions } from "../../utils/permissions";
 
 // Import UI components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../UI/card";
@@ -130,6 +131,12 @@ const CalendarPage = () => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
   
+  // Permission states
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [permissionError, setPermissionError] = useState<string>('');
+  
   const today = new Date();
   const currentMonth = format(date || today, "MMMM yyyy");
   
@@ -148,14 +155,108 @@ const CalendarPage = () => {
   // Extract event dates for the calendar indicators
   const eventDates = events.map(event => new Date(event.date));
 
+  // Permission checking functions
+  const hasPermission = (permission: string): boolean => {
+    return userPermissions.includes(permission);
+  };
+
+
+
+  // Fetch user permissions including individual overrides
+  const fetchUserPermissionsFromAPI = async () => {
+    try {
+      setPermissionsLoading(true);
+      
+      // Get user data from localStorage for basic info
+      const userData = localStorage.getItem('userData');
+      if (!userData) {
+        console.warn('No user data found, using default permissions');
+        setUserPermissions([]);
+        return;
+      }
+
+      const parsedData = JSON.parse(userData);
+      const userId = parsedData.id || parsedData.userId;
+      
+      console.log('👤 Fetching latest user data from backend for permissions...');
+      console.log('🔍 User ID from localStorage:', userId);
+
+      // Use the new fetchUserPermissions API function that properly handles calendar permissions
+      const result = await fetchUserPermissions(userId);
+      
+      if (!result.success) {
+        console.warn('Failed to fetch user permissions from API, using localStorage data');
+        // Fallback to localStorage data
+        const user: UserWithPermissions = {
+          id: userId,
+          email: parsedData.email,
+          role: parsedData.role,
+          plan: 'enterprise',
+          isEmployee: true,
+          individualPermissions: parsedData.individualPermissions || { removed: [], added: [] }
+        };
+        const effectivePermissions = calculateUserPermissions(user);
+        setUserPermissions(effectivePermissions);
+        return;
+      }
+      
+      console.log('✅ Fetched user permissions from API:', result.data);
+      
+      // Merge individual permissions and calendar permissions
+      const mergedIndividualPermissions = {
+        removed: [
+          ...(result.data.individualPermissions?.removed || []),
+          ...(result.data.calendarPermissions?.removed || [])
+        ],
+        added: [
+          ...(result.data.individualPermissions?.added || []),
+          ...(result.data.calendarPermissions?.added || [])
+        ]
+      };
+      
+      console.log('🔄 Merged permissions:', mergedIndividualPermissions);
+
+      // Create user object for permission calculation with merged permissions
+      const user: UserWithPermissions = {
+        id: result.data.user.id,
+        email: result.data.user.email,
+        role: result.data.user.role,
+        plan: 'enterprise',
+        isEmployee: true,
+        individualPermissions: mergedIndividualPermissions
+      };
+
+      console.log('🔍 Calculating permissions for user:', user);
+
+      // Calculate effective permissions
+      const effectivePermissions = calculateUserPermissions(user);
+      console.log('✅ Effective permissions:', effectivePermissions);
+
+      setUserPermissions(effectivePermissions);
+    } catch (error) {
+      console.error('❌ Error fetching user permissions:', error);
+      setUserPermissions([]);
+    } finally {
+      setPermissionsLoading(false);
+    }
+  };
+
   // Function to load more events
   const handleLoadMore = () => {
     setVisibleEventCount(prev => prev + 5);
   };
 
   // Function to fetch events from API
-  const fetchEvents = async () => {    try {
+  const fetchEvents = async () => {
+    try {
       setIsLoading(true);
+      
+      // Check if user has permission to view calendar
+      if (!hasPermission('viewCalendar')) {
+        setPermissionError("You don't have permission to view the calendar. Please contact your administrator.");
+        setShowPermissionModal(true);
+        return;
+      }
       
       // Use Firebase token authentication for meetings with the DEFAULT_USER_ID
       const url = buildUrl(ENDPOINTS.CREATE_MEETING + `/${DEFAULT_USER_ID}`);
@@ -317,6 +418,11 @@ const CalendarPage = () => {
   // Load events when component mounts or date changes
   useEffect(() => {
     fetchEvents();
+  }, []);
+
+  // Load user permissions when component mounts
+  useEffect(() => {
+    fetchUserPermissionsFromAPI();
   }, []);
 
   // Load draft event data from localStorage
@@ -691,6 +797,13 @@ const CalendarPage = () => {
     // Reset any previous errors
     setApiError(null);
     
+    // Check if user has permission to create meetings
+    if (!hasPermission('createMeetings')) {
+      setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
+      setShowPermissionModal(true);
+      return;
+    }
+    
     // Validate the form
     const errors = validateForm();
     
@@ -942,12 +1055,22 @@ const CalendarPage = () => {
         <div className="calendar-title">
           <h1>Calendar</h1>
           <p className="calendar-subtitle">Schedule and manage business card related events.</p>
+          
+
         </div>
         <Button 
           className="header-button outline-button" 
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            
+            // Check if user has permission to create meetings
+            if (!hasPermission('createMeetings')) {
+              setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
+              setShowPermissionModal(true);
+              return;
+            }
+            
             // Reset form data when opening
             const selectedDate = date || new Date();
             const today = new Date();
@@ -969,7 +1092,7 @@ const CalendarPage = () => {
             setAttendeeList([]);
             setIsAddEventOpen(true);
           }}
-          disabled={isDateInPast(date || new Date())}
+          disabled={isDateInPast(date || new Date()) || !hasPermission('createMeetings')}
           type="button"
         >
           <MdAdd className="icon-add" />
@@ -1622,6 +1745,28 @@ const CalendarPage = () => {
               onClick={confirmDeleteEvent}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permission Error Modal */}
+      <Dialog open={showPermissionModal} onOpenChange={setShowPermissionModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">🔒 Access Restricted</DialogTitle>
+            <DialogDescription>
+              <p className="mb-4">
+                {permissionError}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                <strong>Note:</strong> Calendar permissions are managed by your administrator in the Security Settings.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPermissionModal(false)}>
+              I Understand
             </Button>
           </DialogFooter>
         </DialogContent>

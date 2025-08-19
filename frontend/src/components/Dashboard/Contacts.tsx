@@ -7,7 +7,7 @@ import { Badge } from "../UI/badge";
 import "../../styles/Contacts.css";
 import "../../styles/Dashboard.css";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../UI/dropdown-menu";
-import { fetchAuthenticatedContacts, fetchUserContacts, deleteContactByIndex, buildEnterpriseUrl, getEnterpriseHeaders, fetchAllEmployees } from "../../utils/api";
+import { fetchUserContacts, deleteContactByIndex, buildEnterpriseUrl, getEnterpriseHeaders, fetchAllEmployees } from "../../utils/api";
 import { calculateUserPermissions, type UserWithPermissions } from "../../utils/permissions";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../UI/dialog";
 
@@ -286,17 +286,31 @@ const Contacts = () => {
     }
   };
   
-  // Fetch contacts from the API - using authenticated endpoints
+  // Fetch contacts from the API - using user-specific endpoint for employees
     const fetchContacts = async () => {
       try {
         setLoading(true);
-      console.log('🔄 Fetching authenticated contacts data from backend...');
+      console.log('🔄 Fetching user-specific contacts data from backend...');
       
-      // Optional role checking (safe and quick)
-      const userRole = getUserRole();
-      console.log('👤 User role:', userRole);
+      // Get current user ID from localStorage
+      const currentUserData = localStorage.getItem('userData');
+      let userId = '';
+      if (currentUserData) {
+        try {
+          const parsedData = JSON.parse(currentUserData);
+          userId = parsedData.id || parsedData.userId;
+        } catch (e) {
+          console.error('Failed to parse user data:', e);
+        }
+      }
       
-      const response = await fetchAuthenticatedContacts();
+      if (!userId) {
+        throw new Error('User ID not found. Please log in again.');
+      }
+      
+      console.log('👤 Fetching contacts for user ID:', userId);
+      
+      const response = await fetchUserContacts(userId);
       console.log('📊 Authenticated API response:', response);
       
       if (!response.success) {
@@ -342,20 +356,19 @@ const Contacts = () => {
       setContacts(allContacts);
       
       // Cache contacts for performance - using the state-based cache
-      const userData = localStorage.getItem('userData');
-      if (userData) {
+      if (currentUserData) {
         try {
-          const parsedData = JSON.parse(userData);
-          const userId = parsedData.id || parsedData.userId;
-          if (userId) {
+          const parsedData = JSON.parse(currentUserData);
+          const cacheUserId = parsedData.id || parsedData.userId;
+          if (cacheUserId) {
             const now = Date.now();
             const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-            contactsCache[userId] = {
+            contactsCache[cacheUserId] = {
               contacts: allContacts,
               timestamp: now,
               ttl: CACHE_TTL
             };
-            console.log('📦 Cached contacts for user:', userId, allContacts.length, 'contacts');
+            console.log('📦 Cached contacts for user:', cacheUserId, allContacts.length, 'contacts');
           }
         } catch (e) {
           console.warn('Failed to cache contacts:', e);
@@ -756,6 +769,33 @@ const Contacts = () => {
     setShowExportDropdown(false);
   };
 
+  const handleExportEmployeeContactsCSV = () => {
+    const employeeName = selectedEmployee ? 
+      `${selectedEmployee.firstName || selectedEmployee.name || ''} ${selectedEmployee.lastName || selectedEmployee.surname || ''}`.trim() : 
+      'Employee';
+    
+    const csvContent = [
+      ['Name', 'Company', 'Email', 'Phone', 'Added', 'How We Met', 'Source'],
+      ...selectedEmployeeContacts.map(contact => [
+        `${contact.name} ${contact.surname}`,
+        contact.company || 'N/A',
+        contact.email,
+        contact.phone,
+        formatDate(contact.createdAt),
+        contact.howWeMet || '',
+        'Exchanged'
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${employeeName.replace(/\s+/g, '_')}_contacts.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleManualRefresh = async () => {
     console.log('🔄 Manual refresh triggered...');
     if (isEnterpriseUser) {
@@ -773,14 +813,6 @@ const Contacts = () => {
           {isEnterpriseUser ? 'Enterprise Contacts' : 'My Contacts'}
         </h1>
         <div className="contacts-header-actions">
-          <Button 
-            variant="outline" 
-            onClick={handleManualRefresh}
-            style={{ marginRight: '0.5rem' }}
-          >
-            🔄 Refresh
-          </Button>
-
           {!isEnterpriseUser && (
           <div className="export-dropdown">
             <Button 
@@ -1075,7 +1107,7 @@ const Contacts = () => {
 
       {/* Employee Contacts Modal */}
       <Dialog open={contactsModalOpen} onOpenChange={setContactsModalOpen}>
-        <DialogContent className="max-w-none w-[98vw] max-h-[90vh]">
+        <DialogContent className="max-w-none w-[99.5vw] max-h-[98vh]">
           <DialogHeader>
             <DialogTitle>
               Contacts for {selectedEmployee ? 
@@ -1102,11 +1134,11 @@ const Contacts = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <div style={{ maxHeight: '60vh', overflowY: 'auto', overflowX: 'auto' }}>
+          <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
             {contactsLoading ? (
               <div className="loading-state">Loading contacts...</div>
             ) : selectedEmployeeContacts.length > 0 ? (
-              <div className="contacts-table-container" style={{ minWidth: '1200px' }}>
+              <div className="contacts-table-container" style={{ minWidth: '1600px' }}>
                 <table className="contacts-table">
                   <thead>
                     <tr>
@@ -1196,7 +1228,7 @@ const Contacts = () => {
                 </table>
               </div>
             ) : (
-              <div className="contacts-table-container" style={{ minWidth: '1200px' }}>
+              <div className="contacts-table-container" style={{ minWidth: '1600px' }}>
                 <table className="contacts-table">
                   <thead>
                     <tr>
@@ -1222,6 +1254,15 @@ const Contacts = () => {
           </div>
           
           <DialogFooter>
+            {selectedEmployeeContacts.length > 0 && hasPermission('exportContacts') && (
+              <Button 
+                variant="outline" 
+                onClick={handleExportEmployeeContactsCSV}
+                style={{ marginRight: '0.5rem' }}
+              >
+                📤 Export CSV
+              </Button>
+            )}
             <Button variant="outline" onClick={handleCloseContactsModal}>
               Close
             </Button>

@@ -23,16 +23,25 @@ export const VALID_BUSINESS_CARD_PERMISSIONS = [
 
 // Contact Permissions
 export const VALID_CONTACT_PERMISSIONS = [
-  'viewContacts',   // Can view contacts
-  'deleteContacts', // Can delete contacts
-  'shareContacts',  // Can share contacts
-  'exportContacts'  // Can export contact data
+  'viewContacts',      // Can view contacts
+  'deleteContacts',    // Can delete contacts
+  'shareContacts',     // Can share contacts
+  'exportContacts',    // Can export contact data
+  'manageAllContacts'  // Can manage all contacts in enterprise
 ] as const;
 
-// All valid permissions (combining both types)
+// Calendar/Meetings Permissions
+export const VALID_CALENDAR_PERMISSIONS = [
+  'viewCalendar',           // Can view calendar
+  'createMeetings',         // Can create meetings (implies full CRUD on their meetings)
+  'manageAllMeetings'       // Can manage all enterprise meetings
+] as const;
+
+// All valid permissions (combining all types)
 export const VALID_BACKEND_PERMISSIONS = [
   ...VALID_BUSINESS_CARD_PERMISSIONS,
-  ...VALID_CONTACT_PERMISSIONS
+  ...VALID_CONTACT_PERMISSIONS,
+  ...VALID_CALENDAR_PERMISSIONS
 ] as const;
 
 // Permission display names
@@ -49,7 +58,12 @@ export const PERMISSION_DISPLAY_NAMES = {
   'viewContacts': 'View Contacts',
   'deleteContacts': 'Delete Contacts',
   'shareContacts': 'Share Contacts',
-  'exportContacts': 'Export Contact Data'
+  'exportContacts': 'Export Contact Data',
+  'manageAllContacts': 'Manage All Contacts',
+  // Calendar/Meetings Permissions
+  'viewCalendar': 'View Calendar',
+  'createMeetings': 'Create Meetings',
+  'manageAllMeetings': 'Manage All Meetings'
 } as const;
 
 // Role to Permission Mapping - Using backend permission names
@@ -67,7 +81,12 @@ export const ROLE_PERMISSIONS = {
     'viewContacts',
     'deleteContacts',
     'shareContacts',
-    'exportContacts'
+    'exportContacts',
+    'manageAllContacts',
+    // Calendar/Meetings Permissions
+    'viewCalendar',
+    'createMeetings',
+    'manageAllMeetings'
   ],
   'Admin': [
     // Business Card Permissions
@@ -82,7 +101,12 @@ export const ROLE_PERMISSIONS = {
     'viewContacts',
     'deleteContacts',
     'shareContacts',
-    'exportContacts'
+    'exportContacts',
+    'manageAllContacts',
+    // Calendar/Meetings Permissions
+    'viewCalendar',
+    'createMeetings',
+    'manageAllMeetings'
   ],
   'Manager': [
     // Business Card Permissions
@@ -91,12 +115,18 @@ export const ROLE_PERMISSIONS = {
     'editCards',
     'deleteCards',
     'shareCards',
+    'manageAllCards',
     'exportCards',
     // Contact Permissions
     'viewContacts',
     'deleteContacts',
     'shareContacts',
-    'exportContacts'
+    'exportContacts',
+    'manageAllContacts',
+    // Calendar/Meetings Permissions
+    'viewCalendar',
+    'createMeetings',
+    'manageAllMeetings'
   ],
   'Lead': [
     // Business Card Permissions
@@ -105,12 +135,18 @@ export const ROLE_PERMISSIONS = {
     'editCards',
     'deleteCards',
     'shareCards',
+    'manageAllCards',
     'exportCards',
     // Contact Permissions
     'viewContacts',
     'deleteContacts',
     'shareContacts',
-    'exportContacts'
+    'exportContacts',
+    'manageAllContacts',
+    // Calendar/Meetings Permissions
+    'viewCalendar',
+    'createMeetings',
+    'manageAllMeetings'
   ],
   'Employee': [
     // Business Card Permissions
@@ -120,7 +156,10 @@ export const ROLE_PERMISSIONS = {
     // Contact Permissions
     'viewContacts',
     'deleteContacts',
-    'shareContacts'
+    'shareContacts',
+    // Calendar/Meetings Permissions
+    'viewCalendar',
+    'createMeetings'
   ],
   'Staff': [
     // Business Card Permissions
@@ -130,13 +169,17 @@ export const ROLE_PERMISSIONS = {
     // Contact Permissions
     'viewContacts',
     'deleteContacts',
-    'shareContacts'
+    'shareContacts',
+    // Calendar/Meetings Permissions
+    'viewCalendar',
+    'createMeetings'
   ]
 } as const;
 
 // Type definitions
 export type BusinessCardPermission = typeof VALID_BUSINESS_CARD_PERMISSIONS[number];
 export type ContactPermission = typeof VALID_CONTACT_PERMISSIONS[number];
+export type CalendarPermission = typeof VALID_CALENDAR_PERMISSIONS[number];
 export type AllPermission = typeof VALID_BACKEND_PERMISSIONS[number];
 export type UserRole = keyof typeof ROLE_PERMISSIONS;
 
@@ -153,6 +196,12 @@ export const PERMISSION_CATEGORIES = {
     description: 'Manage contact viewing, deletion, and sharing',
     permissions: VALID_CONTACT_PERMISSIONS,
     icon: '👥'
+  },
+  MEETINGS: {
+    name: 'Meetings',
+    description: 'Manage calendar viewing and meeting creation',
+    permissions: VALID_CALENDAR_PERMISSIONS,
+    icon: '📅'
   }
 } as const;
 
@@ -190,7 +239,7 @@ const normalizeRole = (role: string): UserRole => {
 export const calculateUserPermissions = (user: UserWithPermissions): AllPermission[] => {
   // For non-enterprise users, allow basic permissions
   if (user?.plan !== 'enterprise') {
-    return ['viewCards', 'shareCards', 'viewContacts', 'shareContacts'] as AllPermission[];
+    return ['viewCards', 'shareCards', 'viewContacts', 'shareContacts', 'viewCalendar'] as AllPermission[];
   }
   
   // For enterprise users, start with role-based permissions
@@ -236,7 +285,7 @@ export const showPermissionPopup = (user: UserWithPermissions): void => {
 export const hasBusinessCardPermission = (user: UserWithPermissions, permission: AllPermission): boolean => {
   // For non-enterprise users, allow basic access
   if (user?.plan !== 'enterprise') {
-    const basicPermissions = ['viewCards', 'shareCards', 'viewContacts', 'shareContacts'];
+    const basicPermissions = ['viewCards', 'shareCards', 'viewContacts', 'shareContacts', 'viewCalendar'];
     return basicPermissions.includes(permission);
   }
   
@@ -302,9 +351,14 @@ export const isContactPermission = (permission: string): permission is ContactPe
   return VALID_CONTACT_PERMISSIONS.includes(permission as ContactPermission);
 };
 
+export const isCalendarPermission = (permission: string): permission is CalendarPermission => {
+  return VALID_CALENDAR_PERMISSIONS.includes(permission as CalendarPermission);
+};
+
 export const getPermissionCategory = (permission: string): keyof typeof PERMISSION_CATEGORIES | null => {
   if (isBusinessCardPermission(permission)) return 'BUSINESS_CARDS';
   if (isContactPermission(permission)) return 'CONTACTS';
+  if (isCalendarPermission(permission)) return 'MEETINGS';
   return null;
 };
 
@@ -312,7 +366,8 @@ export const getPermissionCategory = (permission: string): keyof typeof PERMISSI
 export const getPermissionsByCategory = (permissions: AllPermission[]) => {
   const categorized = {
     BUSINESS_CARDS: [] as BusinessCardPermission[],
-    CONTACTS: [] as ContactPermission[]
+    CONTACTS: [] as ContactPermission[],
+    MEETINGS: [] as CalendarPermission[]
   };
 
   permissions.forEach(permission => {
@@ -320,6 +375,8 @@ export const getPermissionsByCategory = (permissions: AllPermission[]) => {
       categorized.BUSINESS_CARDS.push(permission);
     } else if (isContactPermission(permission)) {
       categorized.CONTACTS.push(permission);
+    } else if (isCalendarPermission(permission)) {
+      categorized.MEETINGS.push(permission);
     }
   });
 

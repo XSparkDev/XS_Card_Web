@@ -13,7 +13,7 @@ import RoleUsersModal from "./RoleUsersModal";
 import { sessionService } from "../../services/sessionService";
 // import { rolesService, Role } from "../../services/rolesService";
 import ActivityLogs from "./ActivityLogs";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, updateUserPermissions } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, updateUserPermissions, fetchUserPermissions } from "../../utils/api";
 import { calculateUserPermissions, ROLE_PERMISSIONS, type UserWithPermissions, type AllPermission, type IndividualPermissions } from "../../utils/permissions";
 
 // Import icons
@@ -34,6 +34,7 @@ interface EmployeeData {
   status?: string;
   lastActive?: string;
   individualPermissions?: IndividualPermissions; // Individual permission overrides from backend
+  calendarPermissions?: IndividualPermissions; // Calendar permission overrides from backend
   effectivePermissions?: AllPermission[]; // Calculated final permissions
 }
 
@@ -175,6 +176,22 @@ const Security = () => {
         individualPermissions: emp.individualPermissions
       })));
       
+      // Debug: Check if calendarPermissions are included in the response
+      console.log('📅 Checking for calendar permissions in employee data...');
+      employees.forEach(emp => {
+        if (emp.email === 'yy9prnU8sMWsjoQVaHiZSQrwKFJ2' || emp.id.toString() === 'yy9prnU8sMWsjoQVaHiZSQrwKFJ2') {
+          console.log('🔍 Found target user:', {
+            id: emp.id,
+            email: emp.email,
+            role: emp.role,
+            individualPermissions: emp.individualPermissions,
+            calendarPermissions: emp.calendarPermissions,
+            hasCalendarPermissions: 'calendarPermissions' in emp,
+            allKeys: Object.keys(emp)
+          });
+        }
+      });
+      
       // Count users by role
       const roleCounts: { [key: string]: number } = {};
       const roleDescriptions: { [key: string]: string } = {
@@ -189,6 +206,8 @@ const Security = () => {
         email: emp.email, 
         originalRole: emp.role 
       })));
+      
+
       
       // Count employees by normalized role
       employees.forEach((emp: EmployeeData) => {
@@ -262,22 +281,36 @@ const Security = () => {
 
   // Helper function to calculate effective permissions for a user
   const calculateEffectivePermissions = (employee: EmployeeData): AllPermission[] => {
+    // Merge individual permissions and calendar permissions
+    const mergedIndividualPermissions: IndividualPermissions = {
+      removed: [
+        ...(employee.individualPermissions?.removed || []),
+        ...(employee.calendarPermissions?.removed || [])
+      ],
+      added: [
+        ...(employee.individualPermissions?.added || []),
+        ...(employee.calendarPermissions?.added || [])
+      ]
+    };
+    
     const userWithPermissions: UserWithPermissions = {
       id: employee.id.toString(),
       email: employee.email,
       role: employee.role,
       plan: 'enterprise',
       isEmployee: true,
-      individualPermissions: employee.individualPermissions
+      individualPermissions: mergedIndividualPermissions
     };
     
     const effectivePermissions = calculateUserPermissions(userWithPermissions);
     
     // Debug logging for permission calculation
-    if (employee.individualPermissions && (employee.individualPermissions.added?.length || employee.individualPermissions.removed?.length)) {
+    if (mergedIndividualPermissions.added?.length || mergedIndividualPermissions.removed?.length) {
       console.log('🔍 Calculating effective permissions for:', employee.email, {
         role: employee.role,
         individualPermissions: employee.individualPermissions,
+        calendarPermissions: employee.calendarPermissions,
+        mergedIndividualPermissions,
         effectivePermissions
       });
     }
@@ -394,9 +427,39 @@ const Security = () => {
 
       if (result.success) {
         console.log('✅ Permissions saved successfully, reloading roles...');
-        // Reload roles to get updated data with recalculated permissions
+        
+        // For all permissions (including calendar), reload roles
         await loadRoles();
         console.log('✅ Roles reloaded, checking if state updated...');
+        
+        // Also refresh the specific user's permissions to ensure we have the latest data
+        const userPermissionsResult = await fetchUserPermissions(userId.toString());
+        if (userPermissionsResult.success) {
+          console.log('✅ User permissions refreshed:', userPermissionsResult.data);
+          
+          // Update the specific user in the roles state
+          setRoles(prevRoles => {
+            return prevRoles.map(role => ({
+              ...role,
+              users: role.users.map(user => {
+                if (user.id === userId) {
+                  console.log('🔄 Updating user in role:', user.email, 'with new permissions');
+                  return {
+                    ...user,
+                    individualPermissions: userPermissionsResult.data.individualPermissions,
+                    calendarPermissions: userPermissionsResult.data.calendarPermissions,
+                    effectivePermissions: calculateEffectivePermissions({
+                      ...user,
+                      individualPermissions: userPermissionsResult.data.individualPermissions,
+                      calendarPermissions: userPermissionsResult.data.calendarPermissions
+                    })
+                  };
+                }
+                return user;
+              })
+            }));
+          });
+        }
         
         // Force a re-render by updating a state variable
         setRoles(prevRoles => {

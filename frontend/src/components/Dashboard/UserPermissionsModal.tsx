@@ -171,6 +171,7 @@ const UserPermissionsModal = ({
   const [permissionStates, setPermissionStates] = useState<Record<string, PermissionState>>({});
   const [businessCardsExpanded, setBusinessCardsExpanded] = useState(true);
   const [contactsExpanded, setContactsExpanded] = useState(true);
+  const [meetingsExpanded, setMeetingsExpanded] = useState(true);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -395,6 +396,19 @@ const UserPermissionsModal = ({
                   onPermissionChange={updatePermissionState}
                   expanded={contactsExpanded}
                   onToggleExpanded={() => setContactsExpanded(!contactsExpanded)}
+                  disabled={saving}
+                />
+
+                {/* Meetings Permissions */}
+                <PermissionCategory
+                  category={PERMISSION_CATEGORIES.MEETINGS}
+                  permissions={PERMISSION_CATEGORIES.MEETINGS.permissions}
+                  rolePermissions={rolePermissions}
+                  permissionStates={permissionStates}
+                  effectivePermissions={effectivePermissions}
+                  onPermissionChange={updatePermissionState}
+                  expanded={meetingsExpanded}
+                  onToggleExpanded={() => setMeetingsExpanded(!meetingsExpanded)}
                   disabled={saving}
                 />
               </div>

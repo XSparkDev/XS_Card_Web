@@ -182,16 +182,17 @@ export interface ContactDeleteResponse {
 
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NTI3ODAzLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTU1Mjc4MDMsImV4cCI6MTc1NTUzMTQwMywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.NQ1JKfDAc7cpsXRAX2DvMQvhQbubbtPuAzEDr9I732Lrl33SGvT-B8Q94Q9fjHvp7M0t25FbQt0GH5STBg7kCn1QJBTI5mmV9Uxxm2D2_gYGTA3SvEQOcs-OGGGN8qRIwwoBVDSkYylM0PQ1eQi0r10RDkbmxbjA3imqgUsnD5rQtrDXXlEP0HZJOTaFv4KXub8hAWesSkejsNGshp2Z3dNH6tu60OiMngVD7GKG4UZcj51sI2hzR9XWBp74SeicDIoLnrDDrNUM2exQXybX1FZw802tQXe-Kx34H0u54z8PpjpBo7koJGtbi7ahoM60K5lAV1ppRu57f_9ooHD0Cg";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NjEzMTc3LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTU2MTMxNzcsImV4cCI6MTc1NTYxNjc3NywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.IDvzELUQt6AfpG_Jak69PQRsO4Zh3waHBhWYV6T-dqadaLu52BIhoI44fRCcjAAgbWeEp4pltCRLlXawIfyLEgysl1lHD8uIuNqatsy6BdMYOEnwiiyYzf5uu8nesdTLIyEApqUbeHN3SDL4LbzUh9mTeAIcDIAqSJb3mZ7ox1KL6tbGzzIVqd1mlYU5Ko2bhAGWTvKMvw4jnMrOYUGIZNKiSDwm8ocDuifKILh7iu-QF6iTtKp8jh5qNjrI91q9yNgqdtaH2MH-JNn4hSXw-MMkxmp0ke43FrkkEftbrhiMM1t6VFNdqO19if04laWPqFMfiR8hHFPidGzDBDgLAg";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 
 // Default user ID specifically for meetings and user-specific features
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
-//export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // employee
 //export const DEFAULT_USER_ID = "jbtu0MfGddPJLWnrHmHKCvFhm1j2"; // admin
- //export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // user2
+ //export const DEFAULT_USER_ID = "jHKXOoB9aiTMdOiTmuRckYdQFIL2"; // user1
+// export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // user2
+// export const DEFAULT_USER_ID = "X8zi8avT5OdPH0lbCq7q482fYOu1"; // manager
 export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // admin
 
 
@@ -323,6 +324,7 @@ export const ENDPOINTS = {
     // Individual Permissions endpoints
     ENTERPRISE_USER_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/permissions`,
     ENTERPRISE_USER_CONTACT_PERMISSIONS: `/enterprise/:enterpriseId/users/:userId/contact-permissions`,
+    ENTERPRISE_USER_CALENDAR_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/calendar-permissions`,
     
     // Team Management endpoints (management routes - no /api prefix)
     ENTERPRISE_DEPARTMENT_TEAMS: `/enterprise/:enterpriseId/departments/:departmentId/teams`,
@@ -1071,6 +1073,123 @@ export const updateUserContactPermissions = async (
   }
 };
 
+export const updateUserCalendarPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_USER_CALENDAR_PERMISSIONS.replace(':userId', userId), enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🌐 API Call - updateUserCalendarPermissions:', {
+      url,
+      userId,
+      individualPermissions,
+      enterpriseId
+    });
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ individualPermissions })
+    });
+    
+    console.log('📡 API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error:', response.status, errorText);
+      return {
+        success: false,
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ API Success:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ API Exception:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// Function to fetch a specific user's permissions (including calendar permissions)
+export const fetchUserPermissions = async (
+  userId: string,
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    // Try to get user data from the employees endpoint first
+    const employeesUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES, enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(employeesUrl, { headers });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const employees = data.employees || [];
+    
+    // Find the specific user
+    const user = employees.find((emp: any) => emp.id === userId || emp.userId === userId);
+    
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found'
+      };
+    }
+    
+    // Try to fetch calendar permissions separately if they're not in the employee data
+    let calendarPermissions = user.calendarPermissions || { removed: [], added: [] };
+    
+    // Since the backend might not have a GET endpoint for calendar permissions,
+    // we'll use empty defaults and rely on the employees endpoint to include them
+    // The calendar permissions should be included in the user.individualPermissions
+    // or in a separate calendarPermissions field if the backend supports it
+    
+    console.log('📅 Calendar permissions from employee data:', calendarPermissions);
+    console.log('📅 Individual permissions from employee data:', user.individualPermissions);
+    
+          // Check if calendar permissions are mixed in with individual permissions
+      if (user.individualPermissions) {
+        const calendarPerms = ['viewCalendar', 'createMeetings', 'manageAllMeetings'];
+        const calendarRemoved = user.individualPermissions.removed?.filter((p: string) => calendarPerms.includes(p)) || [];
+        const calendarAdded = user.individualPermissions.added?.filter((p: string) => calendarPerms.includes(p)) || [];
+        
+        if (calendarRemoved.length > 0 || calendarAdded.length > 0) {
+          calendarPermissions = {
+            removed: calendarRemoved,
+            added: calendarAdded
+          };
+          console.log('✅ Extracted calendar permissions from individual permissions:', calendarPermissions);
+        }
+      }
+    
+    return {
+      success: true,
+      data: {
+        user,
+        individualPermissions: user.individualPermissions || { removed: [], added: [] },
+        calendarPermissions: calendarPermissions
+      }
+    };
+  } catch (error) {
+    console.error('❌ Error fetching user permissions:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
 // 🚀 SCALABLE PERMISSION ROUTING SYSTEM
 // This automatically routes permissions to the correct endpoint based on permission names
 
@@ -1084,9 +1203,15 @@ export const PERMISSION_TYPES = {
   },
   CONTACTS: {
     prefix: 'Contacts', 
-    permissions: ['viewContacts', 'deleteContacts', 'shareContacts', 'exportContacts'],
+    permissions: ['viewContacts', 'deleteContacts', 'shareContacts', 'exportContacts', 'manageAllContacts'],
     endpoint: 'ENTERPRISE_USER_CONTACT_PERMISSIONS',
     apiFunction: 'updateUserContactPermissions'
+  },
+  CALENDAR: {
+    prefix: 'Calendar', 
+    permissions: ['viewCalendar', 'createMeetings', 'manageAllMeetings'],
+    endpoint: 'ENTERPRISE_USER_CALENDAR_PERMISSIONS',
+    apiFunction: 'updateUserCalendarPermissions'
   },
   // 🎯 FUTURE PERMISSION TYPES - Just add them here!
   TEAMS: {
@@ -1125,6 +1250,31 @@ export const detectPermissionType = (permissions: string[]): keyof typeof PERMIS
   return null;
 };
 
+// Helper function to check if permissions are all of the same type
+export const areAllPermissionsSameType = (permissions: string[]): boolean => {
+  if (permissions.length === 0) return true;
+  
+  const firstPermission = permissions[0];
+  let detectedType: keyof typeof PERMISSION_TYPES | null = null;
+  
+  for (const [type, config] of Object.entries(PERMISSION_TYPES)) {
+    if ((config as any).permissions.includes(firstPermission)) {
+      detectedType = type as keyof typeof PERMISSION_TYPES;
+      break;
+    }
+  }
+  
+  if (!detectedType) return false;
+  
+  // Check if all permissions are of the same type
+  return permissions.every(permission => {
+    const config = PERMISSION_TYPES[detectedType!];
+    return (config as any).permissions.includes(permission);
+  });
+};
+
+
+
 // Universal permission update function
 export const updateUserPermissions = async (
   userId: string,
@@ -1133,6 +1283,70 @@ export const updateUserPermissions = async (
 ): Promise<{ success: boolean; data?: any; message?: string }> => {
   try {
     const allPermissions = [...(individualPermissions.removed || []), ...(individualPermissions.added || [])];
+    
+    // Check if all permissions are of the same type
+    if (!areAllPermissionsSameType(allPermissions)) {
+      console.log('⚠️ Mixed permission types detected, separating by type...');
+      
+      // Separate permissions by type
+      const separatedPermissions: { [key: string]: { removed: string[], added: string[] } } = {};
+      
+      // Initialize all permission types
+      Object.keys(PERMISSION_TYPES).forEach(type => {
+        separatedPermissions[type] = { removed: [], added: [] };
+      });
+      
+      // Sort permissions into their respective types
+      allPermissions.forEach(permission => {
+        const permissionType = detectPermissionType([permission]);
+        if (permissionType) {
+          if (individualPermissions.removed?.includes(permission)) {
+            separatedPermissions[permissionType].removed.push(permission);
+          }
+          if (individualPermissions.added?.includes(permission)) {
+            separatedPermissions[permissionType].added.push(permission);
+          }
+        }
+      });
+      
+      // Process each permission type separately
+      const results = [];
+      for (const [type, perms] of Object.entries(separatedPermissions)) {
+        if (perms.removed.length > 0 || perms.added.length > 0) {
+          console.log(`🔄 Processing ${type} permissions:`, perms);
+          const result = await updateUserPermissions(userId, perms, enterpriseId);
+          results.push({ type, result });
+        }
+      }
+      
+      // Check if all results were successful
+      const allSuccessful = results.every(({ result }) => result.success);
+      const mockResults = results.filter(({ result }) => result.data?.mock);
+      
+      if (allSuccessful) {
+        if (mockResults.length > 0) {
+          return { 
+            success: true, 
+            message: 'Permissions updated successfully (some are mock implementations)',
+            data: { mock: true, results }
+          };
+        } else {
+          return { 
+            success: true, 
+            message: 'All permissions updated successfully',
+            data: { results }
+          };
+        }
+      } else {
+        const failedTypes = results.filter(({ result }) => !result.success).map(({ type }) => type);
+        return {
+          success: false,
+          message: `Failed to update permissions for: ${failedTypes.join(', ')}`
+        };
+      }
+    }
+    
+    // Single permission type - use existing logic
     const permissionType = detectPermissionType(allPermissions);
     
     if (!permissionType) {
@@ -1151,6 +1365,8 @@ export const updateUserPermissions = async (
         return await updateUserIndividualPermissions(userId, individualPermissions, enterpriseId);
       case 'CONTACTS':
         return await updateUserContactPermissions(userId, individualPermissions, enterpriseId);
+      case 'CALENDAR':
+        return await updateUserCalendarPermissions(userId, individualPermissions, enterpriseId);
       // 🎯 FUTURE CASES - Just add them here!
       case 'TEAMS':
         // return await updateUserTeamPermissions(userId, individualPermissions, enterpriseId);
