@@ -125,11 +125,11 @@ const Contacts = () => {
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, { headers });
-
+      
       if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       // Find the current user in the employees list
@@ -385,12 +385,12 @@ const Contacts = () => {
         setPermissionError("Authentication required. Please log in again to access your contacts.");
         setShowPermissionModal(true);
       } else {
-        setError(err.message || "Failed to fetch contacts");
+      setError(err.message || "Failed to fetch contacts");
       }
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
     
   // Initialize component based on user role
   useEffect(() => {

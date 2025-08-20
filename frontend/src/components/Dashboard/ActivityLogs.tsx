@@ -338,7 +338,7 @@ const ActivityLogs = () => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastTimestamp, setLastTimestamp] = useState<string | null>(null);
+  // Removed unused lastTimestamp state - using client-side pagination instead
   const [stats, setStats] = useState({
     totalCount: 0,
     successCount: 0,

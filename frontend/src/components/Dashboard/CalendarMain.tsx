@@ -157,7 +157,24 @@ const CalendarPage = () => {
 
   // Permission checking functions
   const hasPermission = (permission: string): boolean => {
-    return userPermissions.includes(permission);
+    // Check if the permission is in the effective permissions array
+    // If it's there, the user has the permission
+    const hasIt = userPermissions.includes(permission);
+    
+    // Additional safety check: if permissions are still loading, deny access
+    if (permissionsLoading) {
+      console.log(`🔐 Calendar hasPermission("${permission}") = false (permissions still loading)`, {
+        userPermissions,
+        permissionsLoading
+      });
+      return false;
+    }
+    
+    console.log(`🔐 Calendar hasPermission("${permission}") = ${hasIt}`, {
+      userPermissions,
+      permissionsLoading
+    });
+    return hasIt;
   };
 
 
@@ -170,7 +187,7 @@ const CalendarPage = () => {
       // Get user data from localStorage for basic info
       const userData = localStorage.getItem('userData');
       if (!userData) {
-        console.warn('No user data found, using default permissions');
+        console.warn('No user data found, blocking access for security');
         setUserPermissions([]);
         return;
       }
@@ -181,24 +198,38 @@ const CalendarPage = () => {
       console.log('👤 Fetching latest user data from backend for permissions...');
       console.log('🔍 User ID from localStorage:', userId);
 
-      // Use the new fetchUserPermissions API function that properly handles calendar permissions
-      const result = await fetchUserPermissions(userId);
+      // Try to fetch permissions with retry logic
+      let result;
+      let retryCount = 0;
+      const maxRetries = 2;
       
-      if (!result.success) {
-        console.warn('Failed to fetch user permissions from API, using localStorage data');
-        // Fallback to localStorage data
-        const user: UserWithPermissions = {
-          id: userId,
-          email: parsedData.email,
-          role: parsedData.role,
-          plan: 'enterprise',
-          isEmployee: true,
-          individualPermissions: parsedData.individualPermissions || { removed: [], added: [] }
-        };
-        const effectivePermissions = calculateUserPermissions(user);
-        setUserPermissions(effectivePermissions);
-        return;
+      while (retryCount <= maxRetries) {
+        try {
+          // Use the new fetchUserPermissions API function that properly handles calendar permissions
+          result = await fetchUserPermissions(userId);
+          if (result.success) {
+            break; // Success, exit retry loop
+          }
+        } catch (error) {
+          console.warn(`API call attempt ${retryCount + 1} failed:`, error);
+        }
+        
+        retryCount++;
+        if (retryCount <= maxRetries) {
+          console.log(`Retrying API call (${retryCount}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        }
       }
+      
+             if (!result.success) {
+         console.warn('Failed to fetch user permissions from API after retries, blocking access for security');
+         console.warn('This prevents using potentially stale localStorage data that could bypass security restrictions');
+         // For security, if API fails, deny all permissions rather than using potentially stale localStorage data
+         setUserPermissions([]);
+         setPermissionError("Unable to verify your permissions. Please refresh the page or contact your administrator.");
+         setShowPermissionModal(true);
+         return;
+       }
       
       console.log('✅ Fetched user permissions from API:', result.data);
       
@@ -231,13 +262,26 @@ const CalendarPage = () => {
       // Calculate effective permissions
       const effectivePermissions = calculateUserPermissions(user);
       console.log('✅ Effective permissions:', effectivePermissions);
+      console.log('🔍 createMeetings in effective permissions:', effectivePermissions.includes('createMeetings'));
 
-      setUserPermissions(effectivePermissions);
+             // Security check: Ensure we have valid permissions
+       if (!effectivePermissions || effectivePermissions.length === 0) {
+         console.warn('API returned empty permissions, blocking access for security');
+         setUserPermissions([]);
+         setPermissionError("Unable to verify your permissions. Please refresh the page or contact your administrator.");
+         setShowPermissionModal(true);
+         return;
+       }
+       
+       setUserPermissions(effectivePermissions);
+       console.log('✅ userPermissions state set to:', effectivePermissions);
+       console.log('🔍 createMeetings permission check:', effectivePermissions.includes('createMeetings'));
     } catch (error) {
       console.error('❌ Error fetching user permissions:', error);
       setUserPermissions([]);
     } finally {
       setPermissionsLoading(false);
+      console.log('✅ Permissions loading completed');
     }
   };
 
@@ -422,6 +466,7 @@ const CalendarPage = () => {
 
   // Load user permissions when component mounts
   useEffect(() => {
+    console.log('🔄 Calendar component mounted, loading permissions...');
     fetchUserPermissionsFromAPI();
   }, []);
 
@@ -714,6 +759,29 @@ const CalendarPage = () => {
 
   // Handle scheduling from distribution items
   const handleScheduleDistribution = (title: string, count: number) => {
+    console.log('🚨 SCHEDULE DISTRIBUTION BUTTON CLICKED!');
+    console.log('   - Current userPermissions:', userPermissions);
+    console.log('   - permissionsLoading:', permissionsLoading);
+    console.log('   - hasPermission("createMeetings"):', hasPermission('createMeetings'));
+    
+    // Check if permissions are still loading
+    if (permissionsLoading) {
+      console.log('⚠️ Permissions still loading, preventing modal opening');
+      setPermissionError("Permissions are still loading. Please wait a moment and try again.");
+      setShowPermissionModal(true);
+      return;
+    }
+    
+    // Check if user has permission to create meetings
+    if (!hasPermission('createMeetings')) {
+      console.log('❌ User does not have createMeetings permission - BLOCKING SCHEDULE MODAL OPENING');
+      setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
+      setShowPermissionModal(true);
+      return;
+    }
+    
+    console.log('✅ Permission check passed, opening schedule modal...');
+    
     // Pre-populate the form with distribution info
     const selectedDate = date || new Date();
     const today = new Date();
@@ -794,15 +862,31 @@ const CalendarPage = () => {
 
   // Update handleSubmitEvent to show success toast
   const handleSubmitEvent = async () => {
+    console.log('🚨 ATTEMPT TO CREATE MEETING DETECTED!');
+    console.log('   - Current userPermissions:', userPermissions);
+    console.log('   - permissionsLoading:', permissionsLoading);
+    console.log('   - hasPermission("createMeetings"):', hasPermission('createMeetings'));
+    
     // Reset any previous errors
     setApiError(null);
     
+    // Check if permissions are still loading
+    if (permissionsLoading) {
+      console.log('⚠️ Permissions still loading, preventing meeting creation');
+      setPermissionError("Permissions are still loading. Please wait a moment and try again.");
+      setShowPermissionModal(true);
+      return;
+    }
+    
     // Check if user has permission to create meetings
     if (!hasPermission('createMeetings')) {
+      console.log('❌ User does not have createMeetings permission - BLOCKING MEETING CREATION');
       setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
       setShowPermissionModal(true);
       return;
     }
+    
+    console.log('✅ Permission check passed, proceeding with meeting creation...');
     
     // Validate the form
     const errors = validateForm();
@@ -968,6 +1052,30 @@ const CalendarPage = () => {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            
+            console.log('🚨 NO EVENTS ADD EVENT BUTTON CLICKED!');
+            console.log('   - Current userPermissions:', userPermissions);
+            console.log('   - permissionsLoading:', permissionsLoading);
+            console.log('   - hasPermission("createMeetings"):', hasPermission('createMeetings'));
+            
+            // Check if permissions are still loading
+            if (permissionsLoading) {
+              console.log('⚠️ Permissions still loading, preventing modal opening');
+              setPermissionError("Permissions are still loading. Please wait a moment and try again.");
+              setShowPermissionModal(true);
+              return;
+            }
+            
+            // Check if user has permission to create meetings
+            if (!hasPermission('createMeetings')) {
+              console.log('❌ User does not have createMeetings permission - BLOCKING MODAL OPENING');
+              setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
+              setShowPermissionModal(true);
+              return;
+            }
+            
+            console.log('✅ Permission check passed, opening modal...');
+            
             // Reset form data
             const selectedDate = date || new Date();
             const today = new Date();
@@ -989,6 +1097,7 @@ const CalendarPage = () => {
             setAttendeeList([]);
             setIsAddEventOpen(true);
           }}
+          disabled={!hasPermission('createMeetings') || permissionsLoading}
         >
           <MdAdd className="icon-add" />
           <span>Add Event</span>
@@ -1019,6 +1128,7 @@ const CalendarPage = () => {
         variant="outline" 
         size="sm"
         onClick={() => handleScheduleDistribution(title, count)}
+        disabled={!hasPermission('createMeetings') || permissionsLoading}
       >
         Schedule
       </Button>
@@ -1064,12 +1174,28 @@ const CalendarPage = () => {
             e.preventDefault();
             e.stopPropagation();
             
+            console.log('🚨 ADD EVENT BUTTON CLICKED!');
+            console.log('   - Current userPermissions:', userPermissions);
+            console.log('   - permissionsLoading:', permissionsLoading);
+            console.log('   - hasPermission("createMeetings"):', hasPermission('createMeetings'));
+            
+            // Check if permissions are still loading
+            if (permissionsLoading) {
+              console.log('⚠️ Permissions still loading, preventing modal opening');
+              setPermissionError("Permissions are still loading. Please wait a moment and try again.");
+              setShowPermissionModal(true);
+              return;
+            }
+            
             // Check if user has permission to create meetings
             if (!hasPermission('createMeetings')) {
+              console.log('❌ User does not have createMeetings permission - BLOCKING MODAL OPENING');
               setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
               setShowPermissionModal(true);
               return;
             }
+            
+            console.log('✅ Permission check passed, opening modal...');
             
             // Reset form data when opening
             const selectedDate = date || new Date();
@@ -1092,7 +1218,7 @@ const CalendarPage = () => {
             setAttendeeList([]);
             setIsAddEventOpen(true);
           }}
-          disabled={isDateInPast(date || new Date()) || !hasPermission('createMeetings')}
+          disabled={isDateInPast(date || new Date()) || !hasPermission('createMeetings') || permissionsLoading}
           type="button"
         >
           <MdAdd className="icon-add" />

@@ -1,4 +1,4 @@
-import { buildEnterpriseUrl, getEnterpriseHeaders } from '../utils/api';
+import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS } from '../utils/api';
 
 // Types for Activity Logs
 export interface ActivityLog {
@@ -88,7 +88,7 @@ export class ActivityLogsService {
       if (filters.success !== undefined) params.append('success', filters.success.toString());
       if (filters.startAfter) params.append('startAfter', filters.startAfter);
 
-      const url = buildEnterpriseUrl(`/enterprise/${this.enterpriseId}/security/logs`);
+      const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_SECURITY_LOGS, this.enterpriseId);
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(`${url}?${params}`, { headers });

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Button } from "../UI/button";
 import { Badge } from "../UI/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../UI/card";
-import { FaUser, FaEdit, FaExclamationTriangle, FaSearch } from "react-icons/fa";
+import { FaUser, FaEdit, FaExclamationTriangle, FaSearch, FaUserCog } from "react-icons/fa";
 import "../../styles/Security.css";
 import "../../styles/DepartmentModal.css";
 import { type AllPermission, type IndividualPermissions } from "../../utils/permissions";
@@ -36,13 +36,15 @@ interface RoleUsersModalProps {
   onClose: () => void;
   role: RoleSummary | null;
   onEditUserPermissions: (user: EmployeeData) => void;
+  onManageUserRole: (user: EmployeeData) => void;
 }
 
 const RoleUsersModal: React.FC<RoleUsersModalProps> = ({
   isOpen,
   onClose,
   role,
-  onEditUserPermissions
+  onEditUserPermissions,
+  onManageUserRole
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -247,6 +249,18 @@ const RoleUsersModal: React.FC<RoleUsersModalProps> = ({
                           >
                             <FaEdit className="button-icon" />
                             Edit Permissions
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              onManageUserRole(user);
+                              onClose(); // Close the current modal when opening Role Management
+                            }}
+                            className="user-edit-button"
+                          >
+                            <FaUserCog className="button-icon" />
+                            Manage Role
                           </Button>
                         </div>
                       </div>

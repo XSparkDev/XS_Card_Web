@@ -21,6 +21,10 @@ interface EmployeeData {
     removed?: string[];
     added?: string[];
   };
+  calendarPermissions?: {
+    removed?: string[];
+    added?: string[];
+  };
   effectivePermissions?: string[];
 }
 
@@ -180,13 +184,25 @@ const UserPermissionsModal = ({
     if (user) {
       const states: Record<string, PermissionState> = {};
       
+      // Merge individual permissions and calendar permissions
+      const mergedPermissions = {
+        removed: [
+          ...(user.individualPermissions?.removed || []),
+          ...(user.calendarPermissions?.removed || [])
+        ],
+        added: [
+          ...(user.individualPermissions?.added || []),
+          ...(user.calendarPermissions?.added || [])
+        ]
+      };
+      
       VALID_BACKEND_PERMISSIONS.forEach(permission => {
-        // Check if permission is in removed array
-        if (user.individualPermissions?.removed?.includes(permission)) {
+        // Check if permission is in merged removed array
+        if (mergedPermissions.removed.includes(permission)) {
           states[permission] = 'remove';
         }
-        // Check if permission is in added array
-        else if (user.individualPermissions?.added?.includes(permission)) {
+        // Check if permission is in merged added array
+        else if (mergedPermissions.added.includes(permission)) {
           states[permission] = 'add';
         }
         // Default to inherit

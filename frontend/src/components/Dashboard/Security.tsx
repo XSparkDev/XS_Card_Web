@@ -9,6 +9,7 @@ import "../../styles/Security.css";
 import ManageRolesModal from "./ManageRolesModal";
 import UserPermissionsModal from "./UserPermissionsModal";
 import RoleUsersModal from "./RoleUsersModal";
+import RoleManagementModal from "./RoleManagementModal";
 // import { useSessionTimeoutContext } from "../../providers/SessionTimeoutProvider";
 import { sessionService } from "../../services/sessionService";
 // import { rolesService, Role } from "../../services/rolesService";
@@ -31,6 +32,7 @@ interface EmployeeData {
   email: string;
   role?: string;
   departmentName?: string;
+  departmentId?: string;
   status?: string;
   lastActive?: string;
   individualPermissions?: IndividualPermissions; // Individual permission overrides from backend
@@ -72,6 +74,10 @@ const Security = () => {
   const [savingPermissions, setSavingPermissions] = useState(false);
   const [usersModalOpen, setUsersModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<RoleSummary | null>(null);
+  
+  // Role management state
+  const [roleManagementModalOpen, setRoleManagementModalOpen] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState<EmployeeData | null>(null);
   
   // Normalize role names to standard values - moved to top for accessibility
   const normalizeRole = (role: string): string => {
@@ -413,6 +419,39 @@ const Security = () => {
     setSelectedUser(null);
   };
 
+  // Open role management modal for a user
+  const openRoleManagementModal = (user: EmployeeData) => {
+    setSelectedUserForRole(user);
+    setRoleManagementModalOpen(true);
+  };
+
+  // Close role management modal
+  const closeRoleManagementModal = () => {
+    setRoleManagementModalOpen(false);
+    setSelectedUserForRole(null);
+  };
+
+  // Handle role update completion
+  const handleRoleUpdated = async () => {
+    console.log('🔄 Role updated, refreshing roles data...');
+    await loadRoles();
+  };
+
+  // Get current user's role
+  const getCurrentUserRole = (): string => {
+    try {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsedData = JSON.parse(userData);
+        return parsedData.role || 'employee';
+      }
+      return 'employee';
+    } catch (error) {
+      console.error('Error getting current user role:', error);
+      return 'employee';
+    }
+  };
+
   // Save user permissions
   const saveUserPermissions = async (userId: number, individualPermissions: { removed: string[]; added: string[] }) => {
     setSavingPermissions(true);
@@ -440,7 +479,7 @@ const Security = () => {
           // Update the specific user in the roles state
           setRoles(prevRoles => {
             return prevRoles.map(role => ({
-              ...role,
+            ...role,
               users: role.users.map(user => {
                 if (user.id === userId) {
                   console.log('🔄 Updating user in role:', user.email, 'with new permissions');
@@ -493,10 +532,10 @@ const Security = () => {
             <FaShieldAlt className="mr-2" />
             Refresh Roles
           </Button>
-          <Button variant="outline" className="audit-button">
-            <FaShieldAlt className="mr-2" />
-            Security Audit
-          </Button>
+        <Button variant="outline" className="audit-button">
+          <FaShieldAlt className="mr-2" />
+          Security Audit
+        </Button>
         </div>
       </div>
       
@@ -857,6 +896,16 @@ const Security = () => {
         onClose={closeUsersModal}
         role={selectedRole}
         onEditUserPermissions={openPermissionsModal}
+        onManageUserRole={openRoleManagementModal}
+      />
+
+      {/* Role Management Modal */}
+      <RoleManagementModal
+        isOpen={roleManagementModalOpen}
+        onClose={closeRoleManagementModal}
+        user={selectedUserForRole}
+        currentUserRole={getCurrentUserRole()}
+        onRoleUpdated={handleRoleUpdated}
       />
     </div>
   );

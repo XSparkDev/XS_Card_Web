@@ -25,6 +25,8 @@ export interface Employee {
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;
+  individualPermissions?: { removed: string[]; added: string[] };
+  calendarPermissions?: { removed: string[]; added: string[] };
 }
 
 // Team Types
@@ -182,7 +184,7 @@ export interface ContactDeleteResponse {
 
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NjEzMTc3LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTU2MTMxNzcsImV4cCI6MTc1NTYxNjc3NywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.IDvzELUQt6AfpG_Jak69PQRsO4Zh3waHBhWYV6T-dqadaLu52BIhoI44fRCcjAAgbWeEp4pltCRLlXawIfyLEgysl1lHD8uIuNqatsy6BdMYOEnwiiyYzf5uu8nesdTLIyEApqUbeHN3SDL4LbzUh9mTeAIcDIAqSJb3mZ7ox1KL6tbGzzIVqd1mlYU5Ko2bhAGWTvKMvw4jnMrOYUGIZNKiSDwm8ocDuifKILh7iu-QF6iTtKp8jh5qNjrI91q9yNgqdtaH2MH-JNn4hSXw-MMkxmp0ke43FrkkEftbrhiMM1t6VFNdqO19if04laWPqFMfiR8hHFPidGzDBDgLAg";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjkyZTg4M2NjNDY2M2E2MzMyYWRhNmJjMWU0N2YzZmY1ZTRjOGI1ZDciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NjQxNTA3LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTU2NDE1MDcsImV4cCI6MTc1NTY0NTEwNywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.gRMp2XD5sDE7N9TsHOUuVZiXbB2zR-9Gla2kgWqu2BHwX4WxRLShZQhmq98Ze1m6HdTyxM-Qu9ojj64hRs2xWAnRHVp040rI_jdScYI_0UP4tA4FNJDVvD71rL-WptGW6PT4lnyQD_PzVB8VkHGXS1rJATbHMsLORfckDGlAK0vFCOwTIy6mjsFCgqK4GyioeqMn4XKSKmKzltEjegcGuSZ_fLdtdl5qd420YxcePQ1k7vlEV2MOZCesWzdb7Zcso2vAFfIvHHU2ClD1BJYKWasb9M9h-MUPbmUQ9iCK2EnBeyOEsD60OfdnkZCoA-YdZ1F8mLarm-cwf_0BHugsFw";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -191,7 +193,7 @@ export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
 //export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
 //export const DEFAULT_USER_ID = "jbtu0MfGddPJLWnrHmHKCvFhm1j2"; // admin
  //export const DEFAULT_USER_ID = "jHKXOoB9aiTMdOiTmuRckYdQFIL2"; // user1
-// export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // user2
+//export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // user2
 // export const DEFAULT_USER_ID = "X8zi8avT5OdPH0lbCq7q482fYOu1"; // manager
 export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // admin
 
@@ -325,6 +327,9 @@ export const ENDPOINTS = {
     ENTERPRISE_USER_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/permissions`,
     ENTERPRISE_USER_CONTACT_PERMISSIONS: `/enterprise/:enterpriseId/users/:userId/contact-permissions`,
     ENTERPRISE_USER_CALENDAR_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/calendar-permissions`,
+    
+    // Role Management endpoints
+    ENTERPRISE_EMPLOYEE_ROLE_UPDATE: `/enterprise/:enterpriseId/departments/:departmentId/employees/:employeeId/role`,
     
     // Team Management endpoints (management routes - no /api prefix)
     ENTERPRISE_DEPARTMENT_TEAMS: `/enterprise/:enterpriseId/departments/:departmentId/teams`,
@@ -1388,6 +1393,81 @@ export const updateUserPermissions = async (
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// Role Management Functions
+export const updateEmployeeRole = async (
+  employeeId: string,
+  departmentId: string,
+  newRole: string,
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    console.log('🔄 Updating employee role:', { employeeId, departmentId, newRole, enterpriseId });
+    
+    // Validate role
+    const validRoles = ['employee', 'manager', 'director', 'admin'];
+    if (!validRoles.includes(newRole)) {
+      return {
+        success: false,
+        message: `Invalid role. Must be one of: ${validRoles.join(', ')}`
+      };
+    }
+    
+    // Build URL with all required parameters
+    const url = buildEnterpriseUrl(
+      ENDPOINTS.ENTERPRISE_EMPLOYEE_ROLE_UPDATE
+        .replace(':departmentId', departmentId)
+        .replace(':employeeId', employeeId),
+      enterpriseId
+    );
+    
+    const headers = getEnterpriseHeaders();
+    
+    console.log('📡 Making role update request to:', url);
+    console.log('📦 Request payload:', { role: newRole });
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ role: newRole })
+    });
+    
+    console.log('📥 Response status:', response.status);
+    
+    if (!response.ok) {
+      let errorMessage = 'Failed to update employee role';
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        errorMessage = `${errorMessage}: ${response.statusText}`;
+      }
+      
+      console.error('❌ Role update failed:', errorMessage);
+      return {
+        success: false,
+        message: errorMessage
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ Role update successful:', result);
+    
+    return {
+      success: true,
+      data: result.data,
+      message: result.message || 'Employee role updated successfully'
+    };
+    
+  } catch (error) {
+    console.error('❌ Error updating employee role:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to update employee role'
     };
   }
 };
