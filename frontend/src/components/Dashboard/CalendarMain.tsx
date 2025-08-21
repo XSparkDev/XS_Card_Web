@@ -16,7 +16,7 @@ import {
   MdCheckCircle
 } from "react-icons/md";
 import '../../styles/Calendar.css';
-import { ENDPOINTS, buildUrl, DEFAULT_USER_ID, getEnterpriseHeaders, updateUserPermissions, fetchUserPermissions } from "../../utils/api";
+import { ENDPOINTS, buildUrl, DEFAULT_USER_ID, getEnterpriseHeaders, fetchUserPermissions } from "../../utils/api";
 import { calculateUserPermissions, type UserWithPermissions } from "../../utils/permissions";
 
 // Import UI components
@@ -221,15 +221,16 @@ const CalendarPage = () => {
         }
       }
       
-             if (!result.success) {
-         console.warn('Failed to fetch user permissions from API after retries, blocking access for security');
-         console.warn('This prevents using potentially stale localStorage data that could bypass security restrictions');
-         // For security, if API fails, deny all permissions rather than using potentially stale localStorage data
-         setUserPermissions([]);
-         setPermissionError("Unable to verify your permissions. Please refresh the page or contact your administrator.");
-         setShowPermissionModal(true);
-         return;
-       }
+      // Check if we have a successful result after all retries
+      if (!result || !result.success) {
+        console.warn('Failed to fetch user permissions from API after retries, blocking access for security');
+        console.warn('This prevents using potentially stale localStorage data that could bypass security restrictions');
+        // For security, if API fails, deny all permissions rather than using potentially stale localStorage data
+        setUserPermissions([]);
+        setPermissionError("Unable to verify your permissions. Please refresh the page or contact your administrator.");
+        setShowPermissionModal(true);
+        return;
+      }
       
       console.log('✅ Fetched user permissions from API:', result.data);
       
@@ -264,18 +265,18 @@ const CalendarPage = () => {
       console.log('✅ Effective permissions:', effectivePermissions);
       console.log('🔍 createMeetings in effective permissions:', effectivePermissions.includes('createMeetings'));
 
-             // Security check: Ensure we have valid permissions
-       if (!effectivePermissions || effectivePermissions.length === 0) {
-         console.warn('API returned empty permissions, blocking access for security');
-         setUserPermissions([]);
-         setPermissionError("Unable to verify your permissions. Please refresh the page or contact your administrator.");
-         setShowPermissionModal(true);
-         return;
-       }
-       
-       setUserPermissions(effectivePermissions);
-       console.log('✅ userPermissions state set to:', effectivePermissions);
-       console.log('🔍 createMeetings permission check:', effectivePermissions.includes('createMeetings'));
+      // Security check: Ensure we have valid permissions
+      if (!effectivePermissions || effectivePermissions.length === 0) {
+        console.warn('API returned empty permissions, blocking access for security');
+        setUserPermissions([]);
+        setPermissionError("Unable to verify your permissions. Please refresh the page or contact your administrator.");
+        setShowPermissionModal(true);
+        return;
+      }
+      
+      setUserPermissions(effectivePermissions);
+      console.log('✅ userPermissions state set to:', effectivePermissions);
+      console.log('🔍 createMeetings permission check:', effectivePermissions.includes('createMeetings'));
     } catch (error) {
       console.error('❌ Error fetching user permissions:', error);
       setUserPermissions([]);
