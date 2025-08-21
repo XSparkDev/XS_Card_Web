@@ -125,7 +125,7 @@ const Contacts = () => {
       const headers = getEnterpriseHeaders();
       
       const response = await fetch(url, { headers });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
@@ -387,10 +387,10 @@ const Contacts = () => {
       } else {
       setError(err.message || "Failed to fetch contacts");
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+      } finally {
+        setLoading(false);
+      }
+    };
     
   // Initialize component based on user role
   useEffect(() => {
