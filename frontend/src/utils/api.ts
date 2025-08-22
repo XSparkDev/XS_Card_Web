@@ -184,7 +184,7 @@ export interface ContactDeleteResponse {
 
 
 // Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1NjczMTc4LCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTU2NzMxNzgsImV4cCI6MTc1NTY3Njc3OCwiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.bc3DSQospF-qLq3XigYgM7JUn9iKEHVFuh1Olnt7q0z1n3ohUafRGHL7np8T9O82yCpeGfS6mLnmxwuK1KiHQs1g4uXNc-BafqWkSQmublmgZEP3Hc3nV4Jqs9fHP6JqoODE_KllAVQkZN9kbKgTpGXurZVrMfmNoWl4iE6RouhMeg-B6Lgu_uolMivf5abi0ufNTWPeqthjk9ydktQNjDVdsXrlhqfrYA1m5uSRs_9qbC-NtGhvYbSsVDLKdj5unaBJ522uGSz6pJ8Wb9IkSVKRyY6StaUXiPk-lbe4Fn1K8-7rCPo2KNVgjQM-b4TeWU_5ji6ij8i5D5Ol8XWu3A";
+export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjU3YmZiMmExMWRkZmZjMGFkMmU2ODE0YzY4NzYzYjhjNjg3NTgxZDgiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU1ODgzNDkzLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTU4ODM0OTMsImV4cCI6MTc1NTg4NzA5MywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.RQaZNY5HP0_hb7b_ztV6_WCs4Lr9xtBiYs0RDjmyMAhWdZKLhxIToDFAWWS5oIK8V-D-Zv4-Sn5hO0mBathIWwYmUCkEkDSuOT95S48-y6Gde4V4kgF75ePBaFhZMNpYdODUVIK_zGVe6vjZJOlqdbqK30Fcgrg21JTYXdiDpjqaFRq7RB_WfoNVJLP0keV-wYOu9Wds2isF_2-gW-Of3MBi-iugNmcQyYld7tQ9rk43B_TbLA3HPPMD2kvDUVi59RkKFt9n-vGwcyi3JtLgEMmBRvnxeBUpt922U7LjR_CEA6RiVGU284M7xwA5hEmvVEs51LjgyuzlgBCCvyMgEw";
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -302,15 +302,15 @@ export const ENDPOINTS = {
     BILLING_INVOICE_BY_ID: '/billing/invoices/:id', // NEW: Individual invoice operations
     BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
 
-    // Enterprise-related endpoints (management routes - no /api prefix)
-    ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,
-    ENTERPRISE_DEPARTMENTS: `/enterprise/:enterpriseId/departments`,
-    ENTERPRISE_EMPLOYEES: `/enterprise/:enterpriseId/employees`,
-    ENTERPRISE_CREATE_DEPARTMENT: `/enterprise/:enterpriseId/departments`,
-    ENTERPRISE_DELETE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
-    ENTERPRISE_UPDATE_DEPARTMENT: `/enterprise/:enterpriseId/departments/:departmentId`,
-    GET_ENTERPRISE: `/enterprise/:enterpriseId`,
-    UPDATE_ENTERPRISE: `/enterprise/:enterpriseId`,   
+    // Enterprise-related endpoints (management routes - with /api prefix)
+    ENTERPRISE_CARDS: `/api/enterprise/:enterpriseId/cards`,
+    ENTERPRISE_DEPARTMENTS: `/api/enterprise/:enterpriseId/departments`,
+    ENTERPRISE_EMPLOYEES: `/api/enterprise/:enterpriseId/employees`,
+    ENTERPRISE_CREATE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments`,
+    ENTERPRISE_DELETE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments/:departmentId`,
+    ENTERPRISE_UPDATE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments/:departmentId`,
+    GET_ENTERPRISE: `/api/enterprise/:enterpriseId`,
+    UPDATE_ENTERPRISE: `/api/enterprise/:enterpriseId`,   
     // API routes (with /api prefix)
     ENTERPRISE_CONTACTS: `/api/enterprise/:enterpriseId/contacts/details`,
     ENTERPRISE_DEPARTMENT_CONTACTS: `/api/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
@@ -325,18 +325,18 @@ export const ENDPOINTS = {
     
     // Individual Permissions endpoints
     ENTERPRISE_USER_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/permissions`,
-    ENTERPRISE_USER_CONTACT_PERMISSIONS: `/enterprise/:enterpriseId/users/:userId/contact-permissions`,
+    ENTERPRISE_USER_CONTACT_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/contact-permissions`,
     ENTERPRISE_USER_CALENDAR_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/calendar-permissions`,
     
     // Role Management endpoints
-    ENTERPRISE_EMPLOYEE_ROLE_UPDATE: `/enterprise/:enterpriseId/departments/:departmentId/employees/:employeeId/role`,
+    ENTERPRISE_EMPLOYEE_ROLE_UPDATE: `/api/enterprise/:enterpriseId/departments/:departmentId/employees/:employeeId/role`,
     
-    // Team Management endpoints (management routes - no /api prefix)
-    ENTERPRISE_DEPARTMENT_TEAMS: `/enterprise/:enterpriseId/departments/:departmentId/teams`,
-    ENTERPRISE_DEPARTMENT_TEAM_BY_ID: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId`,
-    ENTERPRISE_DEPARTMENT_TEAM_MEMBERS: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members`,
-    ENTERPRISE_DEPARTMENT_TEAM_ADD_MEMBER: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
-    ENTERPRISE_DEPARTMENT_TEAM_REMOVE_MEMBER: `/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
+    // Team Management endpoints (management routes - with /api prefix)
+    ENTERPRISE_DEPARTMENT_TEAMS: `/api/enterprise/:enterpriseId/departments/:departmentId/teams`,
+    ENTERPRISE_DEPARTMENT_TEAM_BY_ID: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId`,
+    ENTERPRISE_DEPARTMENT_TEAM_MEMBERS: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members`,
+    ENTERPRISE_DEPARTMENT_TEAM_ADD_MEMBER: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
+    ENTERPRISE_DEPARTMENT_TEAM_REMOVE_MEMBER: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
     
     // Bulk Operations endpoints
     BULK_DEACTIVATE: `/bulk-deactivate`,

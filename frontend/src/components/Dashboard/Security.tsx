@@ -715,60 +715,7 @@ const Security = () => {
             </Card>
           </div>
           
-          {/* Password Policy */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Password Policy</CardTitle>
-              <CardDescription>Configure password requirements</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="password-policy-grid">
-                <div className="password-policy-item">
-                  <label className="password-policy-label">Password Strength</label>
-                  <div className="password-policy-select">
-                    <select>
-                      <option>Strong</option>
-                      <option>Medium</option>
-                      <option>Weak</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="password-policy-item">
-                  <label className="password-policy-label">Session Timeout (minutes)</label>
-                  <div className="password-policy-select">
-                    <select>
-                      <option>30 minutes</option>
-                      <option>60 minutes</option>
-                      <option>120 minutes</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="password-requirements mt-6">
-                <h3 className="password-requirements-title">Password Requirements:</h3>
-                <ul className="password-requirements-list">
-                  <li className="password-requirement-item">
-                    <span className="password-requirement-check">✓</span>
-                    Minimum 8 characters
-                  </li>
-                  <li className="password-requirement-item">
-                    <span className="password-requirement-check">✓</span>
-                    At least one uppercase letter
-                  </li>
-                  <li className="password-requirement-item">
-                    <span className="password-requirement-check">✓</span>
-                    At least one number
-                  </li>
-                  <li className="password-requirement-item">
-                    <span className="password-requirement-check">✓</span>
-                    At least one special character
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+
         </TabsContent>
         
         {/* 

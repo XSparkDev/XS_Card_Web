@@ -117,11 +117,34 @@ const Settings = () => {
     mentions: true,
     teamUpdates: true
   });
-  const [appearanceSettings, setAppearanceSettings] = useState({
-    theme: "system",
-    fontSize: "medium",
-    compactView: false
-  });  // Billing-related state variables
+
+
+  // Color selector state (same as BusinessCards)
+  const [selectedTheme, setSelectedTheme] = useState(enterpriseData.colorScheme || '#1B2B5B');
+  const [customColor, setCustomColor] = useState(enterpriseData.colorScheme || '#1B2B5B');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // Color themes (same as BusinessCards)
+  const themes = [
+    '#1B2B5B', // Navy Blue
+    '#E63946', // Red
+    '#2A9D8F', // Teal
+    '#E9C46A', // Yellow
+    '#F4A261', // Orange
+    '#6D597A', // Purple
+    '#355070', // Dark Blue
+    '#B56576', // Pink
+    '#4DAA57', // Green
+    '#264653', // Dark Teal
+    '#FF4B6E'  // Pinkish red
+  ];
+
+  // Update enterprise data when theme changes
+  useEffect(() => {
+    setEnterpriseData(prev => ({ ...prev, colorScheme: selectedTheme }));
+  }, [selectedTheme]);
+
+  // Billing-related state variables
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionStatus | null>(null);
   const [billingLogs, setBillingLogs] = useState<BillingLog[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -263,6 +286,51 @@ const Settings = () => {
     }
   };
 
+  // Handle logo upload (using same pattern as BusinessCards)
+  const handleLogoUpload = (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file (PNG, JPG, JPEG)');
+      return;
+    }
+
+    // Validate file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size must be less than 2MB');
+      return;
+    }
+
+    // For preview, convert to Data URL (same as BusinessCards)
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setEnterpriseData(prev => ({ ...prev, logoUrl: result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle logo removal (using same pattern as BusinessCards)
+  const handleLogoRemove = () => {
+    if (!enterpriseData.logoUrl) return;
+    
+    if (!window.confirm('Are you sure you want to remove the logo?')) {
+      return;
+    }
+
+    // Update local state immediately for UI responsiveness (same as BusinessCards)
+    setEnterpriseData(prev => ({ ...prev, logoUrl: '' }));
+  };
+
+  // Handle file input change
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleLogoUpload(file);
+    }
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
+  };
+
   const handleSaveEnterprise = async () => {
     try {
       setIsSaving(true);
@@ -273,10 +341,15 @@ const Settings = () => {
       const url = buildEnterpriseUrl(ENDPOINTS.UPDATE_ENTERPRISE.replace(':enterpriseId', enterpriseId));
       const headers = getEnterpriseHeaders();
       
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
+      // Check if logoUrl is a data URL (newly uploaded image)
+      const isDataUrl = enterpriseData.logoUrl?.startsWith('data:image/');
+      
+      let requestBody;
+      
+      if (isDataUrl) {
+        // If it's a data URL, we need to convert it back to a file and use FormData
+        // For now, we'll save it as a data URL (same as BusinessCards approach)
+        requestBody = JSON.stringify({
           name: enterpriseData.name,
           description: enterpriseData.description,
           industry: enterpriseData.industry,
@@ -285,7 +358,25 @@ const Settings = () => {
           colorScheme: enterpriseData.colorScheme,
           companySize: enterpriseData.companySize,
           address: enterpriseData.address
-        })
+        });
+      } else {
+        // Regular JSON data
+        requestBody = JSON.stringify({
+          name: enterpriseData.name,
+          description: enterpriseData.description,
+          industry: enterpriseData.industry,
+          website: enterpriseData.website,
+          logoUrl: enterpriseData.logoUrl,
+          colorScheme: enterpriseData.colorScheme,
+          companySize: enterpriseData.companySize,
+          address: enterpriseData.address
+        });
+      }
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: requestBody
       });
       
       if (!response.ok) {
@@ -1034,10 +1125,7 @@ const Settings = () => {
             <FaBell className="tab-icon" />
             <span className="tab-text">Notifications</span>
           </TabsTrigger>
-          <TabsTrigger value="appearance" className="settings-tab">
-            <FaPalette className="tab-icon" />
-            <span className="tab-text">Appearance</span>
-          </TabsTrigger>
+
         </TabsList>
         
         <TabsContent value="profile" className="settings-tab-content">
@@ -1188,41 +1276,147 @@ const Settings = () => {
                   </div>
                 </div>
                 
-                <div className="branding-section mt-6">
+                <div className="branding-section">
                   <h3 className="section-title">Organization Branding</h3>
                   <div className="branding-container">
-                    <div className="logo-placeholder">
-                      {enterpriseData.logoUrl ? (
-                        <img src={enterpriseData.logoUrl} alt="Organization logo" className="logo-image" />
-                      ) : (
-                        <span>{enterpriseData.name ? enterpriseData.name.substring(0, 2).toUpperCase() : 'XS'}</span>
-                      )}
+                    <div className="logo-section">
+                      <div className="image-upload-item">
+                        <div 
+                          className="image-upload-preview clickable"
+                          onClick={() => document.getElementById('logo-upload')?.click()}
+                        >
+                          {enterpriseData.logoUrl ? (
+                            <img src={enterpriseData.logoUrl} alt="Organization logo" />
+                          ) : (
+                            <div className="image-placeholder">
+                              <span>📁</span>
+                              <span>Upload Logo</span>
+                            </div>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          id="logo-upload"
+                          accept="image/*"
+                          onChange={handleFileInputChange}
+                          style={{ display: 'none' }}
+                        />
+                        {enterpriseData.logoUrl && (
+                          <button 
+                            className="remove-image-btn"
+                            onClick={handleLogoRemove}
+                            title="Remove logo"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      <div className="logo-actions">
+                        <p className="logo-hint">
+                          <strong>Recommended:</strong> 512x512px PNG or JPG<br />
+                          Maximum file size: 2MB
+                        </p>
+                      </div>
+                      
+                      {/* Brand Color Selection */}
+                      <div className="theme-selection">
+                        <h3 className="section-title">Brand Color</h3>
+                        <div className="theme-colors">
+                          {themes.map(color => (
+                            <button
+                              key={color}
+                              className={`theme-color ${selectedTheme === color ? 'selected' : ''}`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => setSelectedTheme(color)}
+                            />
+                          ))}
+                        </div>
+                        <div className="color-picker-section">
+                          <button
+                            className="color-picker-btn"
+                            onClick={() => setShowColorPicker(!showColorPicker)}
+                          >
+                            <FaPalette />
+                            Custom Color
+                          </button>
+                          {showColorPicker && (
+                            <div className="color-picker-container">
+                              <input
+                                type="color"
+                                value={customColor}
+                                onChange={(e) => {
+                                  setCustomColor(e.target.value);
+                                  setSelectedTheme(e.target.value);
+                                }}
+                                className="color-picker-input"
+                              />
+                              <input
+                                type="text"
+                                value={customColor}
+                                onChange={(e) => {
+                                  setCustomColor(e.target.value);
+                                  setSelectedTheme(e.target.value);
+                                }}
+                                placeholder="#FFFFFF"
+                                className="hex-input"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="logo-actions">
-                      <Button size="sm" variant="outline" className="upload-button">Upload Logo</Button>
-                      <p className="logo-hint">Recommended size: 512x512px</p>
-                    </div>
-                  </div>
-                  
-                  <div className="form-group mt-4">
-                    <Label htmlFor="colorScheme">Brand Color</Label>
-                    <div className="flex items-center gap-4">
-                      <Input 
-                        id="colorScheme" 
-                        name="colorScheme" 
-                        type="color" 
-                        value={enterpriseData.colorScheme} 
-                        onChange={handleEnterpriseChange} 
-                        className="w-20 h-10"
-                      />
-                      <Input 
-                        value={enterpriseData.colorScheme} 
-                        onChange={handleEnterpriseChange}
-                        name="colorScheme"
-                        placeholder="#1B2B5B"
-                        className="flex-1"
-                      />
-                    </div>
+                    
+                    <div className="branding-details">
+                      <div className="branding-preview">
+                        <h4 className="preview-title">Business Card Preview</h4>
+                        <div 
+                          className="preview-card"
+                          style={{
+                            '--brand-color': enterpriseData.colorScheme,
+                            '--brand-color-secondary': enterpriseData.colorScheme
+                          } as React.CSSProperties}
+                        >
+                          <div 
+                            className="preview-card-header"
+                            style={{
+                              backgroundImage: enterpriseData.logoUrl ? `url(${enterpriseData.logoUrl})` : 'none',
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat'
+                            }}
+                          >
+                            <div className="preview-company-info">
+                              {enterpriseData.name || 'Your Company'}
+                            </div>
+                          </div>
+                          
+                          <div className="preview-card-body">
+                            <div className="preview-contact-info">
+                              <div className="preview-contact-name">John Doe</div>
+                              <div className="preview-contact-title">Senior Manager</div>
+                              {enterpriseData.name && (
+                                <div className="preview-company-name">{enterpriseData.name}</div>
+                              )}
+                            </div>
+                            
+                            <div className="preview-contact-details">
+                              <div className="preview-contact-item">
+                                <div className="preview-contact-icon">📧</div>
+                                <span className="preview-contact-text">john.doe@company.com</span>
+                              </div>
+                              <div className="preview-contact-item">
+                                <div className="preview-contact-icon">📱</div>
+                                <span className="preview-contact-text">+27 82 123 4567</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="preview-qr-section">
+                            <div className="preview-qr-code">Send link</div>
+                          </div>
+                        </div>
+                                             </div>
+                     </div>
                   </div>
                 </div>
               </CardContent>
@@ -1362,69 +1556,7 @@ const Settings = () => {
             </CardFooter>
           </Card>
         </TabsContent>
-        
-        <TabsContent value="appearance" className="settings-tab-content">
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance Settings</CardTitle>
-              <CardDescription>Customize the look and feel of your dashboard</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="appearance-settings">
-                <div className="theme-section">
-                  <h3 className="section-title">Theme</h3>
-                  <div className="theme-options">
-                    <div className={`theme-option ${appearanceSettings.theme === 'light' ? 'selected' : ''}`}
-                         onClick={() => setAppearanceSettings({...appearanceSettings, theme: 'light'})}>
-                      <div className="theme-preview light-theme"></div>
-                      <p className="theme-label">Light</p>
-                    </div>
-                    <div className={`theme-option ${appearanceSettings.theme === 'dark' ? 'selected' : ''}`}
-                         onClick={() => setAppearanceSettings({...appearanceSettings, theme: 'dark'})}>
-                      <div className="theme-preview dark-theme"></div>
-                      <p className="theme-label">Dark</p>
-                    </div>
-                    <div className={`theme-option ${appearanceSettings.theme === 'system' ? 'selected' : ''}`}
-                         onClick={() => setAppearanceSettings({...appearanceSettings, theme: 'system'})}>
-                      <div className="theme-preview system-theme"></div>
-                      <p className="theme-label">System</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="font-size-section">
-                  <h3 className="section-title">Font Size</h3>
-                  <Select 
-                    options={[
-                      { value: "small", label: "Small" },
-                      { value: "medium", label: "Medium" },
-                      { value: "large", label: "Large" }
-                    ]}
-                    value={appearanceSettings.fontSize}
-                    onChange={(e) => setAppearanceSettings({...appearanceSettings, fontSize: e.target.value})}
-                    className="font-size-select"
-                  />
-                </div>
-                
-                <div className="compact-view-section">
-                  <div className="view-info">
-                    <h3 className="section-title">Compact View</h3>
-                    <p className="view-description">Display more content with less spacing</p>
-                  </div>
-                  <Switch 
-                    checked={appearanceSettings.compactView} 
-                    onChange={() => setAppearanceSettings(
-                      {...appearanceSettings, compactView: !appearanceSettings.compactView}
-                    )}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Save Preferences</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+
       </Tabs>
       
       {/* Modal Components */}
