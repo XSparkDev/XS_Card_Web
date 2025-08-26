@@ -3,7 +3,16 @@ import { FaSearch, FaQrcode, FaShare, FaEdit, FaTimes, FaLinkedin, FaTwitter, Fa
 import { Button } from "../UI/button";
 import "../../styles/BusinessCards.css";
 import "../../styles/Dashboard.css";
-import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, buildUrl, FIREBASE_TOKEN, API_BASE_URL } from "../../utils/api";
+import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, buildUrl, API_BASE_URL } from "../../utils/api";
+
+// Helper function to get authentication token
+const getAuthToken = () => {
+  const authToken = localStorage.getItem('authToken');
+  if (!authToken) {
+    throw new Error('Authentication required. Please log in first.');
+  }
+  return authToken;
+};
 import { useUserContext } from "../../hooks/useUserContext";
 import { useUser } from "../../contexts/UserContext";
 
@@ -178,12 +187,15 @@ const fetchCardsByUserType = async (isEnterprise: boolean, enterpriseId?: string
     // Individual user - fetch user's own cards
     const url = buildUrl(`${ENDPOINTS.GET_CARD}/${userId}`);
     
-    // TODO: When login page is implemented, get token from localStorage
-    // For now, use the hardcoded Firebase token from api.ts
-    const token = FIREBASE_TOKEN;
+    // Get token from localStorage (stored by Login component)
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      throw new Error('Authentication required. Please log in first.');
+    }
+    
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${authToken}`
     };
     
     console.log('Fetching individual cards with URL:', url); // Debug log
@@ -434,9 +446,15 @@ const QRCodeModal = ({ card, cardIndex, userId, isOpen, onClose }: {
         setPermissionError(null);
         try {
           const endpoint = `${API_BASE_URL}/generateQR/${userId}/${cardIndex}`;
+          // Get token from localStorage
+          const authToken = localStorage.getItem('authToken');
+          if (!authToken) {
+            throw new Error('Authentication required. Please log in first.');
+          }
+          
           const response = await fetch(endpoint, {
             headers: {
-              'Authorization': `Bearer ${FIREBASE_TOKEN}`
+              'Authorization': `Bearer ${authToken}`
             }
           });
           if (!response.ok) {
@@ -720,11 +738,17 @@ const CreateCardModal = ({ isOpen, onClose, onSave }: {
         hasCompanyLogo: !!companyFile
       });
 
+      // Get token from localStorage
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('Authentication required. Please log in first.');
+      }
+      
       const endpoint = buildUrl(ENDPOINTS.ADD_CARD);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: formData
       });
@@ -1186,7 +1210,7 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+          'Authorization': `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify(updatedCardData)
       });
@@ -1274,7 +1298,7 @@ const EditCardModal = ({ card, cards, userContext, isOpen, onClose, onSave }: {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+          'Authorization': `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify(payload)
       });
@@ -1782,7 +1806,7 @@ const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: {
       const response = await fetch(templateUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+          'Authorization': `Bearer ${getAuthToken()}`
           // Don't set Content-Type - let browser set it with boundary for multipart
         },
         body: formData
@@ -2087,12 +2111,109 @@ const BusinessCards = () => {
   const userContext = useUserContext();
   const { user, hasPermission } = useUser();
   
+  // Helper function to check if user can edit cards
+  const canEditCards = () => {
+    // Individual users (free/premium) can always edit their own cards
+    if (user?.plan === 'free' || user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('editCards');
+    }
+    // Default fallback
+    return hasPermission('editCards');
+  };
+  
+  // Helper function to check if user can create cards
+  const canCreateCards = () => {
+    // Premium users can create cards
+    if (user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Free users cannot create cards
+    if (user?.plan === 'free') {
+      return false;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('createCards');
+    }
+    // Default fallback
+    return hasPermission('createCards');
+  };
+  
+  // Helper function to check if user can share cards
+  const canShareCards = () => {
+    // Individual users (free/premium) can always share their own cards
+    if (user?.plan === 'free' || user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('shareCards');
+    }
+    // Default fallback
+    return hasPermission('shareCards');
+  };
+  
+  // Helper function to check if user can generate QR codes
+  const canGenerateQRCodes = () => {
+    // Individual users (free/premium) can always generate QR codes
+    if (user?.plan === 'free' || user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('generateQRCodes');
+    }
+    // Default fallback
+    return hasPermission('generateQRCodes');
+  };
+  
+  // Helper function to check if user can view cards
+  const canViewCards = () => {
+    // Individual users (free/premium) can always view their own cards
+    if (user?.plan === 'free' || user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('viewCards');
+    }
+    // Default fallback
+    return hasPermission('viewCards');
+  };
+  
+  // Helper function to check if user can delete cards
+  const canDeleteCards = () => {
+    // Premium users can delete their own cards
+    if (user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Free users cannot delete cards
+    if (user?.plan === 'free') {
+      return false;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('deleteCards');
+    }
+    // Default fallback
+    return hasPermission('deleteCards');
+  };
+  
   // Debug: Log user info and permissions
   console.log('🔍 User Debug Info:', {
     user: user,
     userContext: userContext,
     hasEditPermission: hasPermission('editCards'),
-    hasCreatePermission: hasPermission('createCards'),
+    canEditCards: canEditCards(),
+    canCreateCards: canCreateCards(),
+    canShareCards: canShareCards(),
+    canGenerateQRCodes: canGenerateQRCodes(),
+    canViewCards: canViewCards(),
+    canDeleteCards: canDeleteCards(),
     hasTemplatePermission: hasPermission('createTemplates'),
     userRole: user?.role,
     userPlan: user?.plan,
@@ -2107,7 +2228,7 @@ const BusinessCards = () => {
       }
       
       // Phase 3: Don't fetch cards if user doesn't have view permission
-      if (!hasPermission('viewCards')) {
+      if (!canViewCards()) {
         setLoading(false);
         return;
       }
@@ -2116,6 +2237,12 @@ const BusinessCards = () => {
         setLoading(true);
         
         console.log('User context detected:', userContext);
+        console.log('🔍 Fetching cards with:', {
+          isEnterprise: userContext.isEnterprise,
+          enterpriseId: userContext.enterpriseId,
+          userId: userContext.userId
+        });
+        console.log('🔍 User context details:', userContext);
         
         // Fetch cards based on user type
         const cardsData = await fetchCardsByUserType(userContext.isEnterprise, userContext.enterpriseId, userContext.userId);
@@ -2161,7 +2288,7 @@ const BusinessCards = () => {
   // Share functionality
   const handleShare = async (card: CardData) => {
     // Check permission to share cards
-    if (!hasPermission('shareCards')) {
+    if (!canShareCards()) {
       alert('You do not have permission to share business cards.');
       return;
     }
@@ -2196,7 +2323,7 @@ const BusinessCards = () => {
     if (!selectedCard) return;
 
     // Check permission to delete cards
-    if (!hasPermission('deleteCards')) {
+    if (!canDeleteCards()) {
       alert('You do not have permission to delete business cards.');
       return;
     }
@@ -2214,7 +2341,7 @@ const BusinessCards = () => {
       const response = await fetch(endpoint, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${FIREBASE_TOKEN}`
+          'Authorization': `Bearer ${getAuthToken()}`
         }
       });
 
@@ -2328,14 +2455,14 @@ const BusinessCards = () => {
         </div>
         <div className="page-actions">
           <Button 
-                    onClick={() => hasPermission('createCards') && setShowCreateModal(true)}
-        disabled={!hasPermission('createCards')}
+                    onClick={() => canCreateCards() && setShowCreateModal(true)}
+        disabled={!canCreateCards()}
         style={{
-          opacity: hasPermission('createCards') ? 1 : 0.5,
-          backgroundColor: hasPermission('createCards') ? undefined : '#f5f5f5',
-          cursor: hasPermission('createCards') ? 'pointer' : 'not-allowed'
+          opacity: canCreateCards() ? 1 : 0.5,
+          backgroundColor: canCreateCards() ? undefined : '#f5f5f5',
+          cursor: canCreateCards() ? 'pointer' : 'not-allowed'
         }}
-        title={!hasPermission('createCards') ? 'You do not have permission to create cards' : 'Create a new business card'}
+        title={!canCreateCards() ? 'You do not have permission to create cards' : 'Create a new business card'}
           >
             <FaQrcode className="mr-2" />
             Create Card
@@ -2358,13 +2485,13 @@ const BusinessCards = () => {
             <Button 
               variant="outline" 
               onClick={() => setShowDeleteModal(true)}
-                      disabled={cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')}
+                      disabled={cards.findIndex(c => c.id === selectedCard.id) === 0 || !canDeleteCards()}
         style={{
-          opacity: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')) ? 0.5 : 1,
-          backgroundColor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')) ? '#f5f5f5' : undefined,
-          cursor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !hasPermission('deleteCards')) ? 'not-allowed' : 'pointer'
+          opacity: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !canDeleteCards()) ? 0.5 : 1,
+          backgroundColor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !canDeleteCards()) ? '#f5f5f5' : undefined,
+          cursor: (cards.findIndex(c => c.id === selectedCard.id) === 0 || !canDeleteCards()) ? 'not-allowed' : 'pointer'
         }}
-        title={!hasPermission('deleteCards') ? 'You do not have permission to delete cards' : 
+        title={!canDeleteCards() ? 'You do not have permission to delete cards' : 
                      cards.findIndex(c => c.id === selectedCard.id) === 0 ? 'Default card cannot be deleted' : 'Delete this card'}
             >
               <FaTimes className="mr-2" />
@@ -2440,20 +2567,20 @@ const BusinessCards = () => {
               <div className="selected-card-container">
                 <BusinessCardItem 
                   card={selectedCard}
-                  onQRClick={hasPermission('generateQRCodes') ? openQRModal : undefined}
-                  onShareClick={hasPermission('shareCards') ? () => handleShare(selectedCard) : undefined}
-                  onEditClick={hasPermission('editCards') ? () => setShowEditModal(true) : undefined}
+                  onQRClick={canGenerateQRCodes() ? openQRModal : undefined}
+                  onShareClick={canShareCards() ? () => handleShare(selectedCard) : undefined}
+                  onEditClick={canEditCards() ? () => setShowEditModal(true) : undefined}
                 />
 
                 <div className="card-actions-panel">
                   <Button 
                     onClick={openQRModal}
-                    disabled={!hasPermission('generateQRCodes')}
+                    disabled={!canGenerateQRCodes()}
                     style={{ 
-                      opacity: hasPermission('generateQRCodes') ? 1 : 0.5,
-                      cursor: hasPermission('generateQRCodes') ? 'pointer' : 'not-allowed'
+                      opacity: canGenerateQRCodes() ? 1 : 0.5,
+                      cursor: canGenerateQRCodes() ? 'pointer' : 'not-allowed'
                     }}
-                    title={!hasPermission('generateQRCodes') ? 'You do not have permission to generate QR codes' : 'Generate QR code for this card'}
+                    title={!canGenerateQRCodes() ? 'You do not have permission to generate QR codes' : 'Generate QR code for this card'}
                   >
                     <FaQrcode className="mr-2" />
                     QR Code
@@ -2461,12 +2588,12 @@ const BusinessCards = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => handleShare(selectedCard)}
-                                        disabled={!hasPermission('shareCards')}
+                                        disabled={!canShareCards()}
                     style={{
-                      opacity: hasPermission('shareCards') ? 1 : 0.5,
-                      cursor: hasPermission('shareCards') ? 'pointer' : 'not-allowed'
+                      opacity: canShareCards() ? 1 : 0.5,
+                      cursor: canShareCards() ? 'pointer' : 'not-allowed'
                     }}
-                    title={!hasPermission('shareCards') ? 'You do not have permission to share cards' : 'Share this card'}
+                    title={!canShareCards() ? 'You do not have permission to share cards' : 'Share this card'}
                   >
                     <FaShare className="mr-2" />
                     Share Card
@@ -2474,12 +2601,12 @@ const BusinessCards = () => {
                   <Button 
                     variant="outline" 
                     onClick={() => setShowEditModal(true)}
-                                        disabled={!hasPermission('editCards')}
+                                        disabled={!canEditCards()}
                     style={{
-                      opacity: hasPermission('editCards') ? 1 : 0.5,
-                      cursor: hasPermission('editCards') ? 'pointer' : 'not-allowed'
+                      opacity: canEditCards() ? 1 : 0.5,
+                      cursor: canEditCards() ? 'pointer' : 'not-allowed'
                     }}
-                    title={!hasPermission('editCards') ? 'You do not have permission to edit cards' : 'Edit this card'}
+                    title={!canEditCards() ? 'You do not have permission to edit cards' : 'Edit this card'}
                   >
                     <FaEdit className="mr-2" />
                     Edit Card
@@ -2502,7 +2629,7 @@ const BusinessCards = () => {
             card={selectedCard}
             cardIndex={cards.findIndex(c => c.id === selectedCard.id)}
             userId={userContext.userId || ''}
-            isOpen={showQRModal && hasPermission('generateQRCodes')} 
+            isOpen={showQRModal && canGenerateQRCodes()} 
             onClose={() => setShowQRModal(false)} 
           />
           <EditCardModal 
@@ -2511,9 +2638,24 @@ const BusinessCards = () => {
             userContext={userContext}
             isOpen={showEditModal} 
             onClose={() => setShowEditModal(false)}
-            onSave={(updatedCard) => {
-              setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
+            onSave={async (updatedCard) => {
+              // Update the card in local state immediately for instant feedback
+              setCards(prevCards => prevCards.map(c => c.id === updatedCard.id ? updatedCard : c));
               setSelectedCard(updatedCard);
+              
+              // Also refresh from server to ensure we have the latest data
+              try {
+                const cardsData = await fetchCardsByUserType(userContext.isEnterprise, userContext.enterpriseId, userContext.userId);
+                setCards(cardsData);
+                // Keep the updated card selected if it exists in the refreshed data
+                const refreshedUpdatedCard = cardsData.find(card => card.id === updatedCard.id);
+                if (refreshedUpdatedCard) {
+                  setSelectedCard(refreshedUpdatedCard);
+                }
+              } catch (error) {
+                console.error('Error refreshing cards after update:', error);
+                // If refresh fails, keep the local state update
+              }
             }}
           />
         </>
@@ -2523,9 +2665,24 @@ const BusinessCards = () => {
       <CreateCardModal 
         isOpen={showCreateModal} 
         onClose={() => setShowCreateModal(false)}
-        onSave={(newCard) => {
-          setCards([...cards, newCard]);
+        onSave={async (newCard) => {
+          // Add the new card to local state immediately for instant feedback
+          setCards(prevCards => [...prevCards, newCard]);
           setSelectedCard(newCard);
+          
+          // Also refresh from server to ensure we have the latest data
+          try {
+            const cardsData = await fetchCardsByUserType(userContext.isEnterprise, userContext.enterpriseId, userContext.userId);
+            setCards(cardsData);
+            // Keep the newly created card selected if it exists in the refreshed data
+            const refreshedNewCard = cardsData.find(card => card.id === newCard.id);
+            if (refreshedNewCard) {
+              setSelectedCard(refreshedNewCard);
+            }
+          } catch (error) {
+            console.error('Error refreshing cards after creation:', error);
+            // If refresh fails, keep the local state update
+          }
         }}
       />
 
@@ -2552,7 +2709,7 @@ const BusinessCards = () => {
               </button>
             </div>
             <div className="modal-body">
-              {!hasPermission('deleteCards') ? (
+              {!canDeleteCards() ? (
                 <div style={{ color: '#dc2626', textAlign: 'center', padding: '1rem' }}>
                   <p><strong>Permission Denied</strong></p>
                   <p>You do not have permission to delete business cards.</p>
@@ -2575,12 +2732,12 @@ const BusinessCards = () => {
               </Button>
               <Button 
                 onClick={handleDeleteCard}
-                                disabled={!hasPermission('deleteCards')}
+                                disabled={!canDeleteCards()}
                 style={{
-                  backgroundColor: hasPermission('deleteCards') ? '#dc2626' : '#f5f5f5',
-                  borderColor: hasPermission('deleteCards') ? '#dc2626' : '#d1d5db',
-                  color: hasPermission('deleteCards') ? 'white' : '#9ca3af',
-                  cursor: hasPermission('deleteCards') ? 'pointer' : 'not-allowed'
+                  backgroundColor: canDeleteCards() ? '#dc2626' : '#f5f5f5',
+                  borderColor: canDeleteCards() ? '#dc2626' : '#d1d5db',
+                  color: canDeleteCards() ? 'white' : '#9ca3af',
+                  cursor: canDeleteCards() ? 'pointer' : 'not-allowed'
                 }}
               >
                 Delete Card

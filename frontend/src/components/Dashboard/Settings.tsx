@@ -1285,7 +1285,7 @@ const Settings = () => {
                           className="image-upload-preview clickable"
                           onClick={() => document.getElementById('logo-upload')?.click()}
                         >
-                          {enterpriseData.logoUrl ? (
+                      {enterpriseData.logoUrl ? (
                             <img src={enterpriseData.logoUrl} alt="Organization logo" />
                           ) : (
                             <div className="image-placeholder">
@@ -1309,15 +1309,15 @@ const Settings = () => {
                           >
                             ✕
                           </button>
-                        )}
-                      </div>
-                      <div className="logo-actions">
+                      )}
+                    </div>
+                    <div className="logo-actions">
                         <p className="logo-hint">
                           <strong>Recommended:</strong> 512x512px PNG or JPG<br />
                           Maximum file size: 2MB
                         </p>
-                      </div>
-                      
+                  </div>
+                  
                       {/* Brand Color Selection */}
                       <div className="theme-selection">
                         <h3 className="section-title">Brand Color</h3>
@@ -1342,7 +1342,7 @@ const Settings = () => {
                           {showColorPicker && (
                             <div className="color-picker-container">
                               <input
-                                type="color"
+                        type="color" 
                                 value={customColor}
                                 onChange={(e) => {
                                   setCustomColor(e.target.value);
@@ -1416,7 +1416,7 @@ const Settings = () => {
                           </div>
                         </div>
                                              </div>
-                     </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -1556,7 +1556,7 @@ const Settings = () => {
             </CardFooter>
           </Card>
         </TabsContent>
-
+        
       </Tabs>
       
       {/* Modal Components */}

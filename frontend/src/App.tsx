@@ -4,8 +4,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import Security from "./components/Dashboard/Security";
 import SecurityDashboard from "./pages/SecurityDashboard";
+import Login from './pages/Login';
 import { SessionTimeoutProvider } from './providers/SessionTimeoutProvider';
-import { UserProvider } from './contexts/UserContext';
+import { UserProvider, useUser } from './contexts/UserContext';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Import your pages
@@ -25,15 +26,46 @@ import ChangePassword from "./components/Settings/ChangePassword";
 // Optional: Import SignIn if you have it
 // import SignIn from './path/to/SignIn';
 
-// Dummy pages if needed (delete these once you have real pages)
+// Main App Content Component (needs to be inside UserProvider to access context)
+const AppContent = () => {
+  const { isAuthenticated, loading, login } = useUser();
 
+  if (loading) {
+    console.log('⏳ AppContent: Loading state, showing loading screen');
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div style={{ textAlign: 'center', color: 'white' }}>
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            border: '4px solid rgba(255,255,255,0.3)', 
+            borderTop: '4px solid white', 
+            borderRadius: '50%', 
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }} />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-const App = () => {
+  if (!isAuthenticated) {
+    console.log('🔐 AppContent: User not authenticated, showing Login page');
+    return <Login onLogin={login} />;
+  }
+
+  console.log('🏠 AppContent: User authenticated, showing dashboard');
   return (
-    <Router>
-      <UserProvider>
-        <SessionTimeoutProvider>
+    <SessionTimeoutProvider>
       <Routes>
+        <Route path="/login" element={<Navigate to="/business-cards" />} />
         <Route path="/" element={<Navigate to="/business-cards" />} />
         <Route element={<DashboardLayout />}>
               {/* Dashboard - Analytics (Managers and Admins only) */}
@@ -175,9 +207,27 @@ const App = () => {
               />
         </Route>
       </Routes>
-        </SessionTimeoutProvider>
-      </UserProvider>
-    </Router>
+    </SessionTimeoutProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      <Router>
+        <UserProvider>
+          <AppContent />
+        </UserProvider>
+      </Router>
+    </>
   );
 };
 

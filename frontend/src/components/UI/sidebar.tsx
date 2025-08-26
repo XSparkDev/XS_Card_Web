@@ -157,7 +157,7 @@ const UserProfile: React.FC = () => {
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation(); //here
-  const { user, hasPermission } = useUser();
+  const { user, hasPermission, logout } = useUser();
   
   // Don't render sidebar if user is not loaded yet
   if (!user) {
@@ -234,8 +234,8 @@ const Sidebar: React.FC = () => {
           />
         )}
         
-        {/* Calendar - All users can view */}
-        {hasPermission('viewCalendar') && (
+        {/* Calendar - Hide from free users, show for premium/enterprise */}
+        {hasPermission('viewCalendar') && user.plan !== 'free' && (
           <SidebarMenuItem
             icon={<i className="fas fa-calendar"></i>}
             label="Calendar"
@@ -288,7 +288,7 @@ const Sidebar: React.FC = () => {
         
         <button 
           className="footer-button logout-button"
-          onClick={() => navigate('/sign-in')}
+          onClick={logout}
         >
           <i className="fas fa-sign-out-alt"></i>
           <span className="footer-button-text logout-button-text">Log Out</span>

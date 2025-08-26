@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ENDPOINTS, buildUrl, buildEnterpriseUrl, getAuthHeaders, getEnterpriseHeaders, FIREBASE_TOKEN, DEFAULT_USER_ID } from '../utils/api';
+import { ENDPOINTS, buildUrl, buildEnterpriseUrl, getAuthHeaders, getEnterpriseHeaders } from '../utils/api';
 
 export interface UserContext {
   isEnterprise: boolean;
@@ -21,14 +21,48 @@ export const useUserContext = () => {
       try {
         setUserContext(prev => ({ ...prev, isLoading: true, error: undefined }));
 
-        // TODO: When login page is implemented, get user ID from localStorage or token
-        // For now, use the hardcoded user ID from api.ts
-        const userId = DEFAULT_USER_ID; // "x-spark-test"
+        // Get user data from localStorage (stored by Login component)
+        const userDataStr = localStorage.getItem('userData');
+        if (!userDataStr) {
+          throw new Error('No user data found. Please log in first.');
+        }
         
-        console.log('Using hardcoded user ID:', userId); // Debug log
+        const userData = JSON.parse(userDataStr);
+        const userId = userData.id;
         
-        // First try to check if this is an enterprise user
-        await checkEnterpriseUser(userId);
+        console.log('Using user ID from login:', userId); // Debug log
+        console.log('User data from login:', userData); // Debug log
+        
+        // Check if this is an enterprise user based on user data
+        console.log('🔍 User data analysis:', {
+          plan: userData.plan,
+          isEmployee: userData.isEmployee,
+          role: userData.role,
+          email: userData.email
+        });
+        
+        // More robust enterprise detection
+        const isEnterprise = userData.plan === 'enterprise' && userData.isEmployee;
+        const isIndividual = userData.plan === 'individual' || userData.plan === 'free' || userData.plan === 'premium';
+        
+        console.log('🔍 Enterprise detection:', {
+          isEnterprise,
+          isIndividual,
+          plan: userData.plan,
+          isEmployee: userData.isEmployee
+        });
+        
+        if (isEnterprise) {
+          console.log('✅ User identified as enterprise based on plan and employee status');
+          await checkEnterpriseUser(userId);
+        } else if (isIndividual) {
+          console.log('✅ User identified as individual based on plan');
+          await checkIndividualUser(userId);
+        } else {
+          // Fallback: if plan is enterprise but isEmployee is false, treat as individual
+          console.log('⚠️ Ambiguous user type, treating as individual (fallback)');
+          await checkIndividualUser(userId);
+        }
       } catch (error) {
         console.warn('Could not detect user context, trying individual user fallback:', error);
         await tryIndividualUserFallback();
@@ -75,11 +109,15 @@ export const useUserContext = () => {
         // Get user info from the users collection
         const userUrl = buildUrl(`${ENDPOINTS.GET_USER}/${userId}`);
         
-        // Use the Firebase token directly for authentication
-        const token = FIREBASE_TOKEN;
+        // Get token from localStorage (stored by Login component)
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+          throw new Error('Authentication required. Please log in first.');
+        }
+        
         const headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${authToken}`
         };
         
         console.log('Checking individual user with URL:', userUrl); // Debug log
@@ -114,6 +152,11 @@ export const useUserContext = () => {
 
     const tryIndividualUserFallback = async () => {
       try {
+        // Get user data from localStorage for fallback
+        const userDataStr = localStorage.getItem('userData');
+        const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        const userId = userData?.id || 'unknown';
+        
         // Try to access enterprise endpoint to see if user is enterprise
         const enterpriseUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_CARDS);
         const headers = getEnterpriseHeaders();
@@ -129,8 +172,8 @@ export const useUserContext = () => {
           console.log('Enterprise fallback succeeded - user is enterprise');
           setUserContext({
             isEnterprise: true,
-            userId: DEFAULT_USER_ID,
-            enterpriseId: DEFAULT_USER_ID,
+            userId: userId,
+            enterpriseId: 'x-spark-test', // Default enterprise ID
             isLoading: false
           });
         } else {
@@ -138,7 +181,7 @@ export const useUserContext = () => {
           console.log('Enterprise fallback failed - user is individual');
           setUserContext({
             isEnterprise: false,
-            userId: DEFAULT_USER_ID,
+            userId: userId,
             enterpriseId: undefined,
             isLoading: false
           });
@@ -146,9 +189,13 @@ export const useUserContext = () => {
       } catch (error) {
         console.warn('Enterprise fallback failed, defaulting to individual:', error);
         // Final fallback - assume individual (most users are individual)
+        const userDataStr = localStorage.getItem('userData');
+        const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        const userId = userData?.id || 'unknown';
+        
         setUserContext({
           isEnterprise: false,
-          userId: DEFAULT_USER_ID,
+          userId: userId,
           enterpriseId: undefined,
           isLoading: false,
           error: 'Could not determine user type, defaulting to individual'

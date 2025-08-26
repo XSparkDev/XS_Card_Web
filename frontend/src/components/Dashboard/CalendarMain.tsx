@@ -16,7 +16,7 @@ import {
   MdCheckCircle
 } from "react-icons/md";
 import '../../styles/Calendar.css';
-import { ENDPOINTS, buildUrl, DEFAULT_USER_ID, getEnterpriseHeaders, fetchUserPermissions } from "../../utils/api";
+import { ENDPOINTS, buildUrl, DEFAULT_USER_ID, getEnterpriseHeaders, getAuthHeaders, fetchUserPermissions } from "../../utils/api";
 import { calculateUserPermissions, type UserWithPermissions } from "../../utils/permissions";
 
 // Import UI components
@@ -136,6 +136,7 @@ const CalendarPage = () => {
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [permissionError, setPermissionError] = useState<string>('');
+  const [user, setUser] = useState<any>(null);
   
   const today = new Date();
   const currentMonth = format(date || today, "MMMM yyyy");
@@ -177,6 +178,38 @@ const CalendarPage = () => {
     return hasIt;
   };
 
+  // Helper function to check if user can view calendar
+  const canViewCalendar = () => {
+    // Individual users (free/premium) can always view their own calendar
+    if (user?.plan === 'free' || user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('viewCalendar');
+    }
+    // Default fallback
+    return hasPermission('viewCalendar');
+  };
+
+  // Helper function to check if user can create meetings
+  const canCreateMeetings = () => {
+    // Premium users can create meetings
+    if (user?.plan === 'premium' || user?.plan === 'individual') {
+      return true;
+    }
+    // Free users cannot create meetings
+    if (user?.plan === 'free') {
+      return false;
+    }
+    // Enterprise users need permission check
+    if (user?.plan === 'enterprise' && user?.isEmployee) {
+      return hasPermission('createMeetings');
+    }
+    // Default fallback
+    return hasPermission('createMeetings');
+  };
+
 
 
   // Fetch user permissions including individual overrides
@@ -194,6 +227,9 @@ const CalendarPage = () => {
 
       const parsedData = JSON.parse(userData);
       const userId = parsedData.id || parsedData.userId;
+      
+      // Set user state for plan-based permission checks
+      setUser(parsedData);
       
       console.log('👤 Fetching latest user data from backend for permissions...');
       console.log('🔍 User ID from localStorage:', userId);
@@ -249,19 +285,19 @@ const CalendarPage = () => {
       console.log('🔄 Merged permissions:', mergedIndividualPermissions);
 
       // Create user object for permission calculation with merged permissions
-      const user: UserWithPermissions = {
+      const userForPermissions: UserWithPermissions = {
         id: result.data.user.id,
         email: result.data.user.email,
         role: result.data.user.role,
-        plan: 'enterprise',
-        isEmployee: true,
+        plan: parsedData.plan || 'free',  // Use actual user plan instead of hardcoded 'enterprise'
+        isEmployee: parsedData.plan === 'enterprise',  // Only true for enterprise users
         individualPermissions: mergedIndividualPermissions
       };
 
-      console.log('🔍 Calculating permissions for user:', user);
+      console.log('🔍 Calculating permissions for user:', userForPermissions);
 
       // Calculate effective permissions
-      const effectivePermissions = calculateUserPermissions(user);
+      const effectivePermissions = calculateUserPermissions(userForPermissions);
       console.log('✅ Effective permissions:', effectivePermissions);
       console.log('🔍 createMeetings in effective permissions:', effectivePermissions.includes('createMeetings'));
 
@@ -277,6 +313,15 @@ const CalendarPage = () => {
       setUserPermissions(effectivePermissions);
       console.log('✅ userPermissions state set to:', effectivePermissions);
       console.log('🔍 createMeetings permission check:', effectivePermissions.includes('createMeetings'));
+      
+      // Debug: Log plan-based permission checks
+      console.log('🔍 Calendar Permission Debug Info:', {
+        userPlan: parsedData.plan,
+        canViewCalendar: canViewCalendar(),
+        canCreateMeetings: canCreateMeetings(),
+        hasViewCalendarPermission: hasPermission('viewCalendar'),
+        hasCreateMeetingsPermission: hasPermission('createMeetings')
+      });
     } catch (error) {
       console.error('❌ Error fetching user permissions:', error);
       setUserPermissions([]);
@@ -297,15 +342,15 @@ const CalendarPage = () => {
       setIsLoading(true);
       
       // Check if user has permission to view calendar
-      if (!hasPermission('viewCalendar')) {
+      if (!canViewCalendar()) {
         setPermissionError("You don't have permission to view the calendar. Please contact your administrator.");
         setShowPermissionModal(true);
         return;
       }
       
-      // Use Firebase token authentication for meetings with the DEFAULT_USER_ID
+      // Use appropriate headers based on user type
       const url = buildUrl(ENDPOINTS.CREATE_MEETING + `/${DEFAULT_USER_ID}`);
-      const headers = getEnterpriseHeaders();
+      const headers = user?.plan === 'enterprise' ? getEnterpriseHeaders() : await getAuthHeaders();
       
       const response = await fetch(url, {
         method: 'GET',
@@ -774,8 +819,8 @@ const CalendarPage = () => {
     }
     
     // Check if user has permission to create meetings
-    if (!hasPermission('createMeetings')) {
-      console.log('❌ User does not have createMeetings permission - BLOCKING SCHEDULE MODAL OPENING');
+    if (!canCreateMeetings()) {
+      console.log('❌ User does not have permission to create meetings - BLOCKING SCHEDULE MODAL OPENING');
       setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
       setShowPermissionModal(true);
       return;
@@ -880,8 +925,8 @@ const CalendarPage = () => {
     }
     
     // Check if user has permission to create meetings
-    if (!hasPermission('createMeetings')) {
-      console.log('❌ User does not have createMeetings permission - BLOCKING MEETING CREATION');
+    if (!canCreateMeetings()) {
+      console.log('❌ User does not have permission to create meetings - BLOCKING MEETING CREATION');
       setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
       setShowPermissionModal(true);
       return;
@@ -939,9 +984,9 @@ const CalendarPage = () => {
     
     console.log('Event data to submit:', eventPayload);
     
-    try {      // Use Firebase token authentication for meetings
+    try {      // Use appropriate headers based on user type
       const url = buildUrl(ENDPOINTS.MEETING_INVITE);
-      const headers = getEnterpriseHeaders();
+      const headers = user?.plan === 'enterprise' ? getEnterpriseHeaders() : await getAuthHeaders();
       
       const response = await fetch(url, {
         method: 'POST',
@@ -1057,6 +1102,7 @@ const CalendarPage = () => {
             console.log('🚨 NO EVENTS ADD EVENT BUTTON CLICKED!');
             console.log('   - Current userPermissions:', userPermissions);
             console.log('   - permissionsLoading:', permissionsLoading);
+            console.log('   - canCreateMeetings():', canCreateMeetings());
             console.log('   - hasPermission("createMeetings"):', hasPermission('createMeetings'));
             
             // Check if permissions are still loading
@@ -1068,8 +1114,8 @@ const CalendarPage = () => {
             }
             
             // Check if user has permission to create meetings
-            if (!hasPermission('createMeetings')) {
-              console.log('❌ User does not have createMeetings permission - BLOCKING MODAL OPENING');
+            if (!canCreateMeetings()) {
+              console.log('❌ User does not have permission to create meetings - BLOCKING MODAL OPENING');
               setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
               setShowPermissionModal(true);
               return;
@@ -1098,7 +1144,7 @@ const CalendarPage = () => {
             setAttendeeList([]);
             setIsAddEventOpen(true);
           }}
-          disabled={!hasPermission('createMeetings') || permissionsLoading}
+          disabled={!canCreateMeetings() || permissionsLoading}
         >
           <MdAdd className="icon-add" />
           <span>Add Event</span>
@@ -1129,7 +1175,7 @@ const CalendarPage = () => {
         variant="outline" 
         size="sm"
         onClick={() => handleScheduleDistribution(title, count)}
-        disabled={!hasPermission('createMeetings') || permissionsLoading}
+        disabled={!canCreateMeetings() || permissionsLoading}
       >
         Schedule
       </Button>
@@ -1189,8 +1235,8 @@ const CalendarPage = () => {
             }
             
             // Check if user has permission to create meetings
-            if (!hasPermission('createMeetings')) {
-              console.log('❌ User does not have createMeetings permission - BLOCKING MODAL OPENING');
+            if (!canCreateMeetings()) {
+              console.log('❌ User does not have permission to create meetings - BLOCKING MODAL OPENING');
               setPermissionError("You don't have permission to create meetings. Please contact your administrator.");
               setShowPermissionModal(true);
               return;
@@ -1219,7 +1265,7 @@ const CalendarPage = () => {
             setAttendeeList([]);
             setIsAddEventOpen(true);
           }}
-          disabled={isDateInPast(date || new Date()) || !hasPermission('createMeetings') || permissionsLoading}
+          disabled={isDateInPast(date || new Date()) || !canCreateMeetings() || permissionsLoading}
           type="button"
         >
           <MdAdd className="icon-add" />

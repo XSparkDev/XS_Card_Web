@@ -183,8 +183,9 @@ export interface ContactDeleteResponse {
 }
 
 
-// Firebase authentication token for API access
-export const FIREBASE_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjkyZTg4M2NjNDY2M2E2MzMyYWRhNmJjMWU0N2YzZmY1ZTRjOGI1ZDciLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20veHNjYXJkLWFkZGQ0IiwiYXVkIjoieHNjYXJkLWFkZGQ0IiwiYXV0aF90aW1lIjoxNzU2MDQwNTMzLCJ1c2VyX2lkIjoiQlB4Rm1tRzZTVlh2Ynd3UkowWWpCbnVJOGU3MyIsInN1YiI6IkJQeEZtbUc2U1ZYdmJ3d1JKMFlqQm51SThlNzMiLCJpYXQiOjE3NTYwNDA1MzMsImV4cCI6MTc1NjA0NDEzMywiZW1haWwiOiJ4ZW5hY29oNzQwQHBlcmN5ZnguY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsieGVuYWNvaDc0MEBwZXJjeWZ4LmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.GkMlVp6g1wUpDWBimSjKxcicgglScICZx-BZ03C0wOxzrJUmOcoX-iAAhsZeerjd29O0xxV9f0RNyRwBQ7f40tf54_Iglg7u-VHPHjC39vMQ1GiMQ-t51N3RY80p5VGkrW04kuPfuC4hGnfyvtFKECqrWJeNi58CkagyyTPbOFIygGZjksTdyejH749jvIUSIPL_dF9eV3QiAzE9fjG7dOKVB6sbJaabHrI2RZUGKUJSIDNCajyVcX_rWveHDRJ_V9ETuq-OX8EsmFK9qy76Dfr4QysriJ5GRolZOtekz4KHRm4iEn1bXh9Dbg0DbqRjjrCzLr17MNhVDprrIVjsBA";
+// Firebase authentication token for API access (fallback only)
+// This should not be used in production - real tokens come from login
+export const FIREBASE_TOKEN = null; // Removed hardcoded token
 
 // Enterprise ID commonly used in the app
 export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
@@ -246,7 +247,7 @@ const getBaseUrl = () => {
       console.warn('🔧 For development only - do not use in production');
     }
     
-    return 'http://localhost:8383';
+    return 'http://192.168.8.174:8383';
   }
   
   // In production, use secure connection
@@ -303,9 +304,9 @@ export const ENDPOINTS = {
     BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
 
     // Enterprise-related endpoints (management routes - with /api prefix)
-    ENTERPRISE_CARDS: `/api/enterprise/:enterpriseId/cards`,
+    ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,
     ENTERPRISE_DEPARTMENTS: `/api/enterprise/:enterpriseId/departments`,
-    ENTERPRISE_EMPLOYEES: `/api/enterprise/:enterpriseId/employees`,
+    ENTERPRISE_EMPLOYEES: `/enterprise/:enterpriseId/employees`,
     ENTERPRISE_CREATE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments`,
     ENTERPRISE_DELETE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments/:departmentId`,
     ENTERPRISE_UPDATE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments/:departmentId`,
@@ -367,8 +368,19 @@ export const buildBillingUrl = (endpoint: string, subscriptionCode?: string) => 
 
 // Function to get authenticated headers for enterprise API calls
 export const getEnterpriseHeaders = () => {
+  // Get the real token from localStorage (stored by Login component)
+  const authToken = localStorage.getItem('authToken');
+  const token = authToken || FIREBASE_TOKEN; // Fallback to hardcoded token if none found
+  
+  if (!token) {
+    console.error('❌ No authentication token found! Please log in first.');
+    throw new Error('Authentication required. Please log in first.');
+  }
+  
+  console.log('🔐 getEnterpriseHeaders: Using token:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+  
   return {
-    'Authorization': `Bearer ${FIREBASE_TOKEN}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   };
 };
@@ -377,9 +389,9 @@ export const buildUrl = (endpoint: string) => `${API_BASE_URL}${endpoint}`;
 
 // Web-specific utility function to get headers with authentication
 export const getAuthHeaders = async (additionalHeaders = {}) => {
-  const token = localStorage.getItem('userToken');
+  const token = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
   return {
-    'Authorization': token || '',
+    'Authorization': token ? `Bearer ${token}` : '', // Added Bearer prefix
     'Content-Type': 'application/json',
     ...additionalHeaders,
   };
@@ -406,8 +418,13 @@ export const getUserId = (): string | null => {
 export const authenticatedFetch = async (endpoint: string, options: RequestInit = {}) => {
   try {
     // Try to get token from localStorage first, fallback to FIREBASE_TOKEN
-    const localToken = localStorage.getItem('userToken');
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
     const token = localToken || FIREBASE_TOKEN;
+    
+    if (!token) {
+      console.error('❌ No authentication token found! Please log in first.');
+      throw new Error('Authentication required. Please log in first.');
+    }
     
     const headers = {
       'Content-Type': 'application/json',
@@ -1516,7 +1533,7 @@ export const fetchTeamsForDepartment = async (
 export const fetchAuthenticatedContacts = async (): Promise<ContactPermissionsResponse> => {
   try {
     // Get token from localStorage first, fallback to FIREBASE_TOKEN
-    const localToken = localStorage.getItem('userToken');
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
     const token = localToken || FIREBASE_TOKEN;
     
     const response = await authenticatedFetch(ENDPOINTS.GET_CONTACTS, {
@@ -1548,7 +1565,7 @@ export const fetchAuthenticatedContacts = async (): Promise<ContactPermissionsRe
 
 export const fetchUserContacts = async (userId: string): Promise<ContactPermissionsResponse> => {
   try {
-    const localToken = localStorage.getItem('userToken');
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
     const token = localToken || FIREBASE_TOKEN;
     
     const endpoint = ENDPOINTS.GET_USER_CONTACTS.replace(':userId', userId);
@@ -1583,7 +1600,7 @@ export const fetchUserContacts = async (userId: string): Promise<ContactPermissi
 
 export const deleteContactByIndex = async (userId: string, contactIndex: number): Promise<ContactDeleteResponse> => {
   try {
-    const localToken = localStorage.getItem('userToken');
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
     const token = localToken || FIREBASE_TOKEN;
     
     const endpoint = ENDPOINTS.DELETE_SPECIFIC_CONTACT
@@ -1621,7 +1638,7 @@ export const deleteContactByIndex = async (userId: string, contactIndex: number)
 
 export const deleteUserContactList = async (userId: string): Promise<ContactDeleteResponse> => {
   try {
-    const localToken = localStorage.getItem('userToken');
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
     const token = localToken || FIREBASE_TOKEN;
     
     const endpoint = ENDPOINTS.DELETE_CONTACT_BY_USER_ID.replace(':userId', userId);

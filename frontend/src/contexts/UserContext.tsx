@@ -61,6 +61,9 @@ interface UserContextType {
   hasBusinessCardPermission: (permission: BusinessCardPermission) => boolean;
   isRole: (role: UserRole | UserRole[]) => boolean;
   loading: boolean;
+  isAuthenticated: boolean;
+  login: (token: string, userData: any) => void;
+  logout: () => void;
 }
 
 // Create context
@@ -163,9 +166,20 @@ const getPermissionsByRole = (role: UserRole): UserPermissions => {
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Load user data on mount
   useEffect(() => {
+    // Clear any old authentication data to ensure fresh start
+    const clearOldAuthData = () => {
+      // Remove old keys that might exist from previous versions
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('enterpriseId');
+      // Keep authToken and userData for new system
+    };
+    
+    clearOldAuthData();
     loadUserData();
   }, []);
 
@@ -173,13 +187,27 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       console.log('🔍 UserContext: Loading user data...');
       
-      // First, try to load from localStorage
+      // Check for auth token first
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        console.log('❌ UserContext: No auth token found - showing login page');
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+      
+      // For now, skip token verification since the backend doesn't have a /api/user/profile endpoint
+      // The token will be verified when making actual API calls
+      console.log('✅ UserContext: Auth token found, skipping verification for now');
+      
+      // Token is valid, load user data
       const userData = localStorage.getItem('userData');
       
       if (userData) {
         const parsedUser = JSON.parse(userData);
         console.log('📋 UserContext: Loaded user from localStorage:', parsedUser);
         
+        setIsAuthenticated(true);
         // Try to refresh user data from enterprise API to get latest individual permissions
         await tryRefreshFromEnterpriseAPI(parsedUser);
       } else {
@@ -189,18 +217,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error) {
       console.error('Failed to load user data:', error);
-      // Fallback to Administrator role (for testing)
-      const permissions = getPermissionsByRole('Administrator');
-      setUserState({
-        id: 'temp-user-id',
-        name: 'Demo Administrator',
-        email: 'admin@company.com',
-        role: 'Administrator',
-        permissions,
-        plan: 'enterprise',
-        isEmployee: true,
-        individualPermissions: null
-      });
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
@@ -391,6 +408,54 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const login = (token: string, userData: any) => {
+    console.log('🔐 UserContext: Login called with:', { token: token.substring(0, 20) + '...', userData });
+    
+    // Store the token
+    localStorage.setItem('authToken', token);
+    
+    // Create user object with permissions
+    const permissions = getPermissionsByRole(userData.role || 'Employee');
+    const user: User = {
+      id: userData.uid || userData.id || userData.userId || 'temp-user-id',
+      name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User',
+      email: userData.email || 'user@company.com',
+      role: userData.role || 'Employee',
+      permissions,
+      plan: userData.plan || 'enterprise',
+      isEmployee: userData.isEmployee !== undefined ? userData.isEmployee : false,
+      individualPermissions: userData.individualPermissions || null
+    };
+    
+    console.log('👤 UserContext: Created user object:', user);
+    
+    // Set user state
+    setUserState(user);
+    setIsAuthenticated(true);
+    
+    // Store user data
+    localStorage.setItem('userData', JSON.stringify(user));
+    
+    console.log('✅ UserContext: Login completed successfully');
+  };
+
+  const logout = () => {
+    console.log('🚪 UserContext: Logout called');
+    
+    // Clear all stored data
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('enterpriseId');
+    
+    // Reset state
+    setUserState(null);
+    setIsAuthenticated(false);
+    
+    console.log('✅ UserContext: Logout completed');
+  };
+
   const hasPermission = (permission: keyof UserPermissions): boolean => {
     if (!user) {
       console.log('❌ hasPermission: No user found');
@@ -440,8 +505,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     hasPermission,
     hasBusinessCardPermission: hasBusinessCardPermissionDirect,
     isRole,
-    loading
+    loading,
+    isAuthenticated,
+    login,
+    logout
   };
+
+  // For testing: Add this to browser console to force logout and see login page
+  // window.forceLogout = () => { logout(); window.location.reload(); };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
