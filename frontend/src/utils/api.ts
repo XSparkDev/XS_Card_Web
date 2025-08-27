@@ -251,7 +251,8 @@ const getBaseUrl = () => {
   }
   
   // In production, use secure connection
-  return 'https://xscard-app.onrender.com';
+  //return 'https://xscard-app.onrender.com';
+  return 'http://192.168.8.174:8383';
 };
 
 export const API_BASE_URL = getBaseUrl();

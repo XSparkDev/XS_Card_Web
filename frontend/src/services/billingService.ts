@@ -596,7 +596,7 @@ export const exportInvoicePDF = async (invoiceId: string): Promise<Blob> => {
       
       try {
         // Import the PDF generator dynamically to avoid bundling issues
-        const { generateInvoicePDF } = await import('../utils/pdfGenerator');
+        const { PDFGenerator } = await import('../utils/pdfGenerator');
         
         // First, fetch the invoice data to populate the PDF
         const invoices = await fetchPremiumInvoices();
@@ -607,7 +607,7 @@ export const exportInvoicePDF = async (invoiceId: string): Promise<Blob> => {
         }
         
         // Generate a proper PDF using jsPDF
-        const pdfBlob = await generateInvoicePDF(invoice, false); // Use direct jsPDF method for faster generation
+        const pdfBlob = PDFGenerator.generateFromInvoiceData(invoice); // Use direct jsPDF method for faster generation
         
         console.log('✅ Proper PDF generated successfully using jsPDF');
         console.log('📄 Invoice data:', {

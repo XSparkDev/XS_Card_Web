@@ -1,31 +1,36 @@
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// import jsPDF from 'jspdf';
+// import html2canvas from 'html2canvas';
 import { Invoice } from '../types/billing';
 
-// PDF generation utility for invoices
-export class InvoicePDFGenerator {
+/**
+ * PDF Generator Utility
+ * Handles generation of PDF documents for invoices and reports
+ */
+export class PDFGenerator {
   private static readonly PAGE_WIDTH = 210; // A4 width in mm
-  private static readonly PAGE_HEIGHT = 297; // A4 height in mm
-  private static readonly MARGIN = 20;
+  private static readonly MARGIN = 20; // Margin in mm
 
   /**
-   * Generate PDF from HTML content
+   * Generate PDF from HTML element
+   * @param element - HTML element to convert to PDF
+   * @returns Promise<Blob> - Generated PDF as blob
    */
-  static async generateFromHTML(htmlContent: string, _filename: string = 'invoice.pdf'): Promise<Blob> {
+  static async generateFromElement(element: HTMLElement): Promise<Blob> {
+    console.log('🔄 PDF generation from element is temporarily disabled');
+    throw new Error('PDF generation is temporarily disabled - missing dependencies');
+    
+    // TODO: Re-enable when jspdf and html2canvas are properly configured
+    /*
     try {
-      console.log('🔄 Generating PDF from HTML content...');
+      console.log('🔄 Generating PDF from HTML element...');
       
-      // Create a temporary container for the HTML
-      const tempContainer = document.createElement('div');
-      tempContainer.innerHTML = htmlContent;
+      // Create temporary container
+      const tempContainer = element.cloneNode(true) as HTMLElement;
       tempContainer.style.position = 'absolute';
       tempContainer.style.left = '-9999px';
-      tempContainer.style.top = '-9999px';
-      tempContainer.style.width = '794px'; // A4 width in pixels (at 96 DPI)
-      tempContainer.style.backgroundColor = 'white';
-      tempContainer.style.padding = '40px';
-      tempContainer.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif';
-      
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '794px'; // A4 width in pixels
+      tempContainer.style.backgroundColor = '#ffffff';
       document.body.appendChild(tempContainer);
 
       try {
@@ -69,12 +74,18 @@ export class InvoicePDFGenerator {
       console.error('❌ PDF generation failed:', error);
       throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+    */
   }
 
   /**
    * Generate PDF directly from invoice data using jsPDF's text methods
    */
   static generateFromInvoiceData(invoice: Invoice): Blob {
+    console.log('🔄 PDF generation from invoice data is temporarily disabled');
+    throw new Error('PDF generation is temporarily disabled - missing dependencies');
+    
+    // TODO: Re-enable when jspdf is properly configured
+    /*
     try {
       console.log('🔄 Generating PDF from invoice data...');
       
@@ -127,202 +138,161 @@ export class InvoicePDFGenerator {
         lineHeight: 10
       });
       
-      yPosition = addText('Professional Digital Business Cards & Contact Management', leftMargin, yPosition, {
-        fontSize: 12,
+      yPosition = addText('Digital Business Card Solutions', leftMargin, yPosition, {
+        fontSize: 14,
+        style: 'italic',
         lineHeight: 8
       });
+      
+      yPosition = addText('Email: support@xscard.com', leftMargin, yPosition, {
+        fontSize: 10,
+        lineHeight: 6
+      });
+      
+      yPosition = addText('Phone: +27 11 123 4567', leftMargin, yPosition, {
+        fontSize: 10,
+        lineHeight: 6
+      });
 
-      // Invoice title (right aligned)
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(32);
-      pdf.text('INVOICE', rightMargin, this.MARGIN, { align: 'right' });
+      yPosition += 10; // Add some space
 
-      // Invoice number and dates (right aligned)
-      yPosition = this.MARGIN + 15;
-      yPosition = addText(safeInvoice.number, rightMargin, yPosition, {
-        fontSize: 16,
+      // Invoice header
+      yPosition = addText(`INVOICE #${safeInvoice.number}`, rightMargin - 60, yPosition, {
+        fontSize: 18,
         style: 'bold',
         align: 'right',
         lineHeight: 8
       });
-
-      yPosition = addText(`Issue Date: ${new Date(safeInvoice.date).toLocaleDateString()}`, rightMargin, yPosition, {
-        fontSize: 10,
+      
+      yPosition = addText(`Date: ${new Date(safeInvoice.date).toLocaleDateString()}`, rightMargin - 60, yPosition, {
+        fontSize: 12,
+        align: 'right',
+        lineHeight: 6
+      });
+      
+      yPosition = addText(`Due Date: ${new Date(safeInvoice.dueDate).toLocaleDateString()}`, rightMargin - 60, yPosition, {
+        fontSize: 12,
         align: 'right',
         lineHeight: 6
       });
 
-      yPosition = addText(`Due Date: ${new Date(safeInvoice.dueDate).toLocaleDateString()}`, rightMargin, yPosition, {
-        fontSize: 10,
-        align: 'right',
-        lineHeight: 8
-      });
+      yPosition += 15; // Add space before customer info
 
-      // Status badge
-      pdf.setFillColor(59, 130, 246); // Blue color
-      pdf.roundedRect(rightMargin - 30, yPosition, 25, 6, 2, 2, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(8);
-      pdf.text(safeInvoice.status.toUpperCase(), rightMargin - 17.5, yPosition + 4, { align: 'center' });
-      pdf.setTextColor(0, 0, 0); // Reset to black
-
-      yPosition += 20;
-
-      // Bill to section
+      // Customer information
       yPosition = addText('Bill To:', leftMargin, yPosition, {
-        fontSize: 12,
+        fontSize: 14,
         style: 'bold',
         lineHeight: 8
       });
-
+      
       yPosition = addText(safeInvoice.customerName, leftMargin, yPosition, {
         fontSize: 12,
-        style: 'bold',
         lineHeight: 6
       });
-
+      
       yPosition = addText(safeInvoice.customerEmail, leftMargin, yPosition, {
-        fontSize: 10,
+        fontSize: 12,
         lineHeight: 6
       });
 
-      yPosition = addText('Professional Business Client', leftMargin, yPosition, {
-        fontSize: 10,
-        lineHeight: 6
-      });
+      yPosition += 15; // Add space before line items
 
-      yPosition = addText('Cape Town, South Africa', leftMargin, yPosition, {
-        fontSize: 10,
-        lineHeight: 12
-      });
-
-      // Payment info (right side)
-      let rightYPosition = yPosition - 30;
-      rightYPosition = addText('Payment Information:', rightMargin - 80, rightYPosition, {
+      // Line items header
+      yPosition = addText('Description', leftMargin, yPosition, {
         fontSize: 12,
         style: 'bold',
         lineHeight: 8
       });
-
-      rightYPosition = addText(`Amount: ${safeInvoice.currency} ${(safeInvoice.total || safeInvoice.amount || 0).toFixed(2)}`, rightMargin - 80, rightYPosition, {
-        fontSize: 10,
-        lineHeight: 6
-      });
-
-      rightYPosition = addText(`Status: ${safeInvoice.status.charAt(0).toUpperCase() + safeInvoice.status.slice(1)}`, rightMargin - 80, rightYPosition, {
-        fontSize: 10,
-        lineHeight: 6
-      });
-
-      rightYPosition = addText(`Currency: ${safeInvoice.currency}`, rightMargin - 80, rightYPosition, {
-        fontSize: 10,
-        lineHeight: 6
-      });
-
-      yPosition = Math.max(yPosition, rightYPosition) + 10;
-
-      // Service details table
-      yPosition = addText('Service Details', leftMargin, yPosition, {
-        fontSize: 16,
+      
+      addText('Amount', rightMargin - 30, yPosition, {
+        fontSize: 12,
         style: 'bold',
-        lineHeight: 12
+        align: 'right',
+        lineHeight: 8
       });
 
-      // Table header
-      const tableStartY = yPosition;
-      const rowHeight = 8;
-      const colWidths = [90, 25, 35, 35]; // Description, Qty, Rate, Amount
-      let colX = leftMargin;
+      yPosition += 5; // Add space before line items
 
-      // Draw table header background
-      pdf.setFillColor(249, 250, 251);
-      pdf.rect(leftMargin, yPosition, contentWidth, rowHeight, 'F');
-
-      // Header text
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10);
-      pdf.text('DESCRIPTION', colX + 2, yPosition + 5);
-      colX += colWidths[0];
-      pdf.text('QTY', colX + 2, yPosition + 5);
-      colX += colWidths[1];
-      pdf.text('RATE', colX + 2, yPosition + 5);
-      colX += colWidths[2];
-      pdf.text('AMOUNT', colX + 2, yPosition + 5);
-
-      yPosition += rowHeight;
-
-      // Table rows
-      pdf.setFont('helvetica', 'normal');
+      // Line items
       safeInvoice.lineItems.forEach((item, index) => {
-        // Alternate row colors
-        if (index % 2 === 0) {
-          pdf.setFillColor(249, 250, 251);
-          pdf.rect(leftMargin, yPosition, contentWidth, rowHeight, 'F');
+        if (yPosition > 250) { // Check if we need a new page
+          pdf.addPage();
+          yPosition = this.MARGIN;
         }
-
-        colX = leftMargin;
-        pdf.text(item.description, colX + 2, yPosition + 5);
-        colX += colWidths[0];
-        pdf.text(item.quantity.toString(), colX + 2, yPosition + 5, { align: 'center' });
-        colX += colWidths[1];
-        pdf.text(`${safeInvoice.currency} ${item.rate.toFixed(2)}`, colX + colWidths[2] - 2, yPosition + 5, { align: 'right' });
-        colX += colWidths[2];
-        pdf.text(`${safeInvoice.currency} ${item.amount.toFixed(2)}`, colX + colWidths[3] - 2, yPosition + 5, { align: 'right' });
-
-        yPosition += rowHeight;
+        
+        yPosition = addText(item.description || 'Service', leftMargin, yPosition, {
+          fontSize: 10,
+          lineHeight: 5
+        });
+        
+        addText(`${safeInvoice.currency} ${item.amount?.toFixed(2) || '0.00'}`, rightMargin - 30, yPosition, {
+          fontSize: 10,
+          align: 'right',
+          lineHeight: 5
+        });
+        
+        yPosition += 2;
       });
 
-      // Table border
-      pdf.setDrawColor(229, 231, 235);
-      pdf.rect(leftMargin, tableStartY, contentWidth, yPosition - tableStartY);
+      yPosition += 10; // Add space before totals
 
-      // Summary section
-      yPosition += 10;
-      const summaryX = rightMargin - 60;
-
-      yPosition = addText(`Subtotal: ${safeInvoice.currency} ${(safeInvoice.subtotal || 0).toFixed(2)}`, summaryX, yPosition, {
-        fontSize: 10,
+      // Totals
+      const totalY = yPosition;
+      
+      addText('Subtotal:', rightMargin - 60, totalY, {
+        fontSize: 12,
+        align: 'right',
+        lineHeight: 6
+      });
+      
+      addText(`${safeInvoice.currency} ${safeInvoice.subtotal?.toFixed(2) || '0.00'}`, rightMargin - 10, totalY, {
+        fontSize: 12,
         align: 'right',
         lineHeight: 6
       });
 
-      yPosition = addText(`VAT (15%): ${safeInvoice.currency} ${(safeInvoice.tax || 0).toFixed(2)}`, summaryX, yPosition, {
-        fontSize: 10,
+      addText('Tax:', rightMargin - 60, totalY + 8, {
+        fontSize: 12,
+        align: 'right',
+        lineHeight: 6
+      });
+      
+      addText(`${safeInvoice.currency} ${safeInvoice.tax?.toFixed(2) || '0.00'}`, rightMargin - 10, totalY + 8, {
+        fontSize: 12,
+        align: 'right',
+        lineHeight: 6
+      });
+
+      addText('Total:', rightMargin - 60, totalY + 16, {
+        fontSize: 14,
+        style: 'bold',
         align: 'right',
         lineHeight: 8
       });
-
-      // Total with border
-      pdf.setDrawColor(229, 231, 235);
-      pdf.line(summaryX - 55, yPosition, rightMargin, yPosition);
-      yPosition += 2;
-
-      yPosition = addText(`Total Amount: ${safeInvoice.currency} ${(safeInvoice.total || safeInvoice.amount || 0).toFixed(2)}`, summaryX, yPosition, {
-        fontSize: 12,
+      
+      addText(`${safeInvoice.currency} ${safeInvoice.total?.toFixed(2) || '0.00'}`, rightMargin - 10, totalY + 16, {
+        fontSize: 14,
         style: 'bold',
         align: 'right',
-        lineHeight: 15
+        lineHeight: 8
       });
 
       // Footer
-      yPosition = this.PAGE_HEIGHT - 40;
-      pdf.setFillColor(249, 250, 251);
-      pdf.rect(leftMargin, yPosition, contentWidth, 30, 'F');
-
-      yPosition += 10;
-      yPosition = addText('Thank you for choosing XSCard Business Solutions!', this.PAGE_WIDTH / 2, yPosition, {
-        fontSize: 14,
-        style: 'bold',
-        align: 'center',
-        lineHeight: 8
-      });
-
-      yPosition = addText('For support and inquiries, contact us at support@xscard.com', this.PAGE_WIDTH / 2, yPosition, {
+      const footerY = 280;
+      addText('Thank you for your business!', leftMargin, footerY, {
         fontSize: 10,
-        align: 'center'
+        style: 'italic',
+        lineHeight: 6
+      });
+      
+      addText('Payment is due within 30 days', leftMargin, footerY + 6, {
+        fontSize: 8,
+        lineHeight: 4
       });
 
+      // Convert to blob
       const pdfBlob = pdf.output('blob');
+      
       console.log('✅ PDF generated successfully from invoice data');
       return pdfBlob;
 
@@ -330,176 +300,67 @@ export class InvoicePDFGenerator {
       console.error('❌ PDF generation failed:', error);
       throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+    */
   }
-}
 
-/**
- * Generate a proper PDF from invoice data
- */
-export const generateInvoicePDF = async (invoice: Invoice, useHTMLMethod: boolean = false): Promise<Blob> => {
-  try {
-    if (useHTMLMethod) {
-      // Method 1: Generate from HTML (better styling, but more complex)
-      const htmlContent = generateInvoiceHTML(invoice);
-      return await InvoicePDFGenerator.generateFromHTML(htmlContent, `invoice-${invoice.number}.pdf`);
-    } else {
-      // Method 2: Generate directly with jsPDF (faster, simpler)
-      return InvoicePDFGenerator.generateFromInvoiceData(invoice);
+  /**
+   * Download PDF blob as file
+   * @param blob - PDF blob to download
+   * @param filename - Name of the file to download
+   */
+  static downloadPDF(blob: Blob, filename: string): void {
+    try {
+      console.log('🔄 Downloading PDF...');
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('✅ PDF downloaded successfully');
+    } catch (error) {
+      console.error('❌ PDF download failed:', error);
+      throw new Error(`PDF download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  } catch (error) {
-    console.error('❌ Invoice PDF generation failed:', error);
-    throw error;
   }
-};
 
-/**
- * Generate HTML content for invoice (used by HTML-to-PDF method)
- */
-function generateInvoiceHTML(invoice: Invoice): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Invoice ${invoice.number}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: white; color: #1f2937; line-height: 1.6; padding: 40px;
-        }
-        .invoice-container {
-            max-width: 800px; margin: 0 auto; background: white;
-            border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;
-        }
-        .invoice-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            padding: 32px 32px 24px; border-bottom: 1px solid #e5e7eb;
-        }
-        .company-info h1 { color: #3b82f6; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-        .company-info p { color: #6b7280; font-size: 14px; }
-        .invoice-title-section { text-align: right; }
-        .invoice-title { color: #3b82f6; font-size: 32px; font-weight: 700; margin-bottom: 8px; }
-        .invoice-number { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-        .invoice-dates { font-size: 14px; color: #6b7280; margin-bottom: 8px; }
-        .status-badge {
-            background: #3b82f6; color: white; padding: 4px 12px; border-radius: 16px;
-            font-size: 12px; font-weight: 600; display: inline-block;
-        }
-        .invoice-details { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 24px 32px; }
-        .bill-to h3, .payment-info h3 { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; }
-        .customer-name { font-weight: 600; margin-bottom: 4px; }
-        .customer-email { color: #3b82f6; margin-bottom: 4px; }
-        .customer-details { color: #6b7280; font-size: 14px; }
-        .payment-info-grid { display: grid; gap: 8px; }
-        .payment-row { display: flex; justify-content: space-between; font-size: 14px; }
-        .payment-label { color: #6b7280; }
-        .payment-value { font-weight: 500; }
-        .service-details { padding: 0 32px 32px; }
-        .service-details h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-        .invoice-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
-        .table-header { background: #f9fafb; }
-        .table-header th { padding: 12px; text-align: left; font-size: 12px; font-weight: 600; }
-        .table-row td { padding: 16px 12px; font-size: 14px; border-bottom: 1px solid #f3f4f6; }
-        .amount-column { text-align: right; font-weight: 500; }
-        .summary-section { margin-top: 24px; display: flex; justify-content: flex-end; }
-        .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
-        .summary-row.total { border-top: 1px solid #e5e7eb; margin-top: 8px; font-weight: 700; }
-        .footer { text-align: center; padding: 24px; background: #f9fafb; }
-    </style>
-</head>
-<body>
-    <div class="invoice-container">
-        <div class="invoice-header">
-            <div class="company-info">
-                <h1>XSCard Business Solutions</h1>
-                <p>Professional Digital Business Cards & Contact Management</p>
-            </div>
-            <div class="invoice-title-section">
-                <div class="invoice-title">INVOICE</div>
-                <div class="invoice-number">${invoice.number}</div>
-                <div class="invoice-dates">
-                    <div>Issue Date: ${new Date(invoice.date || new Date()).toLocaleDateString()}</div>
-                    <div>Due Date: ${new Date(invoice.dueDate || new Date()).toLocaleDateString()}</div>
-                </div>
-                <div class="status-badge">${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}</div>
-            </div>
-        </div>
-        
-        <div class="invoice-details">
-            <div class="bill-to">
-                <h3>Bill To:</h3>
-                <div class="customer-name">${invoice.customerName || 'Unknown Customer'}</div>
-                <div class="customer-email">${invoice.customerEmail || 'No email provided'}</div>
-                <div class="customer-details">Professional Business Client</div>
-                <div class="customer-details">Cape Town, South Africa</div>
-            </div>
-            
-            <div class="payment-info">
-                <h3>Payment Information:</h3>
-                <div class="payment-info-grid">
-                    <div class="payment-row">
-                        <span class="payment-label">Amount:</span>
-                        <span class="payment-value">${invoice.currency} ${(invoice.total || invoice.amount || 0).toFixed(2)}</span>
-                    </div>
-                    <div class="payment-row">
-                        <span class="payment-label">Status:</span>
-                        <span class="payment-value">${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}</span>
-                    </div>
-                    <div class="payment-row">
-                        <span class="payment-label">Currency:</span>
-                        <span class="payment-value">${invoice.currency}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="service-details">
-            <h3>Service Details</h3>
-            <table class="invoice-table">
-                <thead class="table-header">
-                    <tr>
-                        <th>DESCRIPTION</th>
-                        <th style="text-align: center;">QTY</th>
-                        <th style="text-align: right;">RATE</th>
-                        <th style="text-align: right;">AMOUNT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${invoice.lineItems.map((item) => `
-                        <tr class="table-row">
-                            <td>${item.description}</td>
-                            <td style="text-align: center;">${item.quantity}</td>
-                            <td class="amount-column">${invoice.currency} ${item.rate.toFixed(2)}</td>
-                            <td class="amount-column">${invoice.currency} ${item.amount.toFixed(2)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-            
-            <div class="summary-section">
-                <div>
-                    <div class="summary-row">
-                        <span>Subtotal:</span>
-                        <span>${invoice.currency} ${(invoice.subtotal || 0).toFixed(2)}</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>VAT (15%):</span>
-                        <span>${invoice.currency} ${(invoice.tax || 0).toFixed(2)}</span>
-                    </div>
-                    <div class="summary-row total">
-                        <span>Total Amount:</span>
-                        <span>${invoice.currency} ${(invoice.total || invoice.amount || 0).toFixed(2)}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <h4>Thank you for choosing XSCard Business Solutions!</h4>
-            <p>For support and inquiries, contact us at support@xscard.com</p>
-        </div>
-    </div>
-</body>
-</html>`;
+  /**
+   * Generate and download PDF from HTML element
+   * @param element - HTML element to convert to PDF
+   * @param filename - Name of the file to download
+   */
+  static async generateAndDownloadFromElement(element: HTMLElement, filename: string): Promise<void> {
+    try {
+      console.log('🔄 Generating and downloading PDF from element...');
+      
+      const blob = await this.generateFromElement(element);
+      this.downloadPDF(blob, filename);
+      
+    } catch (error) {
+      console.error('❌ PDF generation and download failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate and download PDF from invoice data
+   * @param invoice - Invoice data to convert to PDF
+   * @param filename - Name of the file to download
+   */
+  static generateAndDownloadFromInvoiceData(invoice: Invoice, filename: string): void {
+    try {
+      console.log('🔄 Generating and downloading PDF from invoice data...');
+      
+      const blob = this.generateFromInvoiceData(invoice);
+      this.downloadPDF(blob, filename);
+      
+    } catch (error) {
+      console.error('❌ PDF generation and download failed:', error);
+      throw error;
+    }
+  }
 }
