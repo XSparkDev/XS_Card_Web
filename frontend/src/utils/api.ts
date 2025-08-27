@@ -227,23 +227,9 @@ export const FORM_AUTOFILL_CONFIG = {
 
 // Helper function to get the appropriate base URL with security considerations
 const getBaseUrl = () => {
-  // Check if we're in development
-  const isDevelopment = 
-    window.location.hostname === 'localhost' || 
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.startsWith('192.168.') ||
-    window.location.port === '3000' ||
-    window.location.port === '5173'; // Vite default port
-  
-  // In development, use localhost
-  if (isDevelopment) {
-    console.log('🔧 Development mode detected, using localhost:8383');
-    return 'http://localhost:8383';
-  }
-  
-  // In production, use the deployed backend
-  console.log('🚀 Production mode detected, using xscard-app.onrender.com');
-  return 'https://xscard-app.onrender.com';
+  // Always use the production backend for testing
+  console.log('🚀 Using production backend: https://xs-card-backendweb.onrender.com');
+  return 'https://xs-card-backendweb.onrender.com';
 };
 
 export const API_BASE_URL = getBaseUrl();
