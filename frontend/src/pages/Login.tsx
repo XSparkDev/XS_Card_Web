@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash, FaSignInAlt, FaCode, FaUser, FaLock } from 'react-icons/fa';
 
 // Import API utilities to get the correct base URL
-import { buildEnterpriseUrl, getEnterpriseHeaders } from '../utils/api';
+import { API_BASE_URL, buildEnterpriseUrl, getEnterpriseHeaders } from '../utils/api';
 
 interface LoginProps {
   onLogin: (token: string, userData: any) => void;
@@ -57,7 +57,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       console.log('🔐 Attempting login with:', { email: email.trim() });
       
-      const response = await fetch('http://localhost:8383/SignIn', {
+      const response = await fetch(`${API_BASE_URL}/SignIn`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

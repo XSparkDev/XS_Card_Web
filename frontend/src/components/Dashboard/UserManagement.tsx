@@ -229,7 +229,7 @@ const SendEmailModal = ({ user, users, onClose }: { user: User | null; users: Us
       // Get Firebase token
       const firebaseToken = FIREBASE_TOKEN;
       
-      const response = await fetch('http://localhost:8383/enterprise/email/send', {
+      const response = await fetch(`${API_BASE_URL}/enterprise/email/send`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -2022,7 +2022,7 @@ const UserManagement = () => {
     try {
       setResetPasswordLoading(true);
       
-      const response = await fetch('http://localhost:8383/forgot-password', {
+      const response = await fetch(`${API_BASE_URL}/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -2079,7 +2079,7 @@ const UserManagement = () => {
       setShowEmailLogs(true);
       
       const firebaseToken = FIREBASE_TOKEN;
-      const response = await fetch('http://localhost:8383/enterprise/email/logs?limit=50', {
+      const response = await fetch(`${API_BASE_URL}/enterprise/email/logs?limit=50`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${firebaseToken}`

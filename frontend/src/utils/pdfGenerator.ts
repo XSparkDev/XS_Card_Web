@@ -143,7 +143,7 @@ export class PDFGenerator {
         style: 'italic',
         lineHeight: 8
       });
-      
+
       yPosition = addText('Email: support@xscard.com', leftMargin, yPosition, {
         fontSize: 10,
         lineHeight: 6
@@ -163,13 +163,13 @@ export class PDFGenerator {
         align: 'right',
         lineHeight: 8
       });
-      
+
       yPosition = addText(`Date: ${new Date(safeInvoice.date).toLocaleDateString()}`, rightMargin - 60, yPosition, {
         fontSize: 12,
         align: 'right',
         lineHeight: 6
       });
-      
+
       yPosition = addText(`Due Date: ${new Date(safeInvoice.dueDate).toLocaleDateString()}`, rightMargin - 60, yPosition, {
         fontSize: 12,
         align: 'right',
@@ -184,12 +184,12 @@ export class PDFGenerator {
         style: 'bold',
         lineHeight: 8
       });
-      
+
       yPosition = addText(safeInvoice.customerName, leftMargin, yPosition, {
         fontSize: 12,
         lineHeight: 6
       });
-      
+
       yPosition = addText(safeInvoice.customerEmail, leftMargin, yPosition, {
         fontSize: 12,
         lineHeight: 6
@@ -203,7 +203,7 @@ export class PDFGenerator {
         style: 'bold',
         lineHeight: 8
       });
-      
+
       addText('Amount', rightMargin - 30, yPosition, {
         fontSize: 12,
         style: 'bold',
@@ -244,7 +244,7 @@ export class PDFGenerator {
         align: 'right',
         lineHeight: 6
       });
-      
+
       addText(`${safeInvoice.currency} ${safeInvoice.subtotal?.toFixed(2) || '0.00'}`, rightMargin - 10, totalY, {
         fontSize: 12,
         align: 'right',
@@ -325,10 +325,10 @@ export class PDFGenerator {
     } catch (error) {
       console.error('❌ PDF download failed:', error);
       throw new Error(`PDF download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
   }
+}
 
-  /**
+/**
    * Generate and download PDF from HTML element
    * @param element - HTML element to convert to PDF
    * @param filename - Name of the file to download
