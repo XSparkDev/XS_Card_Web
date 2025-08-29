@@ -1,0 +1,220 @@
+.team-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.team-modal-container {
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 80rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.team-modal-header {
+  padding: 1.5rem;
+  padding-bottom: 1rem;
+  position: relative;
+}
+
+.team-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.team-modal-description {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.team-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+  line-height: 1;
+}
+
+.team-modal-form {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.team-modal-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.team-description-input {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: #fff;
+  color: #0f172a;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.team-description-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.leader-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: #fff;
+  color: #0f172a;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.leader-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.help-text {
+  font-size: 0.75rem;
+}
+
+/* Header button styling to match Department page */
+.header-button {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-button i {
+  font-size: 0.875rem;
+}
+
+.outline-button {
+  background-color: transparent;
+  border: 1px solid #BE1E2D;
+  color: #BE1E2D;
+}
+
+.outline-button:hover {
+  background-color: rgba(190, 30, 45, 0.05);
+}
+
+.primary-button {
+  background-color: #BE1E2D;
+  border: 1px solid #BE1E2D;
+  color: white;
+}
+
+.primary-button:hover {
+  background-color: rgba(190, 30, 45, 0.9);
+}
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* Team leader select specific styling */
+.team-modal-form .select-trigger {
+  background-color: white;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+}
+
+.team-modal-form .select-content {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.team-modal-form .select-item {
+  color: #0f172a;
+  background-color: white;
+}
+
+.team-modal-form .select-item:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.team-modal-form .select-item[data-highlighted] {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Specific team leader select styling */
+.team-leader-select {
+  background-color: white !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.team-leader-dropdown {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.team-leader-dropdown .select-item {
+  color: #0f172a !important;
+  background-color: white !important;
+}
+
+.team-leader-dropdown .select-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.team-leader-dropdown .select-item[data-highlighted] {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.team-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.error-message {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .team-modal-container {
+    max-width: 90%;
+  }
+} 

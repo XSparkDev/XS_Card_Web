@@ -1,0 +1,1672 @@
+// Add these types near the top of the file
+export interface PasscreatorResponse {
+    message: string;
+    passUri: string;
+    passFileUrl: string;
+    passPageUrl: string;
+    identifier: string;
+    colorScheme?: string; // Add default color support
+}
+
+// Employee Types
+export interface Employee {
+  id: string;
+  name: string;
+  surname: string;
+  email: string;
+  phone?: string;
+  position?: string;
+  departmentId?: string;
+  departmentName?: string;
+  employeeNumber?: string;
+  title?: string;
+  role?: string;
+  profileImage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  individualPermissions?: { removed: string[]; added: string[] };
+  calendarPermissions?: { removed: string[]; added: string[] };
+}
+
+// Team Types
+export interface Team {
+  id: string;
+  name: string;
+  description: string;
+  departmentId: string;
+  departmentRef: string;
+  leaderId: string;
+  leaderRef: string | null;
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamsResponse {
+  success: boolean;
+  teams: Team[];
+  count: number;
+  message?: string;
+}
+
+export interface EmployeeSearchResponse {
+  success: boolean;
+  data: {
+    employees: Employee[];
+    total: number;
+    page?: number;
+    limit?: number;
+  };
+  message?: string;
+}
+
+// Template Types
+export interface Template {
+  id: string;
+  name: string;
+  description?: string;
+  colorScheme: string;
+  companyLogo?: string | null;
+  departmentId?: string | null;
+  isEnterprise?: boolean;
+  createdBy?: string;
+  createdByRole?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+}
+
+export interface DepartmentTemplatesResponse {
+  success: boolean;
+  data: {
+    departmentId: string;
+    templates: Template[];
+    total: number;
+  };
+}
+
+export interface EffectiveTemplateResponse {
+  success: boolean;
+  data: {
+    template?: Template;
+    source?: 'department' | 'enterprise' | 'default';
+    inheritance?: string;
+  } | null;
+  message?: string;
+  fallback?: {
+    colorScheme: string;
+    companyLogo?: string | null;
+  };
+}
+
+// Billing Types
+export interface SubscriptionStatus {
+  subscriptionStatus: 'none' | 'trial' | 'active' | 'cancelled' | 'past_due';
+  subscriptionPlan: string | null;
+  subscriptionReference?: string;
+  subscriptionStart?: string;
+  subscriptionEnd?: string;
+  trialStartDate?: string;
+  trialEndDate?: string;
+  customerCode?: string;
+  subscriptionCode?: string;
+  emailToken?: string; // Add email token for subscription operations
+  isActive: boolean;
+  plan: 'free' | 'premium' | 'enterprise';
+  amount?: number;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  amount: number;
+  interval: 'monthly' | 'annually';
+  description: string;
+  trialDays: number;
+  planCode?: string;
+  features?: string[];
+}
+
+export interface BillingLog {
+  id: string;
+  action: string;
+  resource: string;
+  userId: string;
+  resourceId: string;
+  timestamp: string | null | undefined; // Allow null/undefined timestamps
+  details: {
+    type?: string;
+    plan?: string;
+    amount?: number;
+    interval?: string;
+    reason?: string;
+  };
+}
+
+export interface BillingAPIResponse<T> {
+  status: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+// Contact Permission Types
+export interface ContactPermissionsResponse {
+  success: boolean;
+  contacts?: ContactWithOwner[];
+  id?: string;
+  contactList?: ContactWithOwner[];
+  totalCount?: number;
+  message?: string;
+  reason?: string;
+}
+
+export interface ContactWithOwner {
+  name: string;
+  surname: string;
+  phone: string;
+  email: string;
+  company?: string;
+  howWeMet?: string;
+  createdAt: {
+    _seconds: number;
+    _nanoseconds: number;
+  };
+}
+
+export interface ContactDeleteResponse {
+  success: boolean;
+  message: string;
+  deletedContactId?: string;
+  deletedContact?: ContactWithOwner;
+}
+
+
+// Firebase authentication token for API access (fallback only)
+// This should not be used in production - real tokens come from login
+export const FIREBASE_TOKEN = null; // Removed hardcoded token
+
+// Enterprise ID commonly used in the app
+export const DEFAULT_ENTERPRISE_ID = "x-spark-test";// "x-spark-test";
+
+// Default user ID specifically for meetings and user-specific features
+//export const DEFAULT_USER_ID = "EccyMCv7uiS1eYHB3ZMu6zRR1DG2"; // user
+//export const DEFAULT_USER_ID = "jbtu0MfGddPJLWnrHmHKCvFhm1j2"; // admin
+ //export const DEFAULT_USER_ID = "jHKXOoB9aiTMdOiTmuRckYdQFIL2"; // user1
+//export const DEFAULT_USER_ID = "yy9prnU8sMWsjoQVaHiZSQrwKFJ2"; // user2
+// export const DEFAULT_USER_ID = "X8zi8avT5OdPH0lbCq7q482fYOu1"; // manager
+export const DEFAULT_USER_ID = "BPxFmmG6SVXvbwwRJ0YjBnuI8e73"; // admin
+
+
+
+// Example payment method ID for testing
+export const EXAMPLE_PAYMENT_METHOD_ID = "C1qy82bmgPwZdqjfqBQ8";
+
+// Configuration for handling insecure connections
+export const API_CONFIG = {
+  // Allow HTTP requests from HTTPS pages (mixed content)
+  allowMixedContent: true,
+  // Bypass CORS restrictions in development
+  bypassCORS: true,
+  // Allow self-signed certificates
+  allowSelfSigned: true,
+  // Disable SSL verification for development
+  disableSSLVerification: true
+};
+
+// Additional configuration for form autofill and credit card features
+export const FORM_AUTOFILL_CONFIG = {
+  // Enable autofill even on insecure connections (development only)
+  enableInsecureAutofill: true,
+  // Force autocomplete attributes
+  forceAutocomplete: true,
+  // Override browser security for forms
+  overrideFormSecurity: true
+};
+
+// Helper function to get the appropriate base URL with security considerations
+const getBaseUrl = () => {
+  // Check if we're in development
+  const isDevelopment = 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.startsWith('192.168.') ||
+    window.location.port === '3000' ||
+    window.location.port === '5173'; // Vite default port
+  
+  // In development, use production backend for testing
+  if (isDevelopment) {
+    // Check if we need to use HTTP or HTTPS based on current page protocol
+    const protocol = window.location.protocol;
+    const isSecurePage = protocol === 'https:';
+    
+    // If we're on a secure page but want to connect to local dev server
+    if (isSecurePage && API_CONFIG.allowMixedContent) {
+      console.warn('⚠️ Mixed content warning: HTTPS page connecting to HTTP API');
+      console.warn('🔧 For development only - do not use in production');
+    }
+    
+    return 'https://xs-card-backendweb.onrender.com';
+  }
+  
+  // In production, use secure connection
+  return 'https://xs-card-backendweb.onrender.com';
+};
+
+export const API_BASE_URL = getBaseUrl();
+
+// API endpoints
+export const ENDPOINTS = {
+    // Shared endpoints
+    SIGN_IN: '/SignIn',
+    INITIALIZE_PAYMENT: '/payment/initialize',
+    ADD_USER: '/AddUser',
+    GENERATE_QR_CODE: '/generateQR',
+    GET_USER: '/Users',
+    GET_CARD: '/Cards',
+    ADD_CARD: '/AddCard',
+    GET_CONTACTS: '/Contacts',
+    ADD_CONTACT: '/AddContact',
+    UPDATE_USER: '/UpdateUser',
+    UPDATE_PROFILE_IMAGE: '/Users/:id/profile-image',
+    UPDATE_COMPANY_LOGO: '/Users/:id/company-logo', 
+    UPDATE_USER_COLOR: '/Users/:id/color', 
+    ADD_TO_WALLET: '/Cards/:userId/wallet/:cardIndex',
+    DELETE_CONTACT: '/Contacts',
+    DELETE_CONTACT_BY_USER_ID: '/Contacts/:userId',
+    DELETE_SPECIFIC_CONTACT: '/Contacts/:userId/contact/:contactIndex',
+    GET_USER_CONTACTS: '/Contacts/:userId',
+    UPDATE_CARD: '/Cards/:id',
+    UPDATE_CARD_BY_INDEX: '/Cards/:userId?cardIndex=:cardIndex',
+    UPDATE_CARD_COLOR: '/Cards/:id/color',
+    CREATE_MEETING: '/meetings',
+    MEETING_INVITE: '/meetings/invite',
+    DELETE_CARD: '/Cards/:id',
+    UPGRADE_USER: '/Users/:id/upgrade',    
+    SUBSCRIPTION_STATUS: '/subscription/status',
+    CANCEL_SUBSCRIPTION: '/subscription/cancel',
+    UPLOAD_IMAGE: '/upload-image',
+    DEACTIVATE_USER: '/deactivate',
+    REACTIVATE_USER: '/reactivate',
+    
+    // Billing endpoints (Premium/Free plans) - These map to existing backend routes
+    BILLING_SUBSCRIPTION_STATUS: '/subscription/status',  // ✅ EXISTS
+    BILLING_SUBSCRIPTION_PLANS: '/subscription/plans',   // ❌ NEED TO ADD  
+    BILLING_SUBSCRIPTION_LOGS: '/subscription/logs',     // ✅ EXISTS
+    BILLING_INITIALIZE_PAYMENT: '/subscription/initialize', // ✅ EXISTS - Main payment initialization
+    BILLING_TRIAL_INITIALIZE: '/subscription/trial/initialize', // NEW: Trial-specific initialization
+    BILLING_UPDATE_PLAN: '/subscription/plan',           // NEW: Direct plan changes
+    BILLING_PAYMENT_METHODS: '/billing/payment-methods', // NEW: Payment method CRUD
+    BILLING_PAYMENT_METHOD_BY_ID: '/billing/payment-methods/:id', // NEW: Individual payment method operations (GET, PUT, DELETE)
+    BILLING_INVOICES: '/billing/invoices', // NEW: Premium user invoices
+    BILLING_INVOICE_BY_ID: '/billing/invoices/:id', // NEW: Individual invoice operations
+    BILLING_CANCEL_SUBSCRIPTION: '/subscription/cancel',  // Billing cancel subscription endpoint
+
+    // Enterprise-related endpoints (management routes - with /api prefix)
+    ENTERPRISE_CARDS: `/enterprise/:enterpriseId/cards`,
+    ENTERPRISE_DEPARTMENTS: `/api/enterprise/:enterpriseId/departments`,
+    ENTERPRISE_EMPLOYEES: `/enterprise/:enterpriseId/employees`,
+    ENTERPRISE_CREATE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments`,
+    ENTERPRISE_DELETE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments/:departmentId`,
+    ENTERPRISE_UPDATE_DEPARTMENT: `/api/enterprise/:enterpriseId/departments/:departmentId`,
+    GET_ENTERPRISE: `/api/enterprise/:enterpriseId`,
+    UPDATE_ENTERPRISE: `/api/enterprise/:enterpriseId`,   
+    // API routes (with /api prefix)
+    ENTERPRISE_CONTACTS: `/api/enterprise/:enterpriseId/contacts/details`,
+    ENTERPRISE_DEPARTMENT_CONTACTS: `/api/enterprise/:enterpriseId/departments/:departmentId/contacts/details`,
+    ENTERPRISE_CONTACTS_SUMMARY: `/api/enterprise/:enterpriseId/contacts/summary`,
+    ENTERPRISE_INQUIRY_SUBMIT: '/enterprise/inquiry',
+    ENTERPRISE_DEMO_REQUEST: '/enterprise/demo',
+    ENTERPRISE_SALES_CONTACT: '/enterprise/contact-sales',
+    
+    // Security and Activity Logs endpoints
+    ENTERPRISE_SECURITY_LOGS: `/api/enterprise/:enterpriseId/security/logs`,
+    ENTERPRISE_SECURITY_ALERTS: `/api/enterprise/:enterpriseId/security/alerts`,
+    
+    // Individual Permissions endpoints
+    ENTERPRISE_USER_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/permissions`,
+    ENTERPRISE_USER_CONTACT_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/contact-permissions`,
+    ENTERPRISE_USER_CALENDAR_PERMISSIONS: `/api/enterprise/:enterpriseId/users/:userId/calendar-permissions`,
+    
+    // Role Management endpoints
+    ENTERPRISE_EMPLOYEE_ROLE_UPDATE: `/api/enterprise/:enterpriseId/departments/:departmentId/employees/:employeeId/role`,
+    
+    // Team Management endpoints (management routes - with /api prefix)
+    ENTERPRISE_DEPARTMENT_TEAMS: `/api/enterprise/:enterpriseId/departments/:departmentId/teams`,
+    ENTERPRISE_DEPARTMENT_TEAM_BY_ID: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId`,
+    ENTERPRISE_DEPARTMENT_TEAM_MEMBERS: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members`,
+    ENTERPRISE_DEPARTMENT_TEAM_ADD_MEMBER: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
+    ENTERPRISE_DEPARTMENT_TEAM_REMOVE_MEMBER: `/api/enterprise/:enterpriseId/departments/:departmentId/teams/:teamId/members/:employeeId`,
+    
+    // Bulk Operations endpoints
+    BULK_DEACTIVATE: `/bulk-deactivate`,
+    BULK_REACTIVATE: `/bulk-reactivate`,
+    
+    // Cache Management endpoints
+    CACHE_STATS: `/api/cache/stats`,
+    CACHE_CLEAR: `/api/cache/clear`,
+    CACHE_DEPARTMENTS_CLEAR: `/api/cache/departments/clear`,
+    CACHE_WARM: `/api/cache/warm`,
+    CACHE_CONFIG: `/api/cache/config`,
+    CACHE_ANALYTICS: `/api/cache/analytics`,
+    
+};
+
+// Helper function to build enterprise endpoints with the enterpriseId
+export const buildEnterpriseUrl = (endpoint: string, enterpriseId: string = DEFAULT_ENTERPRISE_ID) => {
+  return buildUrl(endpoint.replace(':enterpriseId', enterpriseId));
+};
+
+// Helper function to build billing endpoints with subscription code
+export const buildBillingUrl = (endpoint: string, subscriptionCode?: string) => {
+  if (subscriptionCode && endpoint.includes(':subscriptionCode')) {
+    return buildUrl(endpoint.replace(':subscriptionCode', subscriptionCode));
+  }
+  return buildUrl(endpoint);
+};
+
+// Function to get authenticated headers for enterprise API calls
+export const getEnterpriseHeaders = () => {
+  // Get the real token from localStorage (stored by Login component)
+  const authToken = localStorage.getItem('authToken');
+  const token = authToken || FIREBASE_TOKEN; // Fallback to hardcoded token if none found
+  
+  if (!token) {
+    console.error('❌ No authentication token found! Please log in first.');
+    throw new Error('Authentication required. Please log in first.');
+  }
+  
+  console.log('🔐 getEnterpriseHeaders: Using token:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+  
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+};
+
+export const buildUrl = (endpoint: string) => `${API_BASE_URL}${endpoint}`;
+
+// Web-specific utility function to get headers with authentication
+export const getAuthHeaders = async (additionalHeaders = {}) => {
+  const token = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
+  return {
+    'Authorization': token ? `Bearer ${token}` : '', // Added Bearer prefix
+    'Content-Type': 'application/json',
+    ...additionalHeaders,
+  };
+};
+
+export const getUserId = (): string | null => {
+  try {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      return JSON.parse(userData).id;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting user ID:', error);
+    return null;
+  }
+};
+
+// Request cache to prevent duplicate simultaneous requests
+// Request cache for deduplication (currently unused but reserved for future optimization)
+// const requestCache = new Map<string, Promise<Response>>();
+
+// Enhanced helper function to make authenticated requests with better error handling and insecure connection support
+export const authenticatedFetch = async (endpoint: string, options: RequestInit = {}) => {
+  try {
+    // Try to get token from localStorage first, fallback to FIREBASE_TOKEN
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
+    const token = localToken || FIREBASE_TOKEN;
+    
+    if (!token) {
+      console.error('❌ No authentication token found! Please log in first.');
+      throw new Error('Authentication required. Please log in first.');
+    }
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`, // Fixed: Added "Bearer " prefix
+      ...options.headers,
+    };
+
+    // Configure request options for insecure connections
+    const requestOptions: RequestInit = {
+      ...options,
+      headers,
+    };    // In development, configure request options for cross-origin requests
+    const isDevelopment = 
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.');
+
+    if (isDevelopment && API_CONFIG.bypassCORS) {
+      // Set mode to 'cors' for cross-origin requests
+      // Note: DO NOT set CORS response headers in the request - that's the server's job!
+      requestOptions.mode = 'cors';
+      requestOptions.credentials = 'omit'; // Don't send credentials for development
+    }
+
+    // For mixed content (HTTPS to HTTP), we need to handle it carefully
+    const currentProtocol = window.location.protocol;
+    const targetUrl = buildUrl(endpoint);
+    
+    if (currentProtocol === 'https:' && targetUrl.startsWith('http:')) {
+      console.warn('🔒 Mixed content detected - attempting insecure request from secure page');
+      console.warn('🔧 Target URL:', targetUrl);
+      
+      if (!API_CONFIG.allowMixedContent) {
+        throw new Error('Mixed content blocked - set API_CONFIG.allowMixedContent to true for development');
+      }
+    }
+
+    const response = await fetch(targetUrl, requestOptions);
+
+    // Add response status checking
+    if (!response.ok) {
+      console.error(`API Error: ${response.status} ${response.statusText} for ${endpoint}`);
+      
+      // Handle specific HTTP errors that might be related to security
+      if (response.status === 0 || response.status === 404) {
+        console.warn('🌐 Network error - this might be due to CORS or mixed content restrictions');
+        console.warn('💡 Try: 1) Check if the server is running, 2) Verify CORS settings, 3) Check mixed content policies');
+      }
+      
+      return response; // Still return the response to let calling code handle it
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Authenticated fetch error for endpoint:', endpoint, error);
+    
+    // Provide helpful error messages for common insecure connection issues
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      console.error('🚫 Network error - possible causes:');
+      console.error('   • CORS policy blocking the request');
+      console.error('   • Mixed content policy (HTTPS → HTTP)');
+      console.error('   • Server not accessible or not running');
+      console.error('   • SSL/TLS certificate issues');
+      console.error('💡 For development, ensure API_CONFIG settings allow insecure connections');
+    }
+    
+    throw error;
+  }
+};
+
+// Function to enable credit card autofill on insecure connections
+export const enableInsecureAutofill = () => {
+  if (window.location.hostname !== 'localhost' && !window.location.hostname.startsWith('192.168.')) {
+    console.warn('⚠️ Insecure autofill is only recommended for localhost development');
+    return false;
+  }
+
+  console.log('💳 Attempting to enable credit card autofill on insecure connection...');
+
+  // Method 1: Add autocomplete meta tag
+  if (document && !document.querySelector('meta[name="format-detection"]')) {
+    const formatMeta = document.createElement('meta');
+    formatMeta.name = 'format-detection';
+    formatMeta.content = 'telephone=no, date=no, address=no, email=no, url=no';
+    document.head.appendChild(formatMeta);
+    console.log('📱 Added format-detection meta tag');
+  }
+
+  // Method 2: Add viewport meta with user-scalable for mobile autofill
+  const existingViewport = document.querySelector('meta[name="viewport"]');
+  if (existingViewport && !existingViewport.getAttribute('content')?.includes('user-scalable')) {
+    const currentContent = existingViewport.getAttribute('content') || '';
+    existingViewport.setAttribute('content', currentContent + ', user-scalable=yes');
+    console.log('📱 Updated viewport meta for autofill compatibility');
+  }
+
+  // Method 3: Override form security programmatically
+  const originalCreateElement = document.createElement;
+  document.createElement = function(tagName: string, options?: ElementCreationOptions) {
+    const element = originalCreateElement.call(this, tagName, options);
+    
+    if (tagName.toLowerCase() === 'form') {
+      // Force secure attributes on forms
+      (element as HTMLFormElement).setAttribute('autocomplete', 'on');
+      (element as HTMLFormElement).setAttribute('data-lpignore', 'false');
+      console.log('🔒 Enhanced form element for autofill');
+    }
+    
+    if (tagName.toLowerCase() === 'input') {
+      const inputElement = element as HTMLInputElement;
+      // Ensure credit card inputs have proper autocomplete attributes
+      const name = inputElement.name || inputElement.id || '';
+      if (name.includes('card') || name.includes('credit')) {
+        inputElement.setAttribute('data-lpignore', 'false');
+        inputElement.setAttribute('data-form-type', 'payment');
+        console.log('💳 Enhanced credit card input for autofill');
+      }
+    }
+    
+    return element;
+  };
+
+  console.log('✅ Insecure autofill configuration applied');
+  return true;
+};
+
+// Function to configure specific form for credit card autofill
+export const configureFormForAutofill = (formElement: HTMLFormElement) => {
+  if (!formElement) return;
+
+  console.log('💳 Configuring form for credit card autofill...');
+
+  // Set form attributes for autofill
+  formElement.setAttribute('autocomplete', 'on');
+  formElement.setAttribute('data-lpignore', 'false');
+  formElement.setAttribute('data-form-type', 'payment');
+  
+  // Configure individual inputs
+  const inputs = formElement.querySelectorAll('input');
+  inputs.forEach(input => {
+    configureInputForAutofill(input);
+  });
+
+  console.log('✅ Form configured for autofill');
+};
+
+// Function to configure individual inputs for autofill
+export const configureInputForAutofill = (inputElement: HTMLInputElement) => {
+  if (!inputElement) return;
+
+  const name = (inputElement.name || inputElement.id || '').toLowerCase();
+  
+  // Set appropriate autocomplete values based on input purpose
+  if (name.includes('cardnumber') || name.includes('card-number') || name.includes('cc-number')) {
+    inputElement.setAttribute('autocomplete', 'cc-number');
+    inputElement.setAttribute('data-lpignore', 'false');
+    inputElement.setAttribute('x-autocompletetype', 'cc-number');
+  } else if (name.includes('expiry') || name.includes('exp')) {
+    if (name.includes('month')) {
+      inputElement.setAttribute('autocomplete', 'cc-exp-month');
+      inputElement.setAttribute('x-autocompletetype', 'cc-exp-month');
+    } else if (name.includes('year')) {
+      inputElement.setAttribute('autocomplete', 'cc-exp-year');
+      inputElement.setAttribute('x-autocompletetype', 'cc-exp-year');
+    } else {
+      inputElement.setAttribute('autocomplete', 'cc-exp');
+      inputElement.setAttribute('x-autocompletetype', 'cc-exp');
+    }
+  } else if (name.includes('cvv') || name.includes('cvc') || name.includes('security')) {
+    inputElement.setAttribute('autocomplete', 'cc-csc');
+    inputElement.setAttribute('x-autocompletetype', 'cc-csc');
+  } else if (name.includes('name') || name.includes('cardholder')) {
+    inputElement.setAttribute('autocomplete', 'cc-name');
+    inputElement.setAttribute('x-autocompletetype', 'cc-name');
+  }
+
+  // Add general autofill enabling attributes
+  inputElement.setAttribute('data-lpignore', 'false');
+  inputElement.setAttribute('data-form-type', 'payment');
+  
+  console.log(`💳 Configured input "${name}" for autofill`);
+};
+
+// Date utility functions
+export const isValidDate = (dateString: string | null | undefined): boolean => {
+  if (!dateString) return false;
+  const date = new Date(dateString);
+  return !isNaN(date.getTime()) && date.getFullYear() > 1900;
+};
+
+export const safeFormatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
+};
+
+// Subscription status helpers
+export const isTrialExpired = (trialEndDate: string | undefined): boolean => {
+  if (!trialEndDate) return false;
+  return new Date(trialEndDate) < new Date();
+};
+
+export const getSubscriptionStatusMessage = (subscription: SubscriptionStatus): string => {
+  if (subscription.subscriptionStatus === 'trial') {
+    if (subscription.trialEndDate && isTrialExpired(subscription.trialEndDate)) {
+      return 'Trial expired - Please upgrade to continue';
+    }
+    return 'Trial active';
+  }
+  
+  switch (subscription.subscriptionStatus) {
+    case 'active':
+      return 'Subscription active';
+    case 'cancelled':
+      return 'Subscription cancelled';
+    case 'past_due':
+      return 'Payment past due';
+    case 'none':
+    default:
+      return 'No active subscription';
+  }
+};
+
+// Development helper functions
+export const checkServerConnection = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`, { 
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-cache'
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('❌ Server connection check failed:', error);
+    return false;
+  }
+};
+
+export const setupInsecureConnectionSupport = () => {
+  const isDevelopment = 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.startsWith('192.168.');
+
+  if (!isDevelopment) {
+    console.warn('⚠️ Insecure connection support should only be enabled in development');
+    return;
+  }
+
+  console.log('🔧 Setting up development environment for insecure connections...');
+
+  // Enable autofill on insecure connections
+  enableInsecureAutofill();
+
+  // Log current configuration
+  console.log('📋 Development API Configuration:');
+  console.log(`   • API Base URL: ${API_BASE_URL}`);
+  console.log(`   • Allow Mixed Content: ${API_CONFIG.allowMixedContent}`);
+  console.log(`   • Bypass CORS: ${API_CONFIG.bypassCORS}`);
+  console.log(`   • Current Protocol: ${window.location.protocol}`);
+  console.log(`   • Current Host: ${window.location.hostname}:${window.location.port}`);
+
+  // Check server connectivity
+  checkServerConnection().then(isConnected => {
+    if (isConnected) {
+      console.log('✅ Server is accessible');
+    } else {
+      console.warn('❌ Server is not accessible - check if backend is running on', API_BASE_URL);
+      console.warn('💡 Common fixes:');
+      console.warn('   1. Start the backend server');
+      console.warn('   2. Check if port 8383 is open');
+      console.warn('   3. Verify CORS is configured on the backend');
+    }
+  });
+};
+
+export const bypassSecurityForDevelopment = () => {
+  const isDevelopment = 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.startsWith('192.168.');
+
+  if (!isDevelopment) {
+    console.warn('⚠️ Security bypass is only allowed in development');
+    return false;
+  }
+
+  console.log('🚨 DEVELOPMENT ONLY: Bypassing security restrictions...');
+  
+  // Override fetch for development
+  const originalFetch = window.fetch;
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input.toString();
+    
+    if (url.includes(API_BASE_URL)) {
+      const modifiedInit = {
+        ...init,
+        mode: 'cors' as RequestMode,
+        credentials: 'omit' as RequestCredentials,
+        headers: {
+          ...init?.headers,
+          // Remove any CORS headers that the client shouldn't set
+        }
+      };
+
+      // Remove CORS response headers if they were mistakenly added
+      if (modifiedInit.headers && typeof modifiedInit.headers === 'object') {
+        const headers = modifiedInit.headers as Record<string, string>;
+        delete headers['Access-Control-Allow-Origin'];
+        delete headers['Access-Control-Allow-Methods'];
+        delete headers['Access-Control-Allow-Headers'];
+      }
+
+      console.log(`🌐 Development fetch to: ${url}`);
+      return originalFetch(input, modifiedInit);
+    }
+    
+    return originalFetch(input, init);
+  };
+
+  console.log('✅ Development security bypass activated');
+  return true;
+};
+
+// Automatically setup development environment when in dev mode
+(() => {
+  const isDevelopment = 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.startsWith('192.168.');
+
+  if (isDevelopment) {
+    console.log('🚀 XSCard Development Mode Active');
+    console.log('💡 Available development helpers:');
+    console.log('   • setupInsecureConnectionSupport() - Configure dev environment');
+    console.log('   • bypassSecurityForDevelopment() - Override security for dev');
+    console.log('   • checkServerConnection() - Test backend connectivity');
+    console.log('   • enableInsecureAutofill() - Enable CC autofill on HTTP');
+    
+    // Auto-setup basic development features
+    setTimeout(() => {
+      if (API_CONFIG.bypassCORS) {
+        setupInsecureConnectionSupport();
+      }
+    }, 1000);
+  }
+})();
+
+// Template API Functions
+export const fetchDepartmentTemplates = async (departmentId: string, enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<DepartmentTemplatesResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/api/templates/${enterpriseId}/departments/${departmentId}`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
+    const result = await response.json();
+    
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const fetchEffectiveTemplate = async (departmentId: string, enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<EffectiveTemplateResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/api/templates/${enterpriseId}/${departmentId}/effective`);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🎨 Fetching effective template:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        data: null,
+        message: `HTTP ${response.status}: ${errorText}`,
+        fallback: {
+          colorScheme: '#1B2B5B',
+          companyLogo: null
+        }
+      };
+    }
+    
+    const result = await response.json();
+    
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      fallback: {
+        colorScheme: '#1B2B5B',
+        companyLogo: null
+      }
+    };
+  }
+};
+
+export const getAvailableTemplatesForDepartment = async (departmentId: string, enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<{
+  departmentTemplates: Template[];
+  enterpriseTemplates: Template[];
+  defaultTemplate: Template;
+}> => {
+  try {
+    // Fetch department templates
+    const deptResponse = await fetchDepartmentTemplates(departmentId, enterpriseId);
+    const departmentTemplates = deptResponse.success ? deptResponse.data.templates : [];
+    
+    // Fetch enterprise templates (all templates for the enterprise)
+    const enterpriseUrl = buildEnterpriseUrl(`/api/templates/${enterpriseId}`);
+    const headers = getEnterpriseHeaders();
+    
+    const enterpriseResponse = await fetch(enterpriseUrl, {
+      method: 'GET',
+      headers
+    });
+    
+    let enterpriseTemplates: Template[] = [];
+    if (enterpriseResponse.ok) {
+      const enterpriseResult = await enterpriseResponse.json();
+      if (enterpriseResult.success && enterpriseResult.data) {
+        enterpriseTemplates = enterpriseResult.data.enterpriseTemplates || [];
+      }
+    }
+    
+    // Create default template
+    const defaultTemplate: Template = {
+      id: 'default',
+      name: 'Default Template',
+      description: 'Default card template with standard styling',
+      colorScheme: '#1B2B5B',
+      companyLogo: null,
+      departmentId: null,
+      isEnterprise: false
+    };
+    
+    return {
+      departmentTemplates,
+      enterpriseTemplates,
+      defaultTemplate
+    };
+  } catch (error) {
+    return {
+      departmentTemplates: [],
+      enterpriseTemplates: [],
+      defaultTemplate: {
+        id: 'default',
+        name: 'Default Template',
+        description: 'Default card template with standard styling',
+        colorScheme: '#1B2B5B',
+        companyLogo: null,
+        departmentId: null,
+        isEnterprise: false
+      }
+    };
+  }
+};
+
+// Employee Search Functions
+export const fetchAllEmployees = async (enterpriseId: string = DEFAULT_ENTERPRISE_ID): Promise<EmployeeSearchResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/enterprise/${enterpriseId}/employees`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        data: {
+          employees: [],
+          total: 0
+        },
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    
+    // Transform backend response to match expected structure
+    return {
+      success: result.success,
+      data: {
+        employees: result.employees || [],
+        total: result.totalCount || 0
+      },
+      message: result.message
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: {
+        employees: [],
+        total: 0
+      },
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+export const searchEmployees = async (
+  searchTerm: string, 
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<EmployeeSearchResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/enterprise/${enterpriseId}/employees?search=${encodeURIComponent(searchTerm)}`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        data: {
+          employees: [],
+          total: 0
+        },
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    
+    // Transform backend response to match expected structure
+    return {
+      success: result.success,
+      data: {
+        employees: result.employees || [],
+        total: result.totalCount || 0
+      },
+      message: result.message
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: {
+        employees: [],
+        total: 0
+      },
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// Individual Permissions Functions
+export const updateUserIndividualPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_USER_PERMISSIONS.replace(':userId', userId), enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🌐 API Call - updateUserIndividualPermissions:', {
+      url,
+      userId,
+      individualPermissions,
+      enterpriseId
+    });
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ individualPermissions })
+    });
+    
+    console.log('📡 API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error:', response.status, errorText);
+      return {
+        success: false,
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ API Success:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ API Exception:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+export const updateUserContactPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_USER_CONTACT_PERMISSIONS.replace(':userId', userId), enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🌐 API Call - updateUserContactPermissions:', {
+      url,
+      userId,
+      individualPermissions,
+      enterpriseId
+    });
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ individualPermissions })
+    });
+    
+    console.log('📡 API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error:', response.status, errorText);
+      return {
+        success: false,
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ API Success:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ API Exception:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+export const updateUserCalendarPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const url = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_USER_CALENDAR_PERMISSIONS.replace(':userId', userId), enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    console.log('🌐 API Call - updateUserCalendarPermissions:', {
+      url,
+      userId,
+      individualPermissions,
+      enterpriseId
+    });
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ individualPermissions })
+    });
+    
+    console.log('📡 API Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error:', response.status, errorText);
+      return {
+        success: false,
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ API Success:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ API Exception:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// Function to fetch a specific user's permissions (including calendar permissions)
+export const fetchUserPermissions = async (
+  userId: string,
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    // Try to get user data from the employees endpoint first
+    const employeesUrl = buildEnterpriseUrl(ENDPOINTS.ENTERPRISE_EMPLOYEES, enterpriseId);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(employeesUrl, { headers });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const employees = data.employees || [];
+    
+    // Find the specific user
+    const user = employees.find((emp: any) => emp.id === userId || emp.userId === userId);
+    
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found'
+      };
+    }
+    
+    // Try to fetch calendar permissions separately if they're not in the employee data
+    let calendarPermissions = user.calendarPermissions || { removed: [], added: [] };
+    
+    // Since the backend might not have a GET endpoint for calendar permissions,
+    // we'll use empty defaults and rely on the employees endpoint to include them
+    // The calendar permissions should be included in the user.individualPermissions
+    // or in a separate calendarPermissions field if the backend supports it
+    
+    console.log('📅 Calendar permissions from employee data:', calendarPermissions);
+    console.log('📅 Individual permissions from employee data:', user.individualPermissions);
+    
+          // Check if calendar permissions are mixed in with individual permissions
+      if (user.individualPermissions) {
+        const calendarPerms = ['viewCalendar', 'createMeetings', 'manageAllMeetings'];
+        const calendarRemoved = user.individualPermissions.removed?.filter((p: string) => calendarPerms.includes(p)) || [];
+        const calendarAdded = user.individualPermissions.added?.filter((p: string) => calendarPerms.includes(p)) || [];
+        
+        if (calendarRemoved.length > 0 || calendarAdded.length > 0) {
+          calendarPermissions = {
+            removed: calendarRemoved,
+            added: calendarAdded
+          };
+          console.log('✅ Extracted calendar permissions from individual permissions:', calendarPermissions);
+        }
+      }
+    
+    return {
+      success: true,
+      data: {
+        user,
+        individualPermissions: user.individualPermissions || { removed: [], added: [] },
+        calendarPermissions: calendarPermissions
+      }
+    };
+  } catch (error) {
+    console.error('❌ Error fetching user permissions:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// 🚀 SCALABLE PERMISSION ROUTING SYSTEM
+// This automatically routes permissions to the correct endpoint based on permission names
+
+// Permission type definitions
+export const PERMISSION_TYPES = {
+  BUSINESS_CARDS: {
+    prefix: 'Cards',
+    permissions: ['viewCards', 'createCards', 'editCards', 'deleteCards', 'manageAllCards', 'exportCards', 'shareCards'],
+    endpoint: 'ENTERPRISE_USER_PERMISSIONS',
+    apiFunction: 'updateUserIndividualPermissions'
+  },
+  CONTACTS: {
+    prefix: 'Contacts', 
+    permissions: ['viewContacts', 'deleteContacts', 'shareContacts', 'exportContacts', 'manageAllContacts'],
+    endpoint: 'ENTERPRISE_USER_CONTACT_PERMISSIONS',
+    apiFunction: 'updateUserContactPermissions'
+  },
+  CALENDAR: {
+    prefix: 'Calendar', 
+    permissions: ['viewCalendar', 'createMeetings', 'manageAllMeetings'],
+    endpoint: 'ENTERPRISE_USER_CALENDAR_PERMISSIONS',
+    apiFunction: 'updateUserCalendarPermissions'
+  },
+  // 🎯 FUTURE PERMISSION TYPES - Just add them here!
+  TEAMS: {
+    prefix: 'Teams',
+    permissions: ['viewTeams', 'createTeams', 'editTeams', 'deleteTeams', 'manageTeamMembers'],
+    endpoint: 'ENTERPRISE_USER_TEAM_PERMISSIONS', // You'll add this endpoint
+    apiFunction: 'updateUserTeamPermissions' // You'll add this function
+  },
+  DEPARTMENTS: {
+    prefix: 'Departments',
+    permissions: ['viewDepartments', 'createDepartments', 'editDepartments', 'deleteDepartments', 'manageDepartmentUsers'],
+    endpoint: 'ENTERPRISE_USER_DEPARTMENT_PERMISSIONS',
+    apiFunction: 'updateUserDepartmentPermissions'
+  },
+  ANALYTICS: {
+    prefix: 'Analytics',
+    permissions: ['viewAnalytics', 'exportAnalytics', 'manageAnalytics'],
+    endpoint: 'ENTERPRISE_USER_ANALYTICS_PERMISSIONS',
+    apiFunction: 'updateUserAnalyticsPermissions'
+  },
+  BILLING: {
+    prefix: 'Billing',
+    permissions: ['viewBilling', 'manageBilling', 'processPayments'],
+    endpoint: 'ENTERPRISE_USER_BILLING_PERMISSIONS',
+    apiFunction: 'updateUserBillingPermissions'
+  }
+} as const;
+
+// Helper function to detect permission type
+export const detectPermissionType = (permissions: string[]): keyof typeof PERMISSION_TYPES | null => {
+  for (const [type, config] of Object.entries(PERMISSION_TYPES)) {
+    if (permissions.some(permission => (config as any).permissions.includes(permission))) {
+      return type as keyof typeof PERMISSION_TYPES;
+    }
+  }
+  return null;
+};
+
+// Helper function to check if permissions are all of the same type
+export const areAllPermissionsSameType = (permissions: string[]): boolean => {
+  if (permissions.length === 0) return true;
+  
+  const firstPermission = permissions[0];
+  let detectedType: keyof typeof PERMISSION_TYPES | null = null;
+  
+  for (const [type, config] of Object.entries(PERMISSION_TYPES)) {
+    if ((config as any).permissions.includes(firstPermission)) {
+      detectedType = type as keyof typeof PERMISSION_TYPES;
+      break;
+    }
+  }
+  
+  if (!detectedType) return false;
+  
+  // Check if all permissions are of the same type
+  return permissions.every(permission => {
+    const config = PERMISSION_TYPES[detectedType!];
+    return (config as any).permissions.includes(permission);
+  });
+};
+
+
+
+// Universal permission update function
+export const updateUserPermissions = async (
+  userId: string,
+  individualPermissions: { removed: string[], added: string[] },
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    const allPermissions = [...(individualPermissions.removed || []), ...(individualPermissions.added || [])];
+    
+    // Check if all permissions are of the same type
+    if (!areAllPermissionsSameType(allPermissions)) {
+      console.log('⚠️ Mixed permission types detected, separating by type...');
+      
+      // Separate permissions by type
+      const separatedPermissions: { [key: string]: { removed: string[], added: string[] } } = {};
+      
+      // Initialize all permission types
+      Object.keys(PERMISSION_TYPES).forEach(type => {
+        separatedPermissions[type] = { removed: [], added: [] };
+      });
+      
+      // Sort permissions into their respective types
+      allPermissions.forEach(permission => {
+        const permissionType = detectPermissionType([permission]);
+        if (permissionType) {
+          if (individualPermissions.removed?.includes(permission)) {
+            separatedPermissions[permissionType].removed.push(permission);
+          }
+          if (individualPermissions.added?.includes(permission)) {
+            separatedPermissions[permissionType].added.push(permission);
+          }
+        }
+      });
+      
+      // Process each permission type separately
+      const results = [];
+      for (const [type, perms] of Object.entries(separatedPermissions)) {
+        if (perms.removed.length > 0 || perms.added.length > 0) {
+          console.log(`🔄 Processing ${type} permissions:`, perms);
+          const result = await updateUserPermissions(userId, perms, enterpriseId);
+          results.push({ type, result });
+        }
+      }
+      
+      // Check if all results were successful
+      const allSuccessful = results.every(({ result }) => result.success);
+      const mockResults = results.filter(({ result }) => result.data?.mock);
+      
+      if (allSuccessful) {
+        if (mockResults.length > 0) {
+          return { 
+            success: true, 
+            message: 'Permissions updated successfully (some are mock implementations)',
+            data: { mock: true, results }
+          };
+        } else {
+          return { 
+            success: true, 
+            message: 'All permissions updated successfully',
+            data: { results }
+          };
+        }
+      } else {
+        const failedTypes = results.filter(({ result }) => !result.success).map(({ type }) => type);
+        return {
+          success: false,
+          message: `Failed to update permissions for: ${failedTypes.join(', ')}`
+        };
+      }
+    }
+    
+    // Single permission type - use existing logic
+    const permissionType = detectPermissionType(allPermissions);
+    
+    if (!permissionType) {
+      return {
+        success: false,
+        message: 'Unknown permission type. Please check permission names.'
+      };
+    }
+    
+    const config = PERMISSION_TYPES[permissionType];
+    console.log(`🎯 Detected permission type: ${permissionType} (${config.prefix})`);
+    
+    // Route to the appropriate function based on permission type
+    switch (permissionType) {
+      case 'BUSINESS_CARDS':
+        return await updateUserIndividualPermissions(userId, individualPermissions, enterpriseId);
+      case 'CONTACTS':
+        return await updateUserContactPermissions(userId, individualPermissions, enterpriseId);
+      case 'CALENDAR':
+        return await updateUserCalendarPermissions(userId, individualPermissions, enterpriseId);
+      // 🎯 FUTURE CASES - Just add them here!
+      case 'TEAMS':
+        // return await updateUserTeamPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Team permissions not yet implemented' };
+      case 'DEPARTMENTS':
+        // return await updateUserDepartmentPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Department permissions not yet implemented' };
+      case 'ANALYTICS':
+        // return await updateUserAnalyticsPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Analytics permissions not yet implemented' };
+      case 'BILLING':
+        // return await updateUserBillingPermissions(userId, individualPermissions, enterpriseId);
+        return { success: false, message: 'Billing permissions not yet implemented' };
+      default:
+        return { success: false, message: 'Unknown permission type' };
+    }
+  } catch (error) {
+    console.error('❌ Error in updateUserPermissions:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// Role Management Functions
+export const updateEmployeeRole = async (
+  employeeId: string,
+  departmentId: string,
+  newRole: string,
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    console.log('🔄 Updating employee role:', { employeeId, departmentId, newRole, enterpriseId });
+    
+    // Validate role
+    const validRoles = ['employee', 'manager', 'director', 'admin'];
+    if (!validRoles.includes(newRole)) {
+      return {
+        success: false,
+        message: `Invalid role. Must be one of: ${validRoles.join(', ')}`
+      };
+    }
+    
+    // Build URL with all required parameters
+    const url = buildEnterpriseUrl(
+      ENDPOINTS.ENTERPRISE_EMPLOYEE_ROLE_UPDATE
+        .replace(':departmentId', departmentId)
+        .replace(':employeeId', employeeId),
+      enterpriseId
+    );
+    
+    const headers = getEnterpriseHeaders();
+    
+    console.log('📡 Making role update request to:', url);
+    console.log('📦 Request payload:', { role: newRole });
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ role: newRole })
+    });
+    
+    console.log('📥 Response status:', response.status);
+    
+    if (!response.ok) {
+      let errorMessage = 'Failed to update employee role';
+      
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        errorMessage = `${errorMessage}: ${response.statusText}`;
+      }
+      
+      console.error('❌ Role update failed:', errorMessage);
+      return {
+        success: false,
+        message: errorMessage
+      };
+    }
+    
+    const result = await response.json();
+    console.log('✅ Role update successful:', result);
+    
+    return {
+      success: true,
+      data: result.data,
+      message: result.message || 'Employee role updated successfully'
+    };
+    
+  } catch (error) {
+    console.error('❌ Error updating employee role:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to update employee role'
+    };
+  }
+};
+
+// Team Functions
+export const fetchTeamsForDepartment = async (
+  departmentId: string,
+  enterpriseId: string = DEFAULT_ENTERPRISE_ID
+): Promise<TeamsResponse> => {
+  try {
+    const url = buildEnterpriseUrl(`/enterprise/${enterpriseId}/departments/${departmentId}/teams`);
+    const headers = getEnterpriseHeaders();
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        teams: [],
+        count: 0,
+        message: `HTTP ${response.status}: ${errorText}`
+      };
+    }
+    
+    const result = await response.json();
+    
+    return {
+      success: result.success,
+      teams: result.teams || [],
+      count: result.count || 0
+    };
+  } catch (error) {
+    return {
+      success: false,
+      teams: [],
+      count: 0
+    };
+  }
+};
+
+// Contact Permission Functions
+export const fetchAuthenticatedContacts = async (): Promise<ContactPermissionsResponse> => {
+  try {
+    // Get token from localStorage first, fallback to FIREBASE_TOKEN
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const response = await authenticatedFetch(ENDPOINTS.GET_CONTACTS, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only view your own contacts');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to fetch contacts'
+    };
+  }
+};
+
+export const fetchUserContacts = async (userId: string): Promise<ContactPermissionsResponse> => {
+  try {
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const endpoint = ENDPOINTS.GET_USER_CONTACTS.replace(':userId', userId);
+    const response = await authenticatedFetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only view your own contacts');
+      } else if (response.status === 404) {
+        throw new Error('Contact list not found');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to fetch user contacts'
+    };
+  }
+};
+
+export const deleteContactByIndex = async (userId: string, contactIndex: number): Promise<ContactDeleteResponse> => {
+  try {
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const endpoint = ENDPOINTS.DELETE_SPECIFIC_CONTACT
+      .replace(':userId', userId)
+      .replace(':contactIndex', contactIndex.toString());
+    
+    const response = await authenticatedFetch(endpoint, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only delete your own contacts');
+      } else if (response.status === 404) {
+        throw new Error('Contact not found');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to delete contact'
+    };
+  }
+};
+
+export const deleteUserContactList = async (userId: string): Promise<ContactDeleteResponse> => {
+  try {
+    const localToken = localStorage.getItem('authToken'); // Changed from 'userToken' to 'authToken'
+    const token = localToken || FIREBASE_TOKEN;
+    
+    const endpoint = ENDPOINTS.DELETE_CONTACT_BY_USER_ID.replace(':userId', userId);
+    const response = await authenticatedFetch(endpoint, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Authentication required');
+      } else if (response.status === 403) {
+        throw new Error('Access denied - You can only delete your own contacts');
+      } else if (response.status === 404) {
+        throw new Error('Contact list not found');
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to delete contact list'
+    };
+  }
+};

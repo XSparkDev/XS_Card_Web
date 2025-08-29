@@ -1,0 +1,1592 @@
+.analytics-container {
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.analytics-header {
+  margin-bottom: 1.5rem;
+}
+
+.analytics-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: #0f172a;
+}
+
+.analytics-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card-wrapper {
+  width: 100%;
+}
+
+.stat-card {
+  border-radius: 0.5rem;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.stat-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem;
+}
+
+.stat-card-title {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.stat-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 0.5rem;
+}
+
+.stat-card-percentage {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.percentage-icon {
+  color: #10b981;
+  font-size: 0.875rem;
+}
+
+.percentage-text {
+  font-size: 0.75rem;
+  color: #10b981;
+  margin-left: 0.25rem;
+}
+
+.icon-container {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.charts-grid {
+  margin-bottom: 1.5rem;
+}
+
+.charts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.half-width-card {
+  flex: 1;
+  min-width: 300px;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+
+.heatmap-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background-color: #0B4D2E;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.heatmap-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.heatmap-text {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.engagement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+}
+
+.engagement-chart {
+  background-color: #1e293b;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.engagement-chart-title {
+  font-size: 0.75rem;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.chart-placeholder {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.area-chart-placeholder {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.area-chart-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70%;
+  background-color: rgba(255, 99, 132, 0.1);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.area-chart-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #FF6384;
+}
+
+.line-chart-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.line-chart-line {
+  width: 90%;
+  height: 2px;
+  background-color: #36A2EB;
+  transform: rotate(-5deg);
+}
+
+.line-chart-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #36A2EB;
+  right: 20%;
+  top: 40%;
+}
+
+.pie-chart-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 15px solid rgba(255, 99, 132, 0.6);
+  border-top-color: rgba(54, 162, 235, 0.6);
+  border-right-color: rgba(0, 201, 167, 0.6);
+}
+
+.bottom-grid {
+  margin-bottom: 1.5rem;
+}
+
+.bottom-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.export-button {
+  height: 2rem;
+  padding: 0 0.75rem;
+}
+
+.crm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.crm-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+.crm-item-left {
+  display: flex;
+  align-items: center;
+}
+
+.crm-icon-container {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crm-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.connected-status {
+  font-size: 0.875rem;
+  color: #10b981;
+  font-weight: 500;
+}
+
+.connect-button {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.environmental-grid {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.environmental-card {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.environmental-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.environmental-card-title {
+  font-size: 0.75rem;
+}
+
+.environmental-card-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .charts-row {
+    flex-direction: column;
+  }
+  
+  .half-width-card {
+    width: 100%;
+  }
+  
+  .environmental-grid {
+    flex-direction: column;
+  }
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  height: 100%;
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #1e40af;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.metric-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.metric-change {
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+}
+
+.metric-change.positive {
+  color: #10b981;
+}
+
+.metric-change.negative {
+  color: #ef4444;
+}
+
+.arrow {
+  margin-right: 0.25rem;
+}
+
+/* Main Content Grid */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.heatmap-card {
+  height: 100%;
+}
+
+.heatmap-container {
+  width: 100%;
+  height: 400px;
+  background-color: #065f46;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+}
+
+.placeholder-heatmap {
+  text-align: center;
+}
+
+.section-header {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 1rem;
+}
+
+.chart-card {
+  height: 100%;
+}
+
+.chart-title {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.chart-icon {
+  margin-right: 0.5rem;
+}
+
+/* Chart container styles */
+.chart-container {
+  width: 100%;
+  height: 150px;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.area-chart {
+  background: linear-gradient(180deg, rgba(219, 39, 119, 0.1) 0%, rgba(219, 39, 119, 0.5) 100%);
+}
+
+/* Line chart styling */
+.line-chart {
+  background: #0f172a !important;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  height: 200px !important;
+  position: relative;
+}
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.no-data-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
+}
+
+.donut-chart {
+  background-color: #0f172a;
+  position: relative;
+}
+
+.donut-chart::after {
+  content: "";
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 15px solid #10b981;
+  border-right: 15px solid #fb7185;
+  border-bottom: 15px solid #3b82f6;
+  transform: rotate(-45deg);
+}
+
+/* Tooltip customization */
+.recharts-tooltip-wrapper {
+  z-index: 10;
+}
+
+/* Chart responsive adjustments */
+@media (max-width: 768px) {
+  .line-chart {
+    height: 180px !important;
+  }
+}
+
+/* Bottom Content */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.crm-integration {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.crm-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.crm-logo {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-weight: 600;
+}
+
+.salesforce {
+  background-color: #1589ee;
+  color: white;
+}
+
+.crm-info {
+  flex: 1;
+}
+
+.crm-name {
+  font-weight: 500;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+}
+
+.connected {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.export-button {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Environmental Impact Section */
+.impact-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.impact-stat {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.impact-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-size: 1.25rem;
+}
+
+.trees {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.water {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.co2 {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.impact-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.impact-label {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.impact-value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.impact-check {
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Updated CRM styles */
+.connect-button {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Environmental Impact updated styles */
+.environmental-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.impact-box {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.trees-box {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.water-box {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.co2-box {
+  background-color: rgba(139, 92, 246, 0.1);
+}
+
+.impact-content {
+  position: relative;
+  z-index: 2;
+}
+
+.impact-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.impact-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.trees-value {
+  color: #047857;
+}
+
+.water-value {
+  color: #1d4ed8;
+}
+
+.co2-value {
+  color: #7e22ce;
+}
+
+.impact-icon-container {
+  position: absolute;
+  top: 0.5rem;
+  right: -0.5rem;
+  font-size: 1.25rem;
+  opacity: 0.5;
+  z-index: 2;
+}
+
+.trees-box .impact-icon {
+  color: #047857;
+}
+
+.water-box .impact-icon {
+  color: #1d4ed8;
+}
+
+.co2-box .impact-icon {
+  color: #7e22ce;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1200px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .environmental-impact-grid {
+    flex-direction: column;
+  }
+}
+
+/* Meetings chart styling */
+.meetings-chart {
+  background: #0f172a !important;
+  padding: 1rem;
+  height: 200px !important;
+  overflow: auto;
+}
+
+.meetings-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.meetings-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 0.5rem;
+}
+
+.meeting-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.meeting-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.meeting-stat-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.next-meeting {
+  border-top: 1px solid #1e293b;
+  padding-top: 0.5rem;
+}
+
+.next-meeting h4 {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.meeting-card {
+  background: #1e293b;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+}
+
+.meeting-title {
+  font-weight: 600;
+  color: white;
+  margin-bottom: 0.25rem;
+}
+
+.meeting-time {
+  font-size: 0.75rem;
+  color: #38bdf8;
+  margin-bottom: 0.25rem;
+}
+
+.meeting-location, .meeting-attendees {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.no-meetings {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.error-message {
+  color: #ef4444;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+/* Upcoming meetings list */
+.upcoming-meetings {
+  border-top: 1px solid #1e293b;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.upcoming-meetings h4 {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.meetings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.meeting-list-item {
+  background: #1e293b;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.meeting-list-title {
+  font-weight: 500;
+  color: white;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meeting-list-time {
+  font-size: 0.7rem;
+  color: #38bdf8;
+}
+
+/* Active meeting styling */
+.active-meeting h4 {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.active-meeting .meeting-card {
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.active-meeting .meeting-time {
+  color: #22c55e;
+}
+
+/* Meeting overlap styling */
+.meeting-overlap {
+  border-left: 3px solid #ef4444;
+}
+
+.meeting-overlap-warning {
+  font-size: 0.7rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+}
+
+/* Add overlap warning to active meetings too */
+.active-meeting .meeting-card.meeting-overlap {
+  border-left: 3px solid #ef4444;
+}
+
+/* Expandable Meetings Card styles */
+.meetings-card-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.meetings-card-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.expand-icon {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #38bdf8;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.meetings-expanded {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.meetings-expanded .meetings-chart {
+  height: 350px !important;
+  transition: height 0.3s ease;
+}
+
+.meetings-content-wrapper {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.meetings-content-wrapper.meetings-content-expanded .meetings-chart {
+  height: 350px !important;
+}
+
+.meetings-content-wrapper.meetings-content-expanded .meetings-list {
+  max-height: 200px;
+}
+
+.meeting-details {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  animation: fadeIn 0.3s ease;
+}
+
+.meeting-description {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.meeting-attendees-list {
+  margin-top: 0.5rem;
+}
+
+.meeting-attendees-list h5 {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.meeting-attendees-list ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.meeting-attendees-list li {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  margin-bottom: 0.125rem;
+}
+
+.meeting-expanded-details {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  animation: fadeIn 0.3s ease;
+}
+
+.meeting-description-preview {
+  color: #cbd5e1;
+  font-size: 0.65rem;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Expandable Growth Chart styles */
+.growth-card-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.growth-card-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.growth-expanded {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.growth-expanded .line-chart {
+  height: 250px !important;
+  transition: height 0.3s ease;
+}
+
+.growth-content-wrapper {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.growth-content-wrapper.growth-content-expanded .line-chart {
+  height: 250px !important;
+}
+
+.growth-details {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  animation: fadeIn 0.3s ease;
+}
+
+.growth-details h4 {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.growth-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.growth-table th {
+  text-align: left;
+  padding: 0.5rem;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.growth-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.growth-table tr:last-child td {
+  border-bottom: none;
+}
+
+.growth-table .positive {
+  color: #10b981;
+  font-weight: 500;
+}
+
+/* Event Analytics Styles */
+.event-engagement {
+  background: #0f172a !important;
+  padding: 1rem;
+  height: 200px !important;
+  overflow: auto;
+}
+
+.event-engagement-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.engagement-summary {
+  display: flex;
+  justify-content: space-around;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #1e293b;
+}
+
+.engagement-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.engagement-summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.engagement-summary-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.engagement-metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.engagement-metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e293b;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.engagement-metric-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metric-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.metric-icon.attendance {
+  background-color: #10b981;
+}
+
+.metric-icon.satisfaction {
+  background-color: #f59e0b;
+}
+
+.metric-icon.registration {
+  background-color: #3b82f6;
+}
+
+.metric-icon.completion {
+  background-color: #8b5cf6;
+}
+
+.metric-name {
+  font-size: 0.75rem;
+  color: white;
+  font-weight: 500;
+}
+
+.engagement-metric-stats {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.engagement-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: white;
+}
+
+.stat-unit {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.trend-indicator {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.trend-indicator.positive {
+  color: #10b981;
+}
+
+.trend-indicator.negative {
+  color: #ef4444;
+}
+
+.percentage-value {
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+/* Event Designs Styles */
+.event-designs {
+  background: #0f172a !important;
+  padding: 1rem;
+  height: 200px !important;
+  overflow: auto;
+}
+
+.event-designs-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.event-overview {
+  display: flex;
+  justify-content: space-around;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #1e293b;
+}
+
+.event-overview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.event-overview-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.event-overview-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.event-types-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.event-type-item {
+  background: #1e293b;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  position: relative;
+}
+
+.event-type-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.event-type-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.event-type-details {
+  flex: 1;
+}
+
+.event-type-name {
+  font-size: 0.75rem;
+  color: white;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.event-type-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.event-count, .attendee-count {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.event-stat-icon {
+  font-size: 0.6rem;
+  color: #38bdf8;
+}
+
+.event-type-progress {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.event-progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Expandable Event Engagement Card styles */
+.event-engagement-card-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.event-engagement-card-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.event-engagement-expanded {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.event-engagement-expanded .event-engagement {
+  height: 350px !important;
+  transition: height 0.3s ease;
+}
+
+.event-engagement-content-wrapper {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.event-engagement-content-wrapper.event-engagement-content-expanded .event-engagement {
+  height: 350px !important;
+}
+
+.engagement-details {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.engagement-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.detail-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.detail-value {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.detail-value.positive {
+  color: #10b981;
+}
+
+.detail-value.negative {
+  color: #ef4444;
+}
+
+.performance-insights {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #1e293b;
+  animation: fadeIn 0.3s ease;
+}
+
+.performance-insights h4 {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.insight-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.insight-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.insight-value {
+  font-size: 0.7rem;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+/* Expandable Event Types Card styles */
+.event-types-card-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.event-types-card-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.event-types-expanded {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.event-types-expanded .event-designs {
+  height: 400px !important;
+  transition: height 0.3s ease;
+}
+
+.event-types-content-wrapper {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.event-types-content-wrapper.event-types-content-expanded .event-designs {
+  height: 400px !important;
+}
+
+.avg-attendance {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.event-type-expanded-stats {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.expanded-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.expanded-stat-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.expanded-stat-value {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.event-analytics-summary {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #1e293b;
+  animation: fadeIn 0.3s ease;
+}
+
+.event-analytics-summary h4 {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.analytics-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.summary-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 0.7rem;
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+/* Responsive adjustments for expanded event cards */
+@media (max-width: 768px) {
+  .insights-grid, .analytics-summary-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .event-engagement-expanded .event-engagement,
+  .event-types-expanded .event-designs {
+    height: 300px !important;
+  }
+} 
