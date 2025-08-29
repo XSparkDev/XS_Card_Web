@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "./input";
 import { Button } from "./button";
-import { Select } from "./select";
+// import { Select } from "./select";
 import { Label } from "./label";
 import { Checkbox } from "./checkbox";
 import "../../styles/DepartmentModal.css";

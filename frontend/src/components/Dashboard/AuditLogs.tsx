@@ -430,7 +430,7 @@ const AuditLogs = () => {
   }, [totalPages, loading, paginationLoading, fetchLogs]);
 
   // Handle items per page change
-  const handleItemsPerPageChange = useCallback((newItemsPerPage: number) => {
+  const handleItemsPerPageChange = useCallback((_newItemsPerPage: number) => {
     // This function is no longer needed as itemsPerPage is fixed
   }, []);
 

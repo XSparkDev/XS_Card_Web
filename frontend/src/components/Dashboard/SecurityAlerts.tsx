@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../UI/button';
-import { Badge } from '../UI/badge';
+// import { Badge } from '../UI/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
 import { 
   Select, 

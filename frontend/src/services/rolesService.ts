@@ -162,7 +162,7 @@ export const rolesService = {
   },
   
   // POST /api/roles/:roleId/users/:userId
-  assignUserToRole: async (roleId: string, userId: string): Promise<{ success: boolean }> => {
+  assignUserToRole: async (roleId: string, _userId: string): Promise<{ success: boolean }> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 600));
     
@@ -178,7 +178,7 @@ export const rolesService = {
   },
   
   // DELETE /api/roles/:roleId/users/:userId
-  removeUserFromRole: async (roleId: string, userId: string): Promise<{ success: boolean }> => {
+  removeUserFromRole: async (roleId: string, _userId: string): Promise<{ success: boolean }> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 600));
     

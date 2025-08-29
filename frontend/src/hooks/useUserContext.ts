@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ENDPOINTS, buildUrl, buildEnterpriseUrl, getAuthHeaders, getEnterpriseHeaders } from '../utils/api';
+import { ENDPOINTS, buildUrl, buildEnterpriseUrl, getEnterpriseHeaders } from '../utils/api';
 
 export interface UserContext {
   isEnterprise: boolean;

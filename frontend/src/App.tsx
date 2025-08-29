@@ -10,7 +10,7 @@ import { UserProvider, useUser } from './contexts/UserContext';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Import your pages
-import Dashboard from './pages/Dashboard';
+// import Dashboard from './pages/Dashboard';
 import BusinessCards from './components/Dashboard/BusinessCards';
 import CreateCard from './components/Dashboard/CreateCard';
 import Contacts from './components/Dashboard/Contacts';

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import "../../styles/Sidebar.css";
 
@@ -59,7 +59,7 @@ export const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({
   subItems,
 }) => {
   const [expanded, setExpanded] = useState(active || label === "Business Cards");
-  const location = useLocation();
+  // const location = useLocation();
   
   // Check if this item or any of its subitems is active
   const isActive = active || location.pathname === to || 
@@ -155,8 +155,8 @@ const UserProfile: React.FC = () => {
 
 // Main Sidebar Component
 const Sidebar: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation(); //here
+  // const navigate = useNavigate();
+  // const location = useLocation(); //here
   const { user, hasPermission, logout } = useUser();
   
   // Don't render sidebar if user is not loaded yet

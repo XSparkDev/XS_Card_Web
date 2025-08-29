@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "./button";
+// import { Button } from "./button";
 import { Input } from "./input";
 import { Label } from "./label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./selectRadix";
-import { FaTimes, FaSave } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import "../../styles/TeamModal.css";
 
 interface TeamModalProps {

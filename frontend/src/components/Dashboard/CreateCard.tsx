@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaChevronLeft, FaUpload, FaEye, FaMobile, FaSave } from "react-icons/fa";
+import { FaUpload, FaEye, FaMobile, FaSave } from "react-icons/fa";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
 import { Textarea } from "../UI/textarea";

@@ -36,7 +36,6 @@ const HeatmapLayer: React.FC<HeatmapLayerProps> = ({
     
     // Set defaults for options
     const {
-      baseRadius = 20,
       blur = 15,
       maxZoom = 10,
       gradient = {0.4: '#3b82f6', 0.65: '#10b981', 1: '#ef4444'}

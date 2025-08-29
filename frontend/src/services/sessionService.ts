@@ -22,7 +22,7 @@ interface SessionSummary {
 
 // Dummy data generator
 const generateDummySessions = (): SessionData[] => {
-  const roles = ['Administrator', 'Manager', 'Employee'];
+  // const roles = ['Administrator', 'Manager', 'Employee'];
   const sessions: SessionData[] = [];
   
   // Generate random sessions

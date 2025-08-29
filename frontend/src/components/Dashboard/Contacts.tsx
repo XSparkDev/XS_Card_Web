@@ -796,14 +796,14 @@ const Contacts = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleManualRefresh = async () => {
-    console.log('🔄 Manual refresh triggered...');
-    if (isEnterpriseUser) {
-      await fetchEnterpriseEmployees();
-    } else {
-    await fetchContacts();
-    }
-  };
+  // const handleManualRefresh = async () => {
+  //   console.log('🔄 Manual refresh triggered...');
+  //   if (isEnterpriseUser) {
+  //     await fetchEnterpriseEmployees();
+  //   } else {
+  //   await fetchContacts();
+  //   }
+  // };
   
   return (
     <div className="contacts-container">

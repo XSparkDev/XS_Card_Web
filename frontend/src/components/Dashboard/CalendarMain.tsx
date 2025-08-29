@@ -23,7 +23,7 @@ import { calculateUserPermissions, type UserWithPermissions } from "../../utils/
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../UI/card";
 import { Button } from "../UI/button";
 import { Input } from "../UI/input";
-import { Calendar } from "../UI/calendarWeb";
+import Calendar from "../UI/calendarWeb";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../UI/dialog";
 import { Badge } from "../UI/badge";
 import { Textarea } from "../UI/textarea";
@@ -1637,7 +1637,7 @@ const CalendarPage = () => {
                     <Calendar
                       selectedDate={eventFormData.date}
                       minDate={new Date()}
-                      onDateSelect={(newDate) => {
+                      onDateSelect={(newDate: Date) => {
                         setEventFormData(prev => {
                           // Check if the selected date is today
                           const today = new Date();

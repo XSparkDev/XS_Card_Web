@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { 
   Card, 
   CardContent, 
@@ -1643,7 +1643,7 @@ const ViewProfileModal = ({ user, onClose }: { user: User | null; onClose: () =>
 };
 
 const UserManagement = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -1904,14 +1904,14 @@ const UserManagement = () => {
 
 
 
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-      case "Active": return "default";
-      case "Inactive": return "secondary";
-      case "Pending": return "outline";
-      default: return "outline";
-    }
-  };
+  // const getBadgeVariant = (status: string) => {
+  //   switch (status) {
+  //     case "Active": return "default";
+  //     case "Inactive": return "secondary";
+  //     case "Pending": return "outline";
+  //     default: return "outline";
+  //   }
+  // };
 
   const openAddEmployeeModal = () => {
     setIsAddUserOpen(true);

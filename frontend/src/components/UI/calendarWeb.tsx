@@ -1,214 +1,103 @@
-import { useState, useEffect } from 'react';
-import '../../styles/Calendar.css';
+import React, { useState } from 'react';
 
 interface CalendarProps {
-  onDateSelect?: (date: Date) => void;
   selectedDate?: Date;
+  onDateSelect?: (date: Date) => void;
   minDate?: Date;
   maxDate?: Date;
-  initialMonth?: Date;
+  events?: Date[];
   className?: string;
-  events?: Date[]; // Add events prop to show indicators
 }
 
-export function Calendar({
-  onDateSelect,
+const Calendar: React.FC<CalendarProps> = ({
   selectedDate,
+  onDateSelect,
   minDate,
   maxDate,
-  initialMonth = new Date(),
-  className,
-  events = [], // Default to empty array
-}: CalendarProps) {
-  const [currentMonth, setCurrentMonth] = useState(initialMonth);
-  const [internalSelectedDate, setInternalSelectedDate] = useState<Date | undefined>(selectedDate);
-  
-  // Update internal state when props change
-  useEffect(() => {
-    if (selectedDate) {
-      setInternalSelectedDate(selectedDate);
-    }
-  }, [selectedDate]);
+  events = [],
+  className = ''
+}) => {
+  const [currentMonth] = useState(new Date());
+  const [internalSelectedDate, setInternalSelectedDate] = useState<Date | null>(selectedDate || null);
 
-  useEffect(() => {
-    // If selected date changes to a different month, update current month view
-    if (selectedDate && 
-        (selectedDate.getMonth() !== currentMonth.getMonth() || 
-         selectedDate.getFullYear() !== currentMonth.getFullYear())) {
-      setCurrentMonth(new Date(selectedDate));
-    }
-  }, [selectedDate, currentMonth]);
-  
-  // Get days in month
-  const getDaysInMonth = (year: number, month: number) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-  
-  // Get day of week for first day of month (0 = Sunday, 1 = Monday, etc.)
-  const getFirstDayOfMonth = (year: number, month: number) => {
-    return new Date(year, month, 1).getDay();
-  };
+  // Day names
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const isDatePast = (date: Date) => {
-    const d = new Date(date);
-    const today = new Date();
-    d.setHours(0,0,0,0);
-    today.setHours(0,0,0,0);
-    return d < today;
-  };
-  
-  // Generate calendar days
+  // Simple calendar days generation
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     
-    const daysInMonth = getDaysInMonth(year, month);
-    const firstDayOfMonth = getFirstDayOfMonth(year, month);
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const firstDayOfWeek = firstDay.getDay();
     
-    // Previous month days to show
-    const prevMonthDays: any[] = [];
-    if (firstDayOfMonth > 0) {
-      const prevMonth = month === 0 ? 11 : month - 1;
-      const prevMonthYear = month === 0 ? year - 1 : year;
-      const daysInPrevMonth = getDaysInMonth(prevMonthYear, prevMonth);
-      
-      for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-        const date = new Date(prevMonthYear, prevMonth, daysInPrevMonth - i);
-        prevMonthDays.push({
-          date,
-          isCurrentMonth: false,
-          isToday: false,
-          hasEvents: hasEventsOnDate(date),
-          isPast: isDatePast(date),
-        });
-      }
-    }
+    const days = [];
     
-    // Current month days
-    const currentMonthDays: any[] = [];
-    const today = new Date();
-    for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(year, month, i);
-      currentMonthDays.push({
+    // Previous month days
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      const date = new Date(year, month, -i);
+      days.push({
         date,
-        isCurrentMonth: true,
-        isToday: 
-          date.getDate() === today.getDate() &&
-          date.getMonth() === today.getMonth() &&
-          date.getFullYear() === today.getFullYear(),
-        hasEvents: hasEventsOnDate(date),
-        isPast: isDatePast(date),
+        isCurrentMonth: false,
+        isToday: false,
+        hasEvents: false,
+        isPast: date < new Date()
       });
     }
     
-    // Next month days to fill the calendar
-    const nextMonthDays: any[] = [];
-    const totalDaysShown = prevMonthDays.length + currentMonthDays.length;
-    const daysToAdd = 42 - totalDaysShown; // 6 rows of 7 days
-    
-    if (daysToAdd > 0) {
-      const nextMonth = month === 11 ? 0 : month + 1;
-      const nextMonthYear = month === 11 ? year + 1 : year;
-      
-      for (let i = 1; i <= daysToAdd; i++) {
-        const date = new Date(nextMonthYear, nextMonth, i);
-        nextMonthDays.push({
-          date,
-          isCurrentMonth: false,
-          isToday: false,
-          hasEvents: hasEventsOnDate(date),
-          isPast: isDatePast(date),
-        });
-      }
+    // Current month days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(year, month, i);
+      const today = new Date();
+      days.push({
+        date,
+        isCurrentMonth: true,
+        isToday: date.toDateString() === today.toDateString(),
+        hasEvents: events.some(event => event.toDateString() === date.toDateString()),
+        isPast: date < today
+      });
     }
     
-    return [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
+    // Next month days
+    const remainingDays = 42 - days.length; // 6 rows of 7 days
+    for (let i = 1; i <= remainingDays; i++) {
+      const date = new Date(year, month + 1, i);
+      days.push({
+        date,
+        isCurrentMonth: false,
+        isToday: false,
+        hasEvents: false,
+        isPast: date < new Date()
+      });
+    }
+    
+    return days;
   };
-  
-  // Check if a date has events
-  const hasEventsOnDate = (date: Date) => {
-    return events.some(eventDate => 
-      eventDate.getDate() === date.getDate() &&
-      eventDate.getMonth() === date.getMonth() &&
-      eventDate.getFullYear() === date.getFullYear()
-    );
-  };
-  
-  // Handle month navigation
-  const goToPreviousMonth = () => {
-    const prevMonth = new Date(currentMonth);
-    prevMonth.setMonth(prevMonth.getMonth() - 1);
-    setCurrentMonth(prevMonth);
-  };
-  
-  const goToNextMonth = () => {
-    const nextMonth = new Date(currentMonth);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    setCurrentMonth(nextMonth);
-  };
-  
-  // Handle date selection
+
+  const calendarDays = generateCalendarDays();
+
   const handleDateSelect = (date: Date) => {
     setInternalSelectedDate(date);
     if (onDateSelect) {
       onDateSelect(date);
     }
   };
-  
-  // Check if a date is selected
+
   const isDateSelected = (date: Date) => {
     if (!internalSelectedDate) return false;
-    
-    return (
-      date.getDate() === internalSelectedDate.getDate() &&
-      date.getMonth() === internalSelectedDate.getMonth() &&
-      date.getFullYear() === internalSelectedDate.getFullYear()
-    );
+    return date.toDateString() === internalSelectedDate.toDateString();
   };
-  
-  // Check if a date is disabled
+
   const isDateDisabled = (date: Date) => {
     if (minDate && date < minDate) return true;
     if (maxDate && date > maxDate) return true;
     return false;
   };
-  
-  // Format month name
-  const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  };
-  
-  // Generate calendar days
-  const calendarDays = generateCalendarDays();
-  
-  // Day names
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  
+
   return (
-    <div className={`calendar-container ${className || ''}`}>
-      {/* Header with month navigation */}
-      {/* <div className="calendar-header">
-        <button 
-          onClick={goToPreviousMonth} 
-          className="calendar-nav-button" 
-          aria-label="Previous month"
-          type="button"
-        >
-          <span className="calendar-chevron">←</span>
-        </button>
-        
-        <span className="calendar-month-year">{formatMonthYear(currentMonth)}</span>
-        
-        <button 
-          onClick={goToNextMonth} 
-          className="calendar-nav-button" 
-          aria-label="Next month"
-          type="button"
-        >
-          <span className="calendar-chevron">→</span>
-        </button>
-      </div> */}
-      
+    <div className={`calendar-container ${className}`}>
       {/* Day names row */}
       <div className="calendar-day-names">
         {dayNames.map((day, index) => (
@@ -249,6 +138,8 @@ export function Calendar({
       </div>
     </div>
   );
-}
+};
 
 Calendar.displayName = "Calendar";
+
+export default Calendar;
