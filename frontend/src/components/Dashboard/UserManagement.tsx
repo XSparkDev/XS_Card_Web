@@ -2542,16 +2542,16 @@ const UserManagement = () => {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="firstName" className="form-label">First Name</label>
-                <Input id="firstName" placeholder="First name" />
+                <Input id="firstName" placeholder="Naledi" />
               </div>
               <div className="form-group">
                 <label htmlFor="lastName" className="form-label">Last Name</label>
-                <Input id="lastName" placeholder="Last name" />
+                <Input id="lastName" placeholder="Mokoena" />
               </div>
             </div>
             <div className="form-group">
               <label htmlFor="email" className="form-label">Email</label>
-              <Input id="email" placeholder="Email address" type="email" />
+              <Input id="email" placeholder="naledi.mokoena@xscard.co.za" type="email" />
             </div>
             <div className="form-group">
               <label htmlFor="role" className="form-label">Role</label>

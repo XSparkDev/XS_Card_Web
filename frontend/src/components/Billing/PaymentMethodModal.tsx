@@ -304,7 +304,7 @@ export const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({
               name="cardholderName"
               value={formData.cardholderName}
               onChange={handleInputChange}
-              placeholder="John Doe"
+              placeholder="Naledi Mokoena"
               disabled={isLoading}
             />
             {validationErrors.cardholderName && (

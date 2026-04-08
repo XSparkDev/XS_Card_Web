@@ -353,7 +353,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 name="firstName"
                 value={employeeData.firstName}
                 onChange={handleChange}
-                placeholder="John"
+                placeholder="Naledi"
                 required
               />
             </div>
@@ -365,7 +365,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 name="lastName"
                 value={employeeData.lastName}
                 onChange={handleChange}
-                placeholder="Doe"
+                placeholder="Mokoena"
                 required
               />
             </div>
@@ -380,7 +380,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 type="email"
                 value={employeeData.email}
                 onChange={handleChange}
-                placeholder="john.doe@example.com"
+                placeholder="naledi.mokoena@xscard.co.za"
                 required
               />
             </div>
@@ -392,7 +392,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 name="phone"
                 value={employeeData.phone}
                 onChange={handleChange}
-                placeholder="+1 (555) 123-4567"
+                placeholder="+27 82 456 7812"
               />
             </div>
           </div>

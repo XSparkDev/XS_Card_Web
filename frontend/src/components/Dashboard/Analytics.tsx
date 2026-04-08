@@ -139,6 +139,83 @@ interface EventAnalytics {
   topEvent: string;
 }
 
+const formatMockMeetingWhen = (date: Date): string => {
+  const datePart = date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const timePart = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+
+  return `${datePart} at ${timePart} GMT+2`;
+};
+
+const createMockMeetings = (): Meeting[] => {
+  const now = new Date();
+  const activeStart = new Date(now.getTime() - 15 * 60 * 1000);
+  const upcomingOne = new Date(now.getTime() + 60 * 60 * 1000);
+  const upcomingTwo = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  const upcomingThree = new Date(now.getTime() + 26 * 60 * 60 * 1000);
+
+  return [
+    {
+      title: 'Client Onboarding Sync',
+      meetingWith: 'Lerato Naidoo',
+      meetingWhen: formatMockMeetingWhen(activeStart),
+      description: 'Weekly onboarding alignment for enterprise rollout milestones.',
+      location: 'Microsoft Teams',
+      attendees: [
+        { name: 'Naledi Mokoena', email: 'naledi.mokoena@xscard.co.za' },
+        { name: 'Lerato Naidoo', email: 'lerato.naidoo@xscard.co.za' },
+        { name: 'Aphiwe Ndlovu', email: 'aphiwe.ndlovu@xscard.co.za' },
+      ],
+      duration: 45,
+    },
+    {
+      title: 'Sales Pipeline Review',
+      meetingWith: 'Ayanda Dlamini',
+      meetingWhen: formatMockMeetingWhen(upcomingOne),
+      description: 'Review strategic opportunities and partner follow-ups.',
+      location: 'Boardroom 2A',
+      attendees: [
+        { name: 'Ayanda Dlamini', email: 'ayanda.dlamini@xscard.co.za' },
+        { name: 'Tebogo Mahlangu', email: 'tebogo.mahlangu@xscard.co.za' },
+      ],
+      duration: 30,
+    },
+    {
+      title: 'Campaign Performance Debrief',
+      meetingWith: 'Lindokuhle Nkosi',
+      meetingWhen: formatMockMeetingWhen(upcomingTwo),
+      description: 'Post-campaign review for lead quality and engagement uplift.',
+      location: 'Marketing War Room',
+      attendees: [
+        { name: 'Lindokuhle Nkosi', email: 'lindokuhle.nkosi@xscard.co.za' },
+        { name: 'Kagiso Pillay', email: 'kagiso.pillay@xscard.co.za' },
+        { name: 'Zanele Naidoo', email: 'zanele.naidoo@xscard.co.za' },
+      ],
+      duration: 60,
+    },
+    {
+      title: 'Enterprise Support Check-In',
+      meetingWith: 'Zanele Naidoo',
+      meetingWhen: formatMockMeetingWhen(upcomingThree),
+      description: 'Quarterly account health review and support planning.',
+      location: 'Google Meet',
+      attendees: [
+        { name: 'Zanele Naidoo', email: 'zanele.naidoo@xscard.co.za' },
+        { name: 'Lerato Zulu', email: 'lerato.zulu@xscard.co.za' },
+      ],
+      duration: 45,
+    },
+  ];
+};
+
 const Analytics = () => {
   const [activeCardsCount, setActiveCardsCount] = useState<number>(0);
   const [connectionsCount, setConnectionsCount] = useState<number>(0);
@@ -439,13 +516,14 @@ const Analytics = () => {
           console.log("Meetings data loaded:", responseData.data.meetings.length, "meetings");
         } else {
           console.warn("Meetings data format unexpected:", responseData);
-          setMeetings([]);
-          setMeetingsError('No meetings data found');
+          setMeetings(createMockMeetings());
+          setMeetingsError(null);
         }
       } catch (err) {
-        setMeetingsError("Failed to fetch meetings data.");
+        console.warn("Falling back to mock meetings data.");
+        setMeetingsError(null);
         console.error("Error fetching meetings:", err);
-        setMeetings([]); // Set empty array on error
+        setMeetings(createMockMeetings());
       } finally {
         setMeetingsLoading(false);
       }

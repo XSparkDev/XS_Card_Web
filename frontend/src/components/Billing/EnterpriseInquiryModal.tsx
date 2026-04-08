@@ -326,7 +326,7 @@ export const EnterpriseInquiryModal: React.FC<EnterpriseInquiryModalProps> = ({
                 name="contactPersonName"
                 value={formData.contactPersonName}
                 onChange={handleInputChange}
-                placeholder="John Doe"
+                placeholder="Naledi Mokoena"
                 disabled={isLoading}
               />
               {validationErrors.contactPersonName && (
@@ -343,7 +343,7 @@ export const EnterpriseInquiryModal: React.FC<EnterpriseInquiryModalProps> = ({
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="john@company.com"
+                  placeholder="naledi.mokoena@xscard.co.za"
                   disabled={isLoading}
                 />
                 {validationErrors.email && (

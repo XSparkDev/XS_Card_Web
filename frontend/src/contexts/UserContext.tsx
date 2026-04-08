@@ -6,6 +6,11 @@ import {
   type IndividualPermissions 
 } from '../utils/permissions';
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, DEFAULT_USER_ID } from '../utils/api';
+import {
+  DEFAULT_DEMO_USER,
+  PRIMARY_ADMIN_TEST_EMAIL,
+  PRIMARY_EMPLOYEE_TEST_EMAIL,
+} from '../utils/mockPeople';
 
 // Define user roles
 export type UserRole = 'Employee' | 'Manager' | 'Administrator' | 'Admin' | 'Lead' | 'Staff';
@@ -242,8 +247,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const enterpriseUser = employees.find((emp: any) => 
           emp.id === currentUserId || 
           emp.email === localUser.email ||
-          emp.email === 'higenaw972@fursee.com' || // Fallback for test user
-          emp.email === 'xenacoh740@percyfx.com' // Fallback for admin user
+          emp.email === PRIMARY_EMPLOYEE_TEST_EMAIL ||
+          emp.email === PRIMARY_ADMIN_TEST_EMAIL
         );
         
         console.log('🔍 UserContext: Looking for user in enterprise data:', {
@@ -309,8 +314,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // Find current user - use test user email for now
         const enterpriseUser = employees.find((emp: any) => 
-          emp.email === 'higenaw972@fursee.com' ||
-          emp.email === 'xenacoh740@percyfx.com'
+          emp.email === PRIMARY_EMPLOYEE_TEST_EMAIL ||
+          emp.email === PRIMARY_ADMIN_TEST_EMAIL
         );
         
         console.log('🔍 UserContext: Looking for user in enterprise data (no localStorage):', {
@@ -363,8 +368,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const finalUser = {
       id: parsedUser.id || 'temp-user-id',
-      name: parsedUser.name || 'Current User',
-      email: parsedUser.email || 'user@company.com',
+      name: parsedUser.name || DEFAULT_DEMO_USER.name,
+      email: parsedUser.email || DEFAULT_DEMO_USER.email,
       role: parsedUser.role || 'Employee',
       permissions,
       plan: userPlan,
@@ -380,10 +385,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('⚠️ UserContext: Using default Administrator user');
     const permissions = getPermissionsByRole('Administrator');
     setUserState({
-      id: 'temp-user-id',
-      name: 'Demo Administrator',
-      email: 'admin@company.com',
-      role: 'Administrator',
+      id: DEFAULT_DEMO_USER.id,
+      name: DEFAULT_DEMO_USER.name,
+      email: DEFAULT_DEMO_USER.email,
+      role: DEFAULT_DEMO_USER.role,
       permissions,
       plan: 'enterprise',
       isEmployee: true,
@@ -419,7 +424,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const user: User = {
       id: userData.uid || userData.id || userData.userId || 'temp-user-id',
       name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User',
-      email: userData.email || 'user@company.com',
+      email: userData.email || DEFAULT_DEMO_USER.email,
       role: userData.role || 'Employee',
       permissions,
       plan: userData.plan || 'enterprise',

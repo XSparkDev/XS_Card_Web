@@ -4,6 +4,7 @@ import { Button } from "../UI/button";
 import "../../styles/BusinessCards.css";
 import "../../styles/Dashboard.css";
 import { ENDPOINTS, buildEnterpriseUrl, getEnterpriseHeaders, buildUrl, API_BASE_URL } from "../../utils/api";
+import { PREVIEW_CONTACT } from "../../utils/mockPeople";
 
 // Helper function to get authentication token
 const getAuthToken = () => {
@@ -2060,16 +2061,16 @@ const CreateTemplateModal = ({ userContext, user, isOpen, onClose, onSave }: {
               <BusinessCardItem
                 card={{
                   id: 'preview',
-                  name: 'John',
-                  surname: 'Doe',
-                  occupation: 'Sample Position',
-                  email: 'john.doe@company.com',
-                  phone: '+1 (555) 123-4567',
-                  company: 'Company Name',
+                  name: PREVIEW_CONTACT.name,
+                  surname: PREVIEW_CONTACT.surname,
+                  occupation: PREVIEW_CONTACT.title,
+                  email: PREVIEW_CONTACT.email,
+                  phone: PREVIEW_CONTACT.phone,
+                  company: PREVIEW_CONTACT.company,
                   colorScheme: templateData.colorScheme,
                   companyLogo: templateData.companyLogo,
                   profileImage: null,
-                  departmentName: 'Sample Department'
+                  departmentName: PREVIEW_CONTACT.department
                 }}
                 isPreview={true}
               />

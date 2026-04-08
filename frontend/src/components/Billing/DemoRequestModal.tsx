@@ -187,7 +187,7 @@ export const DemoRequestModal: React.FC<DemoRequestModalProps> = ({
           </label>
           <Input
             type="email"
-            placeholder="your.email@company.com"
+            placeholder="naledi.mokoena@xscard.co.za"
             value={demoRequest.email}
             onChange={(e) => setDemoRequest(prev => ({ ...prev, email: e.target.value }))}
             required

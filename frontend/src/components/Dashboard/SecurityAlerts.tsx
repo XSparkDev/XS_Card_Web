@@ -10,6 +10,7 @@ import {
   SelectValue 
 } from '../UI/selectRadix';
 import { buildEnterpriseUrl, getEnterpriseHeaders, ENDPOINTS } from '../../utils/api';
+import { DEFAULT_DEMO_USER, SECURITY_ALERT_DEMO_USERS } from '../../utils/mockPeople';
 
 // Types
 interface SecurityAlert {
@@ -246,7 +247,7 @@ const AlertCard = ({
               gap: '1rem'
             }}>
               {alert.user && (
-                <span>User: {alert.user.email}</span>
+                <span>User: {alert.user.name} ({alert.user.email})</span>
               )}
               <span>Time: {formatTimestamp(alert.timestamp)}</span>
               {alert.metadata.location && (
@@ -414,6 +415,7 @@ const SecurityAlerts = () => {
       
       // Add fallback mock data for testing
       console.log('Using fallback mock data for testing');
+      const [operationsUser, managerUser, salesUser] = SECURITY_ALERT_DEMO_USERS;
       const mockAlerts: SecurityAlert[] = [
         {
           id: '1',
@@ -436,10 +438,17 @@ const SecurityAlerts = () => {
           title: 'Multiple Failed Login Attempts',
           description: 'Multiple failed login attempts detected from suspicious IP address.',
           timestamp: new Date(Date.now() - 3600000).toISOString(),
+          user: {
+            id: operationsUser.id,
+            name: operationsUser.name,
+            email: operationsUser.email,
+            role: operationsUser.role,
+            department: operationsUser.department,
+          },
           metadata: {
-            ipAddress: '192.168.1.100',
+            ipAddress: '105.23.114.88',
             failedAttempts: 10,
-            location: 'Unknown'
+            location: 'Johannesburg'
           }
         },
         {
@@ -448,8 +457,15 @@ const SecurityAlerts = () => {
           severity: 'medium',
           status: 'acknowledged',
           title: 'Bulk User Operations',
-          description: 'Large number of user operations detected in short time period.',
+          description: `Large number of user operations detected in a short time period for ${managerUser.name}.`,
           timestamp: new Date(Date.now() - 7200000).toISOString(),
+          user: {
+            id: managerUser.id,
+            name: managerUser.name,
+            email: managerUser.email,
+            role: managerUser.role,
+            department: managerUser.department,
+          },
           metadata: {
             affectedUsers: 25
           }
@@ -460,11 +476,18 @@ const SecurityAlerts = () => {
           severity: 'high',
           status: 'resolved',
           title: 'Unauthorized Access Attempt',
-          description: 'Attempt to access restricted area detected and resolved.',
+          description: `Attempt to access a restricted area from ${salesUser.department} was detected and resolved.`,
           timestamp: new Date(Date.now() - 10800000).toISOString(),
+          user: {
+            id: salesUser.id,
+            name: salesUser.name,
+            email: salesUser.email,
+            role: salesUser.role,
+            department: salesUser.department,
+          },
           metadata: {
-            ipAddress: '10.0.0.50',
-            location: 'Internal Network'
+            ipAddress: '197.189.205.17',
+            location: 'Cape Town'
           }
         },
         {
@@ -473,8 +496,15 @@ const SecurityAlerts = () => {
           severity: 'low',
           status: 'acknowledged',
           title: 'Password Reset Request',
-          description: 'Multiple password reset requests from same user.',
+          description: `Multiple password reset requests were submitted for ${operationsUser.name}.`,
           timestamp: new Date(Date.now() - 14400000).toISOString(),
+          user: {
+            id: operationsUser.id,
+            name: operationsUser.name,
+            email: operationsUser.email,
+            role: operationsUser.role,
+            department: operationsUser.department,
+          },
           metadata: {
             affectedUsers: 1
           }
@@ -517,8 +547,8 @@ const SecurityAlerts = () => {
                 acknowledgedAt: new Date().toISOString(),
                 acknowledgedBy: {
                   id: 'current-user-id',
-                  name: 'Current User',
-                  email: 'user@example.com'
+                  name: DEFAULT_DEMO_USER.name,
+                  email: DEFAULT_DEMO_USER.email
                 }
               }
             : alert
@@ -595,8 +625,8 @@ const SecurityAlerts = () => {
                 resolvedAt: new Date().toISOString(),
                 resolvedBy: {
                   id: 'current-user-id',
-                  name: 'Current User',
-                  email: 'user@example.com'
+                  name: DEFAULT_DEMO_USER.name,
+                  email: DEFAULT_DEMO_USER.email
                 }
               }
             : alert

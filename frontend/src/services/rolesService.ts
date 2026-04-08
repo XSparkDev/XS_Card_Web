@@ -1,6 +1,8 @@
 // Roles Service - Dummy implementation for role management
 // These endpoints will be implemented on the backend later
 
+import { createRoleDemoUsers } from '../utils/mockPeople';
+
 export interface Permission {
   viewCards: boolean;
   createCards: boolean;
@@ -146,11 +148,17 @@ export const rolesService = {
       throw new Error('Role not found');
     }
     
-    // In real implementation, this would fetch actual users
-    const dummyUsers = Array.from({ length: role.userCount }, (_, i) => ({
-      id: `user_${roleId}_${i}`,
-      email: `user${i}@company.com`,
-      name: `User ${i + 1}`,
+    const demoRole =
+      role.name === 'Administrator'
+        ? 'Administrator'
+        : role.name === 'Manager'
+          ? 'Manager'
+          : 'Employee';
+
+    const dummyUsers = createRoleDemoUsers(demoRole, role.userCount).map((user, index) => ({
+      id: user.id || `user_${roleId}_${index}`,
+      email: user.email,
+      name: user.name,
       role: role.name,
       lastActive: new Date(Date.now() - Math.random() * 86400000),
     }));

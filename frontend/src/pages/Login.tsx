@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 // Import API utilities to get the correct base URL
 import { API_BASE_URL } from '../utils/api';
+import { AUTH_TEST_USERS } from '../utils/mockPeople';
 
 interface LoginProps {
   onLogin: (token: string, userData: any) => void;
@@ -24,18 +25,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const [activeTab, setActiveTab] = useState('form');
 
-  // Test credentials for quick login
-  const testCredentials = [
-    { label: 'Select Test User...', email: '', password: '' },
-    { label: '🔧 Admin User', email: 'xenacoh740@percyfx.com', password: 'Password.10' },
-    { label: '👔 Manager User', email: 'xapayi9567@coursora.com', password: 'Password.10' },
-    { label: '👤 Employee 1', email: 'higenaw972@fursee.com', password: 'Password.10' },
-    { label: '👤 Employee 2', email: 'xicepo4195@futebr.com', password: 'Password.10' },
-    { label: '🧪 Test User 1', email: 'tshehlap@gmail.com', password: 'P.zzle$0' },
-    { label: '🧪 Test User 2', email: 'devel66949@ahanim.com', password: '123456' },
-    { label: '🧪 Test User 3', email: 'sibef28831@aperiol.com', password: '123456' },
-    { label: '👤 Individual User', email: 'testehakke@gufum.com', password: '123456' }
-  ];
+  // Preserve backend test credentials while showing more realistic display names.
+  const testCredentials = [{ label: 'Select Test User...', email: '', password: '' }, ...AUTH_TEST_USERS];
 
   const handleTestUserSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedIndex = parseInt(e.target.value);
@@ -169,12 +160,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         // Create a basic user object from the token payload
         // Determine user type based on token payload or email domain
-        const email = payload.email || 'unknown@example.com';
+        const email = payload.email || 'unknown@xscard.co.za';
         const role = payload.role || 'Employee';
         
         // Check if this is an enterprise user based on email domain or role
         // Enterprise users typically have company email domains or specific roles
         const isEnterpriseUser = email.includes('@company.com') || 
+                                email.includes('@xscard.co.za') ||
                                 email.includes('@enterprise.com') ||
                                 email.includes('@corp.com') ||
                                 role === 'Administrator' ||

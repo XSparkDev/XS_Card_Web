@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../UI/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/card';
 import { buildEnterpriseUrl, getEnterpriseHeaders } from '../../utils/api';
+import { SECURITY_ACTION_DEMO_USERS } from '../../utils/mockPeople';
 
 // Types
 interface SecurityActionResponse {
@@ -45,11 +46,7 @@ const SecurityActions = () => {
   const [loading, setLoading] = useState(false);
 
   // Mock users for demo
-  const mockUsers = [
-    { id: '1', name: 'John Doe', email: 'john@company.com', role: 'Employee' },
-    { id: '2', name: 'Jane Smith', email: 'jane@company.com', role: 'Manager' },
-    { id: '3', name: 'Bob Wilson', email: 'bob@company.com', role: 'Employee' }
-  ];
+  const mockUsers = SECURITY_ACTION_DEMO_USERS;
 
   // Available security actions
   const securityActions = [

@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { HexColorPicker } from "react-colorful";
 import "../../styles/CreateCard.css";
 import "../../styles/Dashboard.css";
+import { PREVIEW_CONTACT } from "../../utils/mockPeople";
 
 const CreateCard = () => {
   const navigate = useNavigate();
@@ -17,8 +18,8 @@ const CreateCard = () => {
     department: "",
     email: "",
     phone: "",
-    company: "XSCard Inc.",
-    website: "https://xscard.com",
+    company: "XS Card",
+    website: "https://xscard.co.za",
     bio: "",
     template: "modern",
     color: "#4338ca"
@@ -85,7 +86,7 @@ const CreateCard = () => {
                     <Input
                       value={formData.fullName}
                       onChange={(e) => handleInputChange("fullName", e.target.value)}
-                      placeholder="John Doe"
+                      placeholder="Naledi Mokoena"
                     />
                   </div>
                   
@@ -119,7 +120,7 @@ const CreateCard = () => {
                     <Input
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder="john.doe@xscard.com"
+                      placeholder={PREVIEW_CONTACT.email}
                       type="email"
                     />
                   </div>
@@ -129,7 +130,7 @@ const CreateCard = () => {
                     <Input
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
-                      placeholder="+1 (555) 123-4567"
+                      placeholder={PREVIEW_CONTACT.phone}
                       type="tel"
                     />
                   </div>
@@ -139,7 +140,7 @@ const CreateCard = () => {
                     <Input
                       value={formData.website}
                       onChange={(e) => handleInputChange("website", e.target.value)}
-                      placeholder="https://xscard.com"
+                      placeholder="https://xscard.co.za"
                       type="url"
                     />
                   </div>
@@ -261,14 +262,14 @@ const CreateCard = () => {
                     <div className="card-preview-field">
                       <p className="card-preview-field-label">Email</p>
                       <p className="card-preview-field-value">
-                        {formData.email || "email@xscard.com"}
+                        {formData.email || PREVIEW_CONTACT.email}
                       </p>
                     </div>
                     
                     <div className="card-preview-field">
                       <p className="card-preview-field-label">Phone</p>
                       <p className="card-preview-field-value">
-                        {formData.phone || "+1 (555) 123-4567"}
+                        {formData.phone || PREVIEW_CONTACT.phone}
                       </p>
                     </div>
                     

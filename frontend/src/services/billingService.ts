@@ -7,6 +7,7 @@ import {
   BillingLog 
 } from '../utils/api';
 import { PaymentMethod, Invoice } from '../types/billing';
+import { DEFAULT_DEMO_USER } from '../utils/mockPeople';
 
 // Add missing types that were being imported
 
@@ -251,12 +252,12 @@ export const initializePayment = async (planId: string): Promise<any> => {
         const userData = localStorage.getItem('userData');
         if (userData) {
           const user = JSON.parse(userData);
-          return user.email || 'user@example.com';
+          return user.email || DEFAULT_DEMO_USER.email;
         }
       } catch (error) {
         console.error('Error getting user email:', error);
       }
-      return 'dadece8444@adrewire.com';
+      return DEFAULT_DEMO_USER.email;
     };
 
     const getAmountForPlan = (planId: string): number => {
@@ -305,12 +306,12 @@ export const initializeTrialPayment = async (planId: string): Promise<any> => {
         const userData = localStorage.getItem('userData');
         if (userData) {
           const user = JSON.parse(userData);
-          return user.email || 'user@example.com';
+          return user.email || DEFAULT_DEMO_USER.email;
         }
       } catch (error) {
         console.error('Error getting user email:', error);
       }
-      return 'dadece8444@adrewire.com';
+      return DEFAULT_DEMO_USER.email;
     };
 
     const getAmountForPlan = (planId: string): number => {

@@ -28,6 +28,7 @@ import {
   SubscriptionStatus,
   BillingLog
 } from "../../utils/api";
+import { ACCOUNT_MANAGER, PREVIEW_CONTACT } from "../../utils/mockPeople";
 
 import {
   PaymentMethod,
@@ -749,9 +750,9 @@ const Settings = () => {
           <h4 className="section-title">Your Account Manager</h4>
           <div className="contact-card">
             <div className="manager-info">
-              <p className="manager-name">John Smith</p>
-              <p className="manager-email">john.smith@xscard.com</p>
-              <p className="manager-phone">+27 11 123 4567</p>
+              <p className="manager-name">{ACCOUNT_MANAGER.name}</p>
+              <p className="manager-email">{ACCOUNT_MANAGER.email}</p>
+              <p className="manager-phone">{ACCOUNT_MANAGER.phone}</p>
             </div>
             <Button size="sm" onClick={() => handleContactAccountManager()}>
               Contact Manager
@@ -939,13 +940,13 @@ const Settings = () => {
   };
   const handleContactAccountManager = () => {
     const confirmed = window.confirm(
-      '📧 Contact Account Manager\n\nThis will open your email client with a pre-filled message to your account manager.\n\nAccount Manager: John Smith\nEmail: john.smith@xscard.com\n\nClick OK to open email client.'
+      `📧 Contact Account Manager\n\nThis will open your email client with a pre-filled message to your account manager.\n\nAccount Manager: ${ACCOUNT_MANAGER.name}\nEmail: ${ACCOUNT_MANAGER.email}\n\nClick OK to open email client.`
     );
     
     if (confirmed) {
       const subject = encodeURIComponent('Enterprise Support Request');
-      const body = encodeURIComponent('Hello John,\n\nI need assistance with my XSCard Enterprise account.\n\n[Please describe your request here]\n\nBest regards');
-      window.open(`mailto:john.smith@xscard.com?subject=${subject}&body=${body}`, '_blank');
+      const body = encodeURIComponent(`Hello ${ACCOUNT_MANAGER.firstName},\n\nI need assistance with my XSCard Enterprise account.\n\n[Please describe your request here]\n\nBest regards`);
+      window.open(`mailto:${ACCOUNT_MANAGER.email}?subject=${subject}&body=${body}`, '_blank');
     }
   };
   const handleDownloadInvoice = async (invoiceId: string) => {
@@ -1392,8 +1393,8 @@ const Settings = () => {
                           
                           <div className="preview-card-body">
                             <div className="preview-contact-info">
-                              <div className="preview-contact-name">John Doe</div>
-                              <div className="preview-contact-title">Senior Manager</div>
+                              <div className="preview-contact-name">{PREVIEW_CONTACT.fullName}</div>
+                              <div className="preview-contact-title">{PREVIEW_CONTACT.title}</div>
                               {enterpriseData.name && (
                                 <div className="preview-company-name">{enterpriseData.name}</div>
                               )}
@@ -1402,11 +1403,11 @@ const Settings = () => {
                             <div className="preview-contact-details">
                               <div className="preview-contact-item">
                                 <div className="preview-contact-icon">📧</div>
-                                <span className="preview-contact-text">john.doe@company.com</span>
+                                <span className="preview-contact-text">{PREVIEW_CONTACT.email}</span>
                               </div>
                               <div className="preview-contact-item">
                                 <div className="preview-contact-icon">📱</div>
-                                <span className="preview-contact-text">+27 82 123 4567</span>
+                                <span className="preview-contact-text">{PREVIEW_CONTACT.phone}</span>
                               </div>
                             </div>
                           </div>

@@ -1,6 +1,8 @@
 // Session Service - Dummy implementation for session management
 // These endpoints will be implemented on the backend later
 
+import { createRoleDemoUsers } from '../utils/mockPeople';
+
 interface SessionData {
   userId: string;
   userRole: string;
@@ -22,51 +24,34 @@ interface SessionSummary {
 
 // Dummy data generator
 const generateDummySessions = (): SessionData[] => {
-  // const roles = ['Administrator', 'Manager', 'Employee'];
-  const sessions: SessionData[] = [];
-  
-  // Generate random sessions
-  const adminCount = 2;
-  const managerCount = 3;
-  const employeeCount = 3;
-  
-  // Administrators
-  for (let i = 0; i < adminCount; i++) {
-    sessions.push({
-      userId: `admin_${i + 1}`,
-      userRole: 'Administrator',
-      email: `admin${i + 1}@company.com`,
-      lastActivity: new Date(Date.now() - Math.random() * 3600000), // Random time within last hour
-      ipAddress: `192.168.1.${10 + i}`,
-      deviceInfo: 'Chrome on Windows'
-    });
-  }
-  
-  // Managers
-  for (let i = 0; i < managerCount; i++) {
-    sessions.push({
-      userId: `manager_${i + 1}`,
-      userRole: 'Manager',
-      email: `manager${i + 1}@company.com`,
-      lastActivity: new Date(Date.now() - Math.random() * 3600000),
-      ipAddress: `192.168.1.${20 + i}`,
-      deviceInfo: 'Safari on macOS'
-    });
-  }
-  
-  // Employees
-  for (let i = 0; i < employeeCount; i++) {
-    sessions.push({
-      userId: `employee_${i + 1}`,
-      userRole: 'Employee',
-      email: `employee${i + 1}@company.com`,
-      lastActivity: new Date(Date.now() - Math.random() * 3600000),
-      ipAddress: `192.168.1.${30 + i}`,
-      deviceInfo: 'Firefox on Linux'
-    });
-  }
-  
-  return sessions;
+  const administrators = createRoleDemoUsers('Administrator', 2).map((user, index) => ({
+    userId: user.id,
+    userRole: user.role,
+    email: user.email,
+    lastActivity: new Date(Date.now() - Math.random() * 3600000),
+    ipAddress: `105.244.16.${20 + index}`,
+    deviceInfo: index % 2 === 0 ? 'Chrome on macOS' : 'Edge on Windows',
+  }));
+
+  const managers = createRoleDemoUsers('Manager', 3).map((user, index) => ({
+    userId: user.id,
+    userRole: user.role,
+    email: user.email,
+    lastActivity: new Date(Date.now() - Math.random() * 3600000),
+    ipAddress: `102.89.44.${30 + index}`,
+    deviceInfo: index % 2 === 0 ? 'Safari on macOS' : 'Chrome on Windows',
+  }));
+
+  const employees = createRoleDemoUsers('Employee', 3).map((user, index) => ({
+    userId: user.id,
+    userRole: user.role,
+    email: user.email,
+    lastActivity: new Date(Date.now() - Math.random() * 3600000),
+    ipAddress: `196.33.118.${40 + index}`,
+    deviceInfo: index % 2 === 0 ? 'Firefox on Linux' : 'Chrome on Android',
+  }));
+
+  return [...administrators, ...managers, ...employees];
 };
 
 // API Endpoints (to be implemented on backend)

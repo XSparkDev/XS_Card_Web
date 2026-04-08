@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
 import App from './App'
+import { installMockEnterpriseApi } from './mocks/mockEnterpriseApi'
 
 // Comment out Font Awesome temporarily
 // import '../node_modules/@fortawesome/fontawesome-free/css/all.min.css'
@@ -18,6 +19,8 @@ import App from './App'
 // Option 3: Use CDN instead
 // Remove the import and add this to your index.html:
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+installMockEnterpriseApi()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
